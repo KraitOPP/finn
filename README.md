@@ -25,6 +25,8 @@ Keyboard-accessible workspace navigation links Overview, Portfolio, Watchlists, 
 
 Settings save account-specific IANA time zone and notification choices, defaulting to Asia/Kolkata and INR. Source timestamps remain unchanged; display formatting uses the saved zone. A stale revision asks the user to reload and review instead of overwriting another change. Notification choices do not enable delivery by themselves. Private responses are validated, bounded and held in memory; error details from the server are not rendered.
 
+Securities searches the signed-in user's saved manual catalogue. Record companies and securities, inspect distinct NSE/BSE listings, and explicitly confirm exchange/series/symbol and optional Yahoo mapping. Search never selects the first ambiguous result. Missing mappings stay visible and block unsupported price assumptions. The catalogue does not claim all-market coverage. Names and source text render as plain React text.
+
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 
 ## Verification

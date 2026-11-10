@@ -4,6 +4,7 @@ import { useAuthentication } from "./auth/AuthProvider.tsx";
 export const destinations = [
   ["overview", "Overview"],
   ["portfolio", "Portfolio"],
+  ["instruments", "Securities"],
   ["watchlists", "Watchlists"],
   ["inbox", "Inbox"],
   ["research", "Research"],

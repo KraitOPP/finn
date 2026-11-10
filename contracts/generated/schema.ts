@@ -1,14 +1,21 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.4.0",
+  "contractVersion": "0.5.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "cff7dc12bd24a24f0b0f18729d776ecf250987c0082b568f2cbf40ddcac251b5",
+  "sourceSha256": "100b3f8b8877af4838fb5c97cc5be677ebccb493072bbc8e0d10c9f9c175555a",
   "schemaNames": [
     "AcquisitionEnvelope",
     "AdjustmentBasis",
     "AsyncJobStatus",
     "Capability",
+    "CatalogueCompanies",
+    "CatalogueCompany",
+    "CatalogueListing",
+    "CatalogueSecurity",
+    "CatalogueSecurityDetail",
+    "CatalogueSecurityPage",
+    "CompanyInput",
     "ContractVersion",
     "CsrfInformation",
     "DecimalString",
@@ -20,6 +27,7 @@ export const contractMetadata = {
     "InstrumentResult",
     "IntegerString",
     "ListingIdentity",
+    "ListingInput",
     "NonNegativeDecimalString",
     "OpaqueId",
     "PositiveDecimalString",
@@ -36,9 +44,13 @@ export const contractMetadata = {
     "ProviderStatusPage",
     "QuoteResponse",
     "Rights",
+    "SecurityInput",
     "SessionDate",
     "SessionResponse",
     "SourceTimes",
+    "SymbolHistory",
+    "SymbolHistoryList",
+    "SymbolInput",
     "UserProfile",
     "UtcInstant",
     "Warning"
@@ -491,9 +503,244 @@ export const contractSchemas = {
     "additionalProperties": false,
     "description": "A documented library interface does not establish validated Indian listing coverage, timing, or rights."
   },
+  "CatalogueCompanies": {
+    "type": "array",
+    "items": {
+      "$ref": "#/components/schemas/CatalogueCompany"
+    },
+    "maxItems": 100
+  },
+  "CatalogueCompany": {
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "source": {
+        "const": "MANUAL_USER"
+      }
+    },
+    "required": [
+      "companyId",
+      "name",
+      "source"
+    ],
+    "additionalProperties": false
+  },
+  "CatalogueListing": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "securityId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      },
+      "segment": {
+        "type": "string",
+        "const": "CASH_EQUITY"
+      },
+      "series": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 16
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "currency": {
+        "type": "string",
+        "const": "INR"
+      },
+      "isin": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12,
+            "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "providerSymbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "reviewStatus": {
+        "const": "USER_CONFIRMED"
+      },
+      "source": {
+        "const": "MANUAL_USER"
+      },
+      "validFrom": {
+        "$ref": "#/components/schemas/SessionDate"
+      }
+    },
+    "required": [
+      "listingId",
+      "securityId",
+      "companyId",
+      "exchange",
+      "segment",
+      "series",
+      "symbol",
+      "currency",
+      "isin",
+      "providerSymbol",
+      "reviewStatus",
+      "source",
+      "validFrom"
+    ],
+    "additionalProperties": false,
+    "description": "Owner-scoped, manually confirmed listing and optional explicit Yahoo mapping. It is not an authoritative exchange security master. No ISIN-based exchange guess."
+  },
+  "CatalogueSecurity": {
+    "type": "object",
+    "properties": {
+      "securityId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "isin": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12,
+            "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "reviewStatus": {
+        "type": "string",
+        "enum": [
+          "USER_CONFIRMED",
+          "UNRESOLVED"
+        ]
+      }
+    },
+    "required": [
+      "securityId",
+      "companyId",
+      "companyName",
+      "name",
+      "isin",
+      "reviewStatus"
+    ],
+    "additionalProperties": false
+  },
+  "CatalogueSecurityDetail": {
+    "type": "object",
+    "properties": {
+      "security": {
+        "$ref": "#/components/schemas/CatalogueSecurity"
+      },
+      "listings": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CatalogueListing"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "security",
+      "listings"
+    ],
+    "additionalProperties": false
+  },
+  "CatalogueSecurityPage": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CatalogueSecurity"
+        },
+        "maxItems": 100
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "items",
+      "limit",
+      "offset",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyInput": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "additionalProperties": false
+  },
   "ContractVersion": {
     "type": "string",
-    "const": "0.4.0"
+    "const": "0.5.0"
   },
   "CsrfInformation": {
     "type": "object",
@@ -976,6 +1223,57 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Stable listing identity. NSE and BSE listings remain distinct even for one security. ISIN may be unknown; ticker is not a permanent identifier."
+  },
+  "ListingInput": {
+    "type": "object",
+    "properties": {
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      },
+      "series": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 16,
+        "pattern": "^[A-Z0-9_-]{1,16}$"
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+      },
+      "providerSymbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "validFrom": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "confirmed": {
+        "const": true
+      }
+    },
+    "required": [
+      "exchange",
+      "series",
+      "symbol",
+      "providerSymbol",
+      "validFrom",
+      "confirmed"
+    ],
+    "additionalProperties": false
   },
   "NonNegativeDecimalString": {
     "type": "string",
@@ -1840,6 +2138,42 @@ export const contractSchemas = {
       }
     ]
   },
+  "SecurityInput": {
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "isin": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12,
+            "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "confirmed": {
+        "const": true
+      }
+    },
+    "required": [
+      "companyId",
+      "name",
+      "isin",
+      "confirmed"
+    ],
+    "additionalProperties": false
+  },
   "SessionDate": {
     "type": "string",
     "minLength": 1,
@@ -1989,6 +2323,82 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Source and FINN processing times are distinct. Null timestamps require matching unknownTimeReasons; checked by semantic validation."
+  },
+  "SymbolHistory": {
+    "type": "object",
+    "properties": {
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "validFrom": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "validTo": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "source": {
+        "const": "MANUAL_USER"
+      }
+    },
+    "required": [
+      "symbol",
+      "validFrom",
+      "validTo",
+      "source"
+    ],
+    "additionalProperties": false
+  },
+  "SymbolHistoryList": {
+    "type": "array",
+    "items": {
+      "$ref": "#/components/schemas/SymbolHistory"
+    },
+    "maxItems": 100
+  },
+  "SymbolInput": {
+    "type": "object",
+    "properties": {
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+      },
+      "providerSymbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "effectiveDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "confirmed": {
+        "const": true
+      }
+    },
+    "required": [
+      "symbol",
+      "providerSymbol",
+      "effectiveDate",
+      "confirmed"
+    ],
+    "additionalProperties": false
   },
   "UserProfile": {
     "type": "object",

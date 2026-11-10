@@ -88,7 +88,56 @@ export type Capability = ({
   "evidence": (string);
 });
 
-export type ContractVersion = ("0.4.0") & (string);
+export type CatalogueCompanies = (Array<(CatalogueCompany)>);
+
+export type CatalogueCompany = ({
+  "companyId": (OpaqueId);
+  "name": (string);
+  "source": ("MANUAL_USER");
+});
+
+export type CatalogueListing = ({
+  "listingId": (OpaqueId);
+  "securityId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "exchange": ("NSE" | "BSE") & (string);
+  "segment": ("CASH_EQUITY") & (string);
+  "series": (string);
+  "symbol": (string);
+  "currency": ("INR") & (string);
+  "isin": (((string)) | ((null)));
+  "providerSymbol": (((string)) | ((null)));
+  "reviewStatus": ("USER_CONFIRMED");
+  "source": ("MANUAL_USER");
+  "validFrom": (SessionDate);
+});
+
+export type CatalogueSecurity = ({
+  "securityId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "name": (string);
+  "isin": (((string)) | ((null)));
+  "reviewStatus": ("USER_CONFIRMED" | "UNRESOLVED") & (string);
+});
+
+export type CatalogueSecurityDetail = ({
+  "security": (CatalogueSecurity);
+  "listings": (Array<(CatalogueListing)>);
+});
+
+export type CatalogueSecurityPage = ({
+  "items": (Array<(CatalogueSecurity)>);
+  "limit": (number);
+  "offset": (number);
+  "hasMore": (boolean);
+});
+
+export type CompanyInput = ({
+  "name": (string);
+});
+
+export type ContractVersion = ("0.5.0") & (string);
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -177,6 +226,15 @@ export type ListingIdentity = ({
   "symbol": (string);
   "currency": ("INR") & (string);
   "isin": (((string)) | ((null)));
+});
+
+export type ListingInput = ({
+  "exchange": ("NSE" | "BSE") & (string);
+  "series": (string);
+  "symbol": (string);
+  "providerSymbol": (((string)) | ((null)));
+  "validFrom": (SessionDate);
+  "confirmed": (true);
 });
 
 export type NonNegativeDecimalString = (string);
@@ -335,6 +393,13 @@ export type Rights = ((({
   "externalAiAllowed": (false) & (boolean);
 })));
 
+export type SecurityInput = ({
+  "companyId": (OpaqueId);
+  "name": (string);
+  "isin": (((string)) | ((null)));
+  "confirmed": (true);
+});
+
 export type SessionDate = (string);
 
 export type SessionResponse = ((({
@@ -361,6 +426,22 @@ export type SourceTimes = ({
   "unknownTimeReasons": (Array<("OBSERVATION_TIME_NOT_PROVIDED" | "PUBLICATION_TIME_NOT_PROVIDED" | "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED" | "NOT_YET_INGESTED" | "NOT_YET_ACCEPTED") & (string)>);
 });
 
+export type SymbolHistory = ({
+  "symbol": (string);
+  "validFrom": (SessionDate);
+  "validTo": (((SessionDate)) | ((null)));
+  "source": ("MANUAL_USER");
+});
+
+export type SymbolHistoryList = (Array<(SymbolHistory)>);
+
+export type SymbolInput = ({
+  "symbol": (string);
+  "providerSymbol": (((string)) | ((null)));
+  "effectiveDate": (SessionDate);
+  "confirmed": (true);
+});
+
 export type UserProfile = ({
   "userId": (OpaqueId);
   "displayName": (string);
@@ -378,6 +459,13 @@ export interface ContractTypes {
   AdjustmentBasis: AdjustmentBasis;
   AsyncJobStatus: AsyncJobStatus;
   Capability: Capability;
+  CatalogueCompanies: CatalogueCompanies;
+  CatalogueCompany: CatalogueCompany;
+  CatalogueListing: CatalogueListing;
+  CatalogueSecurity: CatalogueSecurity;
+  CatalogueSecurityDetail: CatalogueSecurityDetail;
+  CatalogueSecurityPage: CatalogueSecurityPage;
+  CompanyInput: CompanyInput;
   ContractVersion: ContractVersion;
   CsrfInformation: CsrfInformation;
   DecimalString: DecimalString;
@@ -389,6 +477,7 @@ export interface ContractTypes {
   InstrumentResult: InstrumentResult;
   IntegerString: IntegerString;
   ListingIdentity: ListingIdentity;
+  ListingInput: ListingInput;
   NonNegativeDecimalString: NonNegativeDecimalString;
   OpaqueId: OpaqueId;
   PositiveDecimalString: PositiveDecimalString;
@@ -405,9 +494,13 @@ export interface ContractTypes {
   ProviderStatusPage: ProviderStatusPage;
   QuoteResponse: QuoteResponse;
   Rights: Rights;
+  SecurityInput: SecurityInput;
   SessionDate: SessionDate;
   SessionResponse: SessionResponse;
   SourceTimes: SourceTimes;
+  SymbolHistory: SymbolHistory;
+  SymbolHistoryList: SymbolHistoryList;
+  SymbolInput: SymbolInput;
   UserProfile: UserProfile;
   UtcInstant: UtcInstant;
   Warning: Warning;

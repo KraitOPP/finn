@@ -3,6 +3,7 @@ import type { QuoteResponse } from "../contracts/generated/models.ts";
 import { quotePresentation } from "../contracts/presentation.ts";
 import { loadDemoQuote } from "./api/demo.ts";
 import { AuthControls, SessionNotice } from "./auth/AuthControls.tsx";
+import { Securities } from "./instruments/Securities.tsx";
 import {
   Navigation,
   PendingView,
@@ -235,7 +236,9 @@ function WorkspaceApp() {
           </PendingView>
         ) : (
           <PrivateView key={route}>
-            {route === "settings" ? (
+            {route === "instruments" ? (
+              <Securities />
+            ) : route === "settings" ? (
               <Settings />
             ) : (
               <PendingView
