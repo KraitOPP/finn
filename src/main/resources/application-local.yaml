@@ -1,0 +1,6 @@
+finn:
+  public-origin: http://127.0.0.1:5173
+  oidc:
+    issuer: http://localhost:8180/realms/finn-local
+server:
+  address: 127.0.0.1

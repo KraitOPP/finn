@@ -11,6 +11,7 @@ const root = await externalWorkspace();
 await mkdir(join(root, 'cache/maven-wrapper'), { recursive: true });
 const env = { ...process.env, MAVEN_USER_HOME: join(root, 'cache/maven-wrapper'),
   JAVA_TOOL_OPTIONS: `${process.env.JAVA_TOOL_OPTIONS ?? ''} -Djava.io.tmpdir="${join(root, 'tmp/backend')}" -Duser.home="${join(root, 'cache/java-home')}"`.trim() };
+if (action === 'run' && !env.SPRING_PROFILES_ACTIVE) env.SPRING_PROFILES_ACTIVE = 'local';
 const windows = process.platform === 'win32';
 const args = ['-B', '-ntp', ...actions[action]];
 // Windows invokes only a fixed, reviewed action; no caller text is passed into the shell.

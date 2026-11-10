@@ -18,6 +18,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -29,6 +30,7 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@ActiveProfiles("test")
 class FoundationIntegrationTest {
     private static final String APP_PASSWORD = UUID.randomUUID().toString();
     private static final String MIGRATION_PASSWORD = UUID.randomUUID().toString();
@@ -50,6 +52,13 @@ class FoundationIntegrationTest {
         properties.add("spring.flyway.url", DATABASE::getJdbcUrl);
         properties.add("spring.flyway.user", () -> "finn_migrator");
         properties.add("spring.flyway.password", () -> MIGRATION_PASSWORD);
+        properties.add("finn.public-origin", () -> "http://127.0.0.1:5173");
+        properties.add("finn.oidc.issuer", () -> "http://127.0.0.1:1/test-issuer");
+        properties.add("finn.oidc.client-secret", () -> UUID.randomUUID().toString());
+        properties.add("finn.oidc.authorization-uri", () -> "http://127.0.0.1:1/authorize");
+        properties.add("finn.oidc.token-uri", () -> "http://127.0.0.1:1/token");
+        properties.add("finn.oidc.jwk-set-uri", () -> "http://127.0.0.1:1/jwks");
+        properties.add("finn.oidc.user-info-uri", () -> "http://127.0.0.1:1/userinfo");
     }
 
     @Autowired MockMvc mvc;
@@ -76,7 +85,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.2.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.3.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

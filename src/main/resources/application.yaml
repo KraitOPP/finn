@@ -22,6 +22,19 @@ spring:
   servlet:
     multipart:
       enabled: false
+  session:
+    timeout: 30m
+    jdbc:
+      initialize-schema: never
+      table-name: finn.spring_session
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+finn:
+  public-origin: ${FINN_PUBLIC_ORIGIN:}
+  oidc:
+    issuer: ${FINN_OIDC_ISSUER:}
+    client-secret: ${FINN_OIDC_CLIENT_SECRET:}
 server:
   address: 127.0.0.1
   port: 8080

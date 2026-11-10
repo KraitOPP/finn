@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -239,6 +239,13 @@ def definitions() -> dict:
         "warnings": array(ref("Warning"), maxItems=32),
     }, "Ascending sessionDate/observationId order. ONE_DAY only. Never fill gaps with zero or a silent previous close. Cursors bind listing, range, basis and source-selection snapshot.")
     d["ProviderStatusPage"] = obj({**page_common, "items": array(ref("ProviderStatus"), maxItems=4)})
+    d["UserProfile"] = obj({"userId": ref("OpaqueId"), "displayName": text(maxLength=120)},
+                            "Application identity only. Provider claims, subject, tokens and secrets are never serialized here.")
+    d["CsrfInformation"] = obj({"headerName": {"const": "X-CSRF-TOKEN"}, "parameterName": {"const": "_csrf"}, "token": text(maxLength=2048)})
+    d["SessionResponse"] = {"oneOf": [
+        obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
+        obj({**page_common, "authenticated": {"const": False}, "user": {"type": "null"}, "csrf": ref("CsrfInformation")}),
+    ]}
     job_common = {
         **page_common, "jobId": ref("OpaqueId"),
         "revision": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
@@ -287,10 +294,10 @@ def public_api_document() -> dict:
         return {"description": description,
                 "content": {media: {"schema": {"$ref": f"#/components/schemas/{name}"}}}}
 
-    def operation(operation_id, description, result_name, params, implemented=False):
+    def operation(operation_id, description, result_name, params, implemented=False, implementation_status="IMPLEMENTED_SYNTHETIC_ONLY"):
         return {"operationId": operation_id, "summary": description,
-                "description": "Implemented fixed synthetic demonstration; no provider or portfolio access." if implemented else "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
-                "x-finn-implementation-status": "IMPLEMENTED_SYNTHETIC_ONLY" if implemented else "PLANNED", "parameters": params,
+                "description": ("Implemented fixed synthetic demonstration; no provider or portfolio access." if implementation_status == "IMPLEMENTED_SYNTHETIC_ONLY" else "Implemented server-side identity boundary. Do not expose provider tokens or accept a trusted owner ID from the browser.") if implemented else "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the Java service; no browser provider access.",
+                "x-finn-implementation-status": implementation_status if implemented else "PLANNED", "parameters": params,
                 "responses": {"200": response("Stored result; inspect availability, coverage and freshness.", result_name),
                               "400": response("Malformed request.", "Problem", "application/problem+json"),
                               "401": response("Authentication required.", "Problem", "application/problem+json"),
@@ -305,6 +312,10 @@ def public_api_document() -> dict:
             parameter("cursor", "query", text(maxLength=512))]
     paths = {
         "/api/v1/demo/quote": {"get": {**operation("getSyntheticDemoQuote", "Get a fixed fictional EOD snapshot", "QuoteResponse", [], True), "security": []}},
+        "/api/v1/session": {"get": {**operation("getSession", "Get session status and a same-origin CSRF token", "SessionResponse", [], True, "IMPLEMENTED"), "security": []}},
+        "/api/v1/me": {"get": operation("getCurrentUser", "Get the current application profile", "UserProfile", [], True, "IMPLEMENTED")},
+        "/oauth2/authorization/finn": {"get": {"operationId": "startSignIn", "summary": "Start server-side OIDC authorization code sign-in with PKCE", "security": [], "x-finn-implementation-status": "IMPLEMENTED", "responses": {"302": {"description": "Redirect to the configured identity provider; nonce/state stay server-bound."}}}},
+        "/api/v1/logout": {"post": {"operationId": "signOut", "summary": "Invalidate the current session and initiate provider logout", "x-finn-implementation-status": "IMPLEMENTED", "parameters": [parameter("X-CSRF-TOKEN", "header", text(maxLength=2048), True, "Token from getSession; browser form submission may use the _csrf parameter instead.")], "responses": {"302": {"description": "Session invalidated; redirect through configured provider logout or the fixed application origin."}, "403": response("CSRF token missing or invalid.", "Problem", "application/problem+json")}}},
         "/api/v1/instruments": {"get": operation("searchInstruments", "Search supported cash-equity listings", "InstrumentPage", [
             parameter("query", "query", text(maxLength=100)),
             parameter("exchange", "query", enum(["NSE", "BSE"])), *page])},
@@ -321,14 +332,14 @@ def public_api_document() -> dict:
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "The synthetic demo route is implemented. Other operations remain planned. Explicit missing/stale states and source provenance; no trading, broker onboarding, news or investment-performance promises."},
+                 "description": "Identity/session and fixed synthetic demo routes are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
-        "x-finn-status": "PARTIALLY_IMPLEMENTED_SYNTHETIC_DEMO_ONLY",
+        "x-finn-status": "PARTIALLY_IMPLEMENTED_IDENTITY_AND_SYNTHETIC_DEMO",
         "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
         "paths": paths,
-        "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "FINN_SESSION",
-                         "description": "Planned secure HttpOnly session. State-changing endpoints added later require CSRF protection."}},
+        "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-FINN_SESSION",
+                         "description": "Secure HttpOnly SameSite=Lax host-only session. Explicit loopback local profile uses FINN_SESSION with HTTP. Mutations require CSRF protection."}},
                        "schemas": definitions()},
     })
 

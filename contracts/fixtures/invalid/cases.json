@@ -659,5 +659,46 @@
       }
     ],
     "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-session-contradiction",
+    "baseCaseId": "session-authenticated",
+    "changes": [
+      {
+        "path": [
+          "authenticated"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-session-secret-field",
+    "baseCaseId": "session-authenticated",
+    "changes": [
+      {
+        "path": [
+          "user",
+          "accessToken"
+        ],
+        "value": "nonfunctional-value"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-session-empty-csrf",
+    "baseCaseId": "session-authenticated",
+    "changes": [
+      {
+        "path": [
+          "csrf",
+          "token"
+        ],
+        "value": ""
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
   }
 ]

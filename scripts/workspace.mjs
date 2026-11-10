@@ -11,7 +11,7 @@ export async function externalWorkspace() {
     catch (error) { if (error.code !== 'ENOENT') throw error; if (path === dirname(path)) break; continue; }
     throw new Error('FINN_WORKSPACE_ROOT must stay outside every Git checkout.');
   }
-  for (const child of ['cache/java-home', 'tmp/backend', 'build/backend', 'secrets/backend', 'data/postgres']) {
+  for (const child of ['cache/java-home', 'tmp/backend', 'build/backend', 'secrets/backend', 'secrets/identity', 'data/postgres']) {
     await mkdir(join(root, child), { recursive: true });
     const resolved = await realpath(join(root, child));
     if (!resolved.startsWith(root + (process.platform === 'win32' ? '\\' : '/'))) throw new Error('An external output directory resolves outside the working directory.');

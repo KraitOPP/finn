@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.2.0",
+  "$id": "urn:finn:contracts:market-data:0.3.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.2.0"
+      "const": "0.3.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1493,6 +1493,107 @@
         "items"
       ],
       "additionalProperties": false
+    },
+    "UserProfile": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "userId",
+        "displayName"
+      ],
+      "additionalProperties": false,
+      "description": "Application identity only. Provider claims, subject, tokens and secrets are never serialized here."
+    },
+    "CsrfInformation": {
+      "type": "object",
+      "properties": {
+        "headerName": {
+          "const": "X-CSRF-TOKEN"
+        },
+        "parameterName": {
+          "const": "_csrf"
+        },
+        "token": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "headerName",
+        "parameterName",
+        "token"
+      ],
+      "additionalProperties": false
+    },
+    "SessionResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "authenticated": {
+              "const": true
+            },
+            "user": {
+              "$ref": "#/$defs/UserProfile"
+            },
+            "csrf": {
+              "$ref": "#/$defs/CsrfInformation"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "authenticated",
+            "user",
+            "csrf"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "authenticated": {
+              "const": false
+            },
+            "user": {
+              "type": "null"
+            },
+            "csrf": {
+              "$ref": "#/$defs/CsrfInformation"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "authenticated",
+            "user",
+            "csrf"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "AsyncJobStatus": {
       "description": "Owner-scoped status snapshot, not a queue implementation. Revision is server-assigned and increases on committed changes. Terminal states are immutable; retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",

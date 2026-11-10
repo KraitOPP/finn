@@ -4,7 +4,7 @@ Java 25 and Spring Boot 4.1.2 backend for an India-first portfolio intelligence 
 
 ## Repository status
 
-The application foundation contains a fixed synthetic demo endpoint, a PostgreSQL migration, separate migration/runtime database roles, health/readiness checks and a default-deny API boundary. Identity and portfolio workflows are later feature slices. The existing Yahoo client returns unaccepted acquisition candidates; no live prices or user portfolios are served by the demo. Excel/EOD parsers are not implemented yet.
+The application includes OIDC sign-in, PostgreSQL-backed private sessions, CSRF-protected logout, a fixed synthetic demo endpoint, separate migration/runtime database roles and readiness checks. The existing Yahoo client returns unaccepted acquisition candidates; no live prices or user portfolios are served by the demo. Portfolio workflows and Excel/EOD parsers are not implemented yet.
 
 ## Run locally
 
@@ -17,22 +17,24 @@ $env:FINN_WORKSPACE_ROOT = 'C:/path/to/private/finn-workspace'
 $env:JAVA_HOME = 'C:/path/to/jdk-25'
 New-Item -ItemType Directory -Force -Path $env:FINN_WORKSPACE_ROOT | Out-Null
 node scripts/setup.mjs
-docker compose up -d --wait postgres
+node scripts/dev-services.mjs
 node scripts/maven.mjs verify
 node scripts/maven.mjs run
 ```
 
 On Linux/macOS export the same variables and create the external directory, then use the same Node commands and Docker Compose command. The runner checks the working directory before starting Maven and keeps dependency downloads, wrapper files, JVM temporary files, compiled output and test reports under that directory. Use this runner rather than invoking Maven with arbitrary output paths.
 
-Setup creates random development database passwords outside Git and preserves existing files. PostgreSQL bootstrap, migration and runtime identities are distinct: the runtime role cannot create tables or read migration history. Restore existing secrets if they are lost; setup does not reset passwords in an existing database. Stop only this project's services with `docker compose stop`; no data removal is part of startup or shutdown.
+Setup creates random development credentials outside Git and preserves existing files. PostgreSQL bootstrap, migration, identity-provider and runtime identities are distinct: the application role cannot create tables or read migration history. Restore existing secrets if they are lost; setup does not reset passwords in an existing database. Stop only this project's services with `docker compose stop`; no data removal is part of startup or shutdown.
 
-The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.2.0. All other operations remain denied; there is no default account or generated login password. CSRF stays enabled, mutation endpoints are not public, and uploads are disabled.
+The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.3.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Uploads are disabled.
 
-Run the frontend separately and use its same-origin `/api` proxy. The packaged JAR is under `FINN_WORKSPACE_ROOT/build/backend`; running it needs Java and database configuration but does not need Node. Local development is not a production deployment or a completed authentication implementation.
+Run the frontend at exactly `http://127.0.0.1:5173` and use its same-origin proxies. Sign in redirects to the local Keycloak realm at `http://localhost:8180/realms/finn-local`. Development-only synthetic account credentials are generated in the private `secrets/identity/demo-users.json` file under the working directory. Never commit or share that file. Keycloak stores identity records in its own database; the app stores only an issuer/subject link and display name. The packaged JAR is under `FINN_WORKSPACE_ROOT/build/backend`; running it needs Java and configuration but does not need Node.
+
+The Node runner selects the `local` profile, which permits loopback HTTP only. Production must omit that profile, configure HTTPS `FINN_PUBLIC_ORIGIN` and `FINN_OIDC_ISSUER`, provide `FINN_OIDC_CLIENT_SECRET` privately, and register the exact `/login/oauth2/code/finn` callback and logout origin with the provider. No wildcard redirects are supported. Production uses a Secure, HttpOnly, SameSite=Lax `__Host-FINN_SESSION` cookie. The loopback profile uses `FINN_SESSION`. Sessions expire after 30 minutes idle; POST `/api/v1/logout` requires the session CSRF token and invalidates local access before provider logout. No provider token is sent to React. Configure a trusted same-origin HTTPS reverse proxy for the frontend, `/api`, `/oauth2` and `/login/oauth2`; the development server is not a production host.
 
 ## Verification
 
-`node scripts/maven.mjs verify` compiles, tests and packages the application. Integration checks start a real PostgreSQL Testcontainer, apply migrations, verify replay/role restrictions, exercise the synthetic route and deny private requests. Docker must be available; missing Docker is a failure, not a silently skipped database test.
+`node scripts/maven.mjs verify` compiles, tests and packages the application. Integration checks start real PostgreSQL containers, verify migrations and role restrictions, and exercise signed OIDC callbacks against a deterministic test provider. They check state/nonce/PKCE, session rotation, database expiry, CSRF and logout. Docker must be available; missing Docker is a failure, not a silently skipped database test.
 
 The GitHub workflow runs the application and existing Python contract/adapter checks without live providers or personal reports. Build actions and the PostgreSQL image are pinned to verified immutable identifiers. Python check tools must use external environments/caches; their component READMEs document standalone commands.
 

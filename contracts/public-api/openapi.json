@@ -3,8 +3,8 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.2.0",
-    "description": "The synthetic demo route is implemented. Other operations remain planned. Explicit missing/stale states and source provenance; no trading, broker onboarding, news or investment-performance promises."
+    "version": "0.3.0",
+    "description": "Identity/session and fixed synthetic demo routes are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
     {
@@ -17,7 +17,7 @@
       "sessionCookie": []
     }
   ],
-  "x-finn-status": "PARTIALLY_IMPLEMENTED_SYNTHETIC_DEMO_ONLY",
+  "x-finn-status": "PARTIALLY_IMPLEMENTED_IDENTITY_AND_SYNTHETIC_DEMO",
   "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
   "paths": {
     "/api/v1/demo/quote": {
@@ -102,11 +102,222 @@
         "security": []
       }
     },
+    "/api/v1/session": {
+      "get": {
+        "operationId": "getSession",
+        "summary": "Get session status and a same-origin CSRF token",
+        "description": "Implemented server-side identity boundary. Do not expose provider tokens or accept a trusted owner ID from the browser.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "summary": "Get the current application profile",
+        "description": "Implemented server-side identity boundary. Do not expose provider tokens or accept a trusted owner ID from the browser.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth2/authorization/finn": {
+      "get": {
+        "operationId": "startSignIn",
+        "summary": "Start server-side OIDC authorization code sign-in with PKCE",
+        "security": [],
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "responses": {
+          "302": {
+            "description": "Redirect to the configured identity provider; nonce/state stay server-bound."
+          }
+        }
+      }
+    },
+    "/api/v1/logout": {
+      "post": {
+        "operationId": "signOut",
+        "summary": "Invalidate the current session and initiate provider logout",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "description": "Token from getSession; browser form submission may use the _csrf parameter instead."
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Session invalidated; redirect through configured provider logout or the fixed application origin."
+          },
+          "403": {
+            "description": "CSRF token missing or invalid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/instruments": {
       "get": {
         "operationId": "searchInstruments",
         "summary": "Search supported cash-equity listings",
-        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
+        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the Java service; no browser provider access.",
         "x-finn-implementation-status": "PLANNED",
         "parameters": [
           {
@@ -231,7 +442,7 @@
       "get": {
         "operationId": "getLatestEodQuote",
         "summary": "Get latest stored EOD observation",
-        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
+        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the Java service; no browser provider access.",
         "x-finn-implementation-status": "PLANNED",
         "parameters": [
           {
@@ -322,7 +533,7 @@
       "get": {
         "operationId": "getDailyHistory",
         "summary": "Get stored daily history",
-        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
+        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the Java service; no browser provider access.",
         "x-finn-implementation-status": "PLANNED",
         "parameters": [
           {
@@ -461,7 +672,7 @@
       "get": {
         "operationId": "getProviderStatuses",
         "summary": "Get source capabilities and acquisition status",
-        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
+        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the Java service; no browser provider access.",
         "x-finn-implementation-status": "PLANNED",
         "parameters": [],
         "responses": {
@@ -542,7 +753,7 @@
       "get": {
         "operationId": "getJobStatus",
         "summary": "Get an owned background job status",
-        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
+        "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the Java service; no browser provider access.",
         "x-finn-implementation-status": "PLANNED",
         "parameters": [
           {
@@ -635,14 +846,14 @@
       "sessionCookie": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "FINN_SESSION",
-        "description": "Planned secure HttpOnly session. State-changing endpoints added later require CSRF protection."
+        "name": "__Host-FINN_SESSION",
+        "description": "Secure HttpOnly SameSite=Lax host-only session. Explicit loopback local profile uses FINN_SESSION with HTTP. Mutations require CSRF protection."
       }
     },
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.2.0"
+        "const": "0.3.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -2128,6 +2339,107 @@
           "items"
         ],
         "additionalProperties": false
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "userId",
+          "displayName"
+        ],
+        "additionalProperties": false,
+        "description": "Application identity only. Provider claims, subject, tokens and secrets are never serialized here."
+      },
+      "CsrfInformation": {
+        "type": "object",
+        "properties": {
+          "headerName": {
+            "const": "X-CSRF-TOKEN"
+          },
+          "parameterName": {
+            "const": "_csrf"
+          },
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "headerName",
+          "parameterName",
+          "token"
+        ],
+        "additionalProperties": false
+      },
+      "SessionResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "contractVersion": {
+                "$ref": "#/components/schemas/ContractVersion"
+              },
+              "requestId": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "authenticated": {
+                "const": true
+              },
+              "user": {
+                "$ref": "#/components/schemas/UserProfile"
+              },
+              "csrf": {
+                "$ref": "#/components/schemas/CsrfInformation"
+              }
+            },
+            "required": [
+              "contractVersion",
+              "requestId",
+              "authenticated",
+              "user",
+              "csrf"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "contractVersion": {
+                "$ref": "#/components/schemas/ContractVersion"
+              },
+              "requestId": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "authenticated": {
+                "const": false
+              },
+              "user": {
+                "type": "null"
+              },
+              "csrf": {
+                "$ref": "#/components/schemas/CsrfInformation"
+              }
+            },
+            "required": [
+              "contractVersion",
+              "requestId",
+              "authenticated",
+              "user",
+              "csrf"
+            ],
+            "additionalProperties": false
+          }
+        ]
       },
       "AsyncJobStatus": {
         "description": "Owner-scoped status snapshot, not a queue implementation. Revision is server-assigned and increases on committed changes. Terminal states are immutable; retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
