@@ -1,10 +1,40 @@
 # FINN backend
 
-Java and Spring Boot backend for an India-first portfolio intelligence and investment research platform.
+Java 25 and Spring Boot 4.1.2 backend for an India-first portfolio intelligence and investment research platform. PostgreSQL 18.6 stores application data; Java owns domain decisions and database writes.
 
 ## Repository status
 
-Phase 1 includes maintained market-data/API contracts, synthetic acceptance fixtures, a bounded Python Yahoo history client, and a normalized Excel import-preview contract. The Java application, database, upload parser and API endpoints have not been implemented yet. Delivery follows the phased plan maintained separately from this repository.
+The application foundation contains a fixed synthetic demo endpoint, a PostgreSQL migration, separate migration/runtime database roles, health/readiness checks and a default-deny API boundary. Identity and portfolio workflows are later feature slices. The existing Yahoo client returns unaccepted acquisition candidates; no live prices or user portfolios are served by the demo. Excel/EOD parsers are not implemented yet.
+
+## Run locally
+
+Use Node.js 24.22.1, a supported Java 25 LTS JDK (verified with Temurin 25.0.5+8), and Docker with Linux containers. The checksum-pinned Maven wrapper supplies Maven 3.9.16. No global Maven installation is required. Spring's [runtime requirements](https://docs.spring.io/spring-boot/system-requirements.html) describe compatibility.
+
+From this repository in PowerShell, choose a private working directory outside every Git checkout:
+
+```powershell
+$env:FINN_WORKSPACE_ROOT = 'C:/path/to/private/finn-workspace'
+$env:JAVA_HOME = 'C:/path/to/jdk-25'
+New-Item -ItemType Directory -Force -Path $env:FINN_WORKSPACE_ROOT | Out-Null
+node scripts/setup.mjs
+docker compose up -d --wait postgres
+node scripts/maven.mjs verify
+node scripts/maven.mjs run
+```
+
+On Linux/macOS export the same variables and create the external directory, then use the same Node commands and Docker Compose command. The runner checks the working directory before starting Maven and keeps dependency downloads, wrapper files, JVM temporary files, compiled output and test reports under that directory. Use this runner rather than invoking Maven with arbitrary output paths.
+
+Setup creates random development database passwords outside Git and preserves existing files. PostgreSQL bootstrap, migration and runtime identities are distinct: the runtime role cannot create tables or read migration history. Restore existing secrets if they are lost; setup does not reset passwords in an existing database. Stop only this project's services with `docker compose stop`; no data removal is part of startup or shutdown.
+
+The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.2.0. All other operations remain denied; there is no default account or generated login password. CSRF stays enabled, mutation endpoints are not public, and uploads are disabled.
+
+Run the frontend separately and use its same-origin `/api` proxy. The packaged JAR is under `FINN_WORKSPACE_ROOT/build/backend`; running it needs Java and database configuration but does not need Node. Local development is not a production deployment or a completed authentication implementation.
+
+## Verification
+
+`node scripts/maven.mjs verify` compiles, tests and packages the application. Integration checks start a real PostgreSQL Testcontainer, apply migrations, verify replay/role restrictions, exercise the synthetic route and deny private requests. Docker must be available; missing Docker is a failure, not a silently skipped database test.
+
+The GitHub workflow runs the application and existing Python contract/adapter checks without live providers or personal reports. Build actions and the PostgreSQL image are pinned to verified immutable identifiers. Python check tools must use external environments/caches; their component READMEs document standalone commands.
 
 ## Available components
 

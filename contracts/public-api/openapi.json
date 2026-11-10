@@ -3,8 +3,8 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.1.0",
-    "description": "Design contract for a future Java service; no endpoints currently deployed. EOD valuation, explicit missing/stale data and synthetic/private modes only. No trading, broker onboarding, news or investment-performance promises."
+    "version": "0.2.0",
+    "description": "The synthetic demo route is implemented. Other operations remain planned. Explicit missing/stale states and source provenance; no trading, broker onboarding, news or investment-performance promises."
   },
   "servers": [
     {
@@ -17,9 +17,91 @@
       "sessionCookie": []
     }
   ],
-  "x-finn-status": "CONTRACT_ONLY_NOT_IMPLEMENTED",
+  "x-finn-status": "PARTIALLY_IMPLEMENTED_SYNTHETIC_DEMO_ONLY",
   "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
   "paths": {
+    "/api/v1/demo/quote": {
+      "get": {
+        "operationId": "getSyntheticDemoQuote",
+        "summary": "Get a fixed fictional EOD snapshot",
+        "description": "Implemented fixed synthetic demonstration; no provider or portfolio access.",
+        "x-finn-implementation-status": "IMPLEMENTED_SYNTHETIC_ONLY",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
     "/api/v1/instruments": {
       "get": {
         "operationId": "searchInstruments",
@@ -560,7 +642,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.1.0"
+        "const": "0.2.0"
       },
       "OpaqueId": {
         "type": "string",

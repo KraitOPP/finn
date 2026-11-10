@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: finn-backend
+  main:
+    banner-mode: "off"
+  config:
+    import: "optional:configtree:${FINN_WORKSPACE_ROOT}/secrets/backend/"
+  datasource:
+    url: ${FINN_DB_URL:jdbc:postgresql://127.0.0.1:55432/finn?currentSchema=finn}
+    username: finn_app
+    password: ${FINN_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 5000
+  flyway:
+    user: finn_migrator
+    password: ${FINN_DB_MIGRATION_PASSWORD:}
+    default-schema: finn
+    create-schemas: false
+    clean-disabled: true
+    validate-on-migrate: true
+  servlet:
+    multipart:
+      enabled: false
+server:
+  address: 127.0.0.1
+  port: 8080
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db

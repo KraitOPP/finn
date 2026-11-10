@@ -1,6 +1,6 @@
 # FINN contracts
 
-These contracts describe intended application and provider boundaries. They are not running endpoints, proof of provider coverage, legal data entitlements, or an implemented portfolio backend. The public API is marked `CONTRACT_ONLY_NOT_IMPLEMENTED`; every operation is `PLANNED`.
+These contracts describe application and provider boundaries. Public contract 0.2.0 implements only the fixed synthetic `/api/v1/demo/quote` route; the remaining operations are explicitly `PLANNED`. The API's overall status is `PARTIALLY_IMPLEMENTED_SYNTHETIC_DEMO_ONLY`. This is not proof of provider coverage, legal data entitlements or an implemented portfolio backend.
 
 ## Files and ownership
 

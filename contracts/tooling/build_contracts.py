@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -287,10 +287,10 @@ def public_api_document() -> dict:
         return {"description": description,
                 "content": {media: {"schema": {"$ref": f"#/components/schemas/{name}"}}}}
 
-    def operation(operation_id, description, result_name, params):
+    def operation(operation_id, description, result_name, params, implemented=False):
         return {"operationId": operation_id, "summary": description,
-                "description": "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
-                "x-finn-implementation-status": "PLANNED", "parameters": params,
+                "description": "Implemented fixed synthetic demonstration; no provider or portfolio access." if implemented else "PLANNED CONTRACT ONLY: endpoint not yet implemented. Authentication/ownership is enforced by the future Java service; no browser provider access.",
+                "x-finn-implementation-status": "IMPLEMENTED_SYNTHETIC_ONLY" if implemented else "PLANNED", "parameters": params,
                 "responses": {"200": response("Stored result; inspect availability, coverage and freshness.", result_name),
                               "400": response("Malformed request.", "Problem", "application/problem+json"),
                               "401": response("Authentication required.", "Problem", "application/problem+json"),
@@ -304,6 +304,7 @@ def public_api_document() -> dict:
     page = [parameter("limit", "query", {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}),
             parameter("cursor", "query", text(maxLength=512))]
     paths = {
+        "/api/v1/demo/quote": {"get": {**operation("getSyntheticDemoQuote", "Get a fixed fictional EOD snapshot", "QuoteResponse", [], True), "security": []}},
         "/api/v1/instruments": {"get": operation("searchInstruments", "Search supported cash-equity listings", "InstrumentPage", [
             parameter("query", "query", text(maxLength=100)),
             parameter("exchange", "query", enum(["NSE", "BSE"])), *page])},
@@ -320,10 +321,10 @@ def public_api_document() -> dict:
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "Design contract for a future Java service; no endpoints currently deployed. EOD valuation, explicit missing/stale data and synthetic/private modes only. No trading, broker onboarding, news or investment-performance promises."},
+                 "description": "The synthetic demo route is implemented. Other operations remain planned. Explicit missing/stale states and source provenance; no trading, broker onboarding, news or investment-performance promises."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
-        "x-finn-status": "CONTRACT_ONLY_NOT_IMPLEMENTED",
+        "x-finn-status": "PARTIALLY_IMPLEMENTED_SYNTHETIC_DEMO_ONLY",
         "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
         "paths": paths,
         "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "FINN_SESSION",
