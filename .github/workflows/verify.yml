@@ -13,9 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      FINN_WORKSPACE_ROOT: ${{ runner.temp }}/finn-workspace
       PYTHONDONTWRITEBYTECODE: "1"
-      PIP_CACHE_DIR: ${{ runner.temp }}/finn-workspace/cache/pip
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -31,7 +29,10 @@ jobs:
         with:
           python-version: "3.13.9"
       - name: Prepare external working directory
-        run: mkdir -p "$FINN_WORKSPACE_ROOT"
+        run: |
+          mkdir -p "$RUNNER_TEMP/finn-workspace"
+          echo "FINN_WORKSPACE_ROOT=$RUNNER_TEMP/finn-workspace" >> "$GITHUB_ENV"
+          echo "PIP_CACHE_DIR=$RUNNER_TEMP/finn-workspace/cache/pip" >> "$GITHUB_ENV"
       - name: Build and verify real PostgreSQL integration
         run: node scripts/maven.mjs verify
       - name: Verify contracts and synthetic runtime fixture
