@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.3.0",
+  "$id": "urn:finn:contracts:market-data:0.4.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.3.0"
+      "const": "0.4.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1534,6 +1534,76 @@
         "token"
       ],
       "additionalProperties": false
+    },
+    "PreferencesUpdate": {
+      "type": "object",
+      "properties": {
+        "timeZone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "currency": {
+          "const": "INR"
+        },
+        "inAppNotifications": {
+          "type": "boolean"
+        },
+        "emailNotifications": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "timeZone",
+        "currency",
+        "inAppNotifications",
+        "emailNotifications",
+        "revision"
+      ],
+      "additionalProperties": false,
+      "description": "Owner comes only from the authenticated session. Revision prevents silent lost updates. Only supported IANA zone IDs are accepted by Java."
+    },
+    "Preferences": {
+      "type": "object",
+      "properties": {
+        "timeZone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "currency": {
+          "const": "INR"
+        },
+        "inAppNotifications": {
+          "type": "boolean"
+        },
+        "emailNotifications": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "deliveryAvailable": {
+          "const": false
+        }
+      },
+      "required": [
+        "timeZone",
+        "currency",
+        "inAppNotifications",
+        "emailNotifications",
+        "revision",
+        "deliveryAvailable"
+      ],
+      "additionalProperties": false,
+      "description": "Delivery choices are stored; no notification or email service is enabled yet."
     },
     "SessionResponse": {
       "oneOf": [

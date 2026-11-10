@@ -700,5 +700,44 @@
       }
     ],
     "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preferences-currency",
+    "baseCaseId": "preferences-update",
+    "changes": [
+      {
+        "path": [
+          "currency"
+        ],
+        "value": "USD"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preferences-owner",
+    "baseCaseId": "preferences-update",
+    "changes": [
+      {
+        "path": [
+          "ownerId"
+        ],
+        "value": "untrusted"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preferences-revision",
+    "baseCaseId": "preferences-update",
+    "changes": [
+      {
+        "path": [
+          "revision"
+        ],
+        "value": -1
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
   }
 ]

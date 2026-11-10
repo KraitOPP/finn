@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -242,6 +242,11 @@ def definitions() -> dict:
     d["UserProfile"] = obj({"userId": ref("OpaqueId"), "displayName": text(maxLength=120)},
                             "Application identity only. Provider claims, subject, tokens and secrets are never serialized here.")
     d["CsrfInformation"] = obj({"headerName": {"const": "X-CSRF-TOKEN"}, "parameterName": {"const": "_csrf"}, "token": text(maxLength=2048)})
+    preference_fields = {"timeZone": text(maxLength=64), "currency": {"const": "INR"},
+                         "inAppNotifications": {"type": "boolean"}, "emailNotifications": {"type": "boolean"},
+                         "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}}
+    d["PreferencesUpdate"] = obj(preference_fields, "Owner comes only from the authenticated session. Revision prevents silent lost updates. Only supported IANA zone IDs are accepted by Java.")
+    d["Preferences"] = obj({**preference_fields, "deliveryAvailable": {"const": False}}, "Delivery choices are stored; no notification or email service is enabled yet.")
     d["SessionResponse"] = {"oneOf": [
         obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
         obj({**page_common, "authenticated": {"const": False}, "user": {"type": "null"}, "csrf": ref("CsrfInformation")}),
@@ -314,6 +319,11 @@ def public_api_document() -> dict:
         "/api/v1/demo/quote": {"get": {**operation("getSyntheticDemoQuote", "Get a fixed fictional EOD snapshot", "QuoteResponse", [], True), "security": []}},
         "/api/v1/session": {"get": {**operation("getSession", "Get session status and a same-origin CSRF token", "SessionResponse", [], True, "IMPLEMENTED"), "security": []}},
         "/api/v1/me": {"get": operation("getCurrentUser", "Get the current application profile", "UserProfile", [], True, "IMPLEMENTED")},
+        "/api/v1/preferences": {
+            "get": operation("getPreferences", "Read the current user's display and delivery preferences", "Preferences", [], True, "IMPLEMENTED"),
+            "put": {**operation("updatePreferences", "Save preferences with an optimistic revision check", "Preferences", [parameter("X-CSRF-TOKEN", "header", text(maxLength=2048), True)], True, "IMPLEMENTED"),
+                    "requestBody": {"required": True, "content": {"application/json": {"schema": ref("PreferencesUpdate")}}},
+                    "responses": {"200": response("Saved preferences.", "Preferences"), "400": response("Malformed request.", "Problem", "application/problem+json"), "401": response("Sign in required.", "Problem", "application/problem+json"), "403": response("CSRF rejected.", "Problem", "application/problem+json"), "409": response("Preferences changed; reload before saving.", "Problem", "application/problem+json"), "422": response("Unsupported zone/currency or invalid input.", "Problem", "application/problem+json")}}},
         "/oauth2/authorization/finn": {"get": {"operationId": "startSignIn", "summary": "Start server-side OIDC authorization code sign-in with PKCE", "security": [], "x-finn-implementation-status": "IMPLEMENTED", "responses": {"302": {"description": "Redirect to the configured identity provider; nonce/state stay server-bound."}}}},
         "/api/v1/logout": {"post": {"operationId": "signOut", "summary": "Invalidate the current session and initiate provider logout", "x-finn-implementation-status": "IMPLEMENTED", "parameters": [parameter("X-CSRF-TOKEN", "header", text(maxLength=2048), True, "Token from getSession; browser form submission may use the _csrf parameter instead.")], "responses": {"302": {"description": "Session invalidated; redirect through configured provider logout or the fixed application origin."}, "403": response("CSRF token missing or invalid.", "Problem", "application/problem+json")}}},
         "/api/v1/instruments": {"get": operation("searchInstruments", "Search supported cash-equity listings", "InstrumentPage", [

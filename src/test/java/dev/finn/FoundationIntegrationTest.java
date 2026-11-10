@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.nio.charset.StandardCharsets;
@@ -85,7 +87,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.3.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.4.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())
@@ -96,5 +98,28 @@ class FoundationIntegrationTest {
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.components").doesNotExist());
         mvc.perform(get("/actuator/env")).andExpect(status().isUnauthorized());
+    }
+
+    @Test void preferencesAreOwnedValidatedAndProtectedAgainstLostUpdates() throws Exception {
+        var first=oidcLogin().idToken(token -> token.claim("iss", "http://127.0.0.1:1/test-issuer").subject("fictional-preference-one"));
+        var second=oidcLogin().idToken(token -> token.claim("iss", "http://127.0.0.1:1/test-issuer").subject("fictional-preference-two"));
+        mvc.perform(get("/api/v1/preferences")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/preferences").with(first)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.timeZone").value("Asia/Kolkata")).andExpect(jsonPath("$.revision").value(0));
+        String changed="""
+                {"timeZone":"Europe/London","currency":"INR","inAppNotifications":false,"emailNotifications":true,"revision":0}
+                """;
+        mvc.perform(put("/api/v1/preferences").with(first).contentType("application/json").content(changed)).andExpect(status().isForbidden());
+        mvc.perform(put("/api/v1/preferences").with(first).with(csrf()).contentType("application/json").content(changed))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.revision").value(1)).andExpect(jsonPath("$.deliveryAvailable").value(false));
+        mvc.perform(get("/api/v1/preferences").with(second).param("owner", "fictional-preference-one"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.timeZone").value("Asia/Kolkata"));
+        mvc.perform(put("/api/v1/preferences").with(first).with(csrf()).contentType("application/json").content(changed))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("REVIEW_REQUIRED"));
+        mvc.perform(put("/api/v1/preferences").with(first).with(csrf()).contentType("application/json").content(changed.replace("Europe/London", "Secret/Invalid")))
+                .andExpect(status().isUnprocessableContent()).andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Secret/Invalid"))));
+        mvc.perform(put("/api/v1/preferences").with(second).with(csrf()).contentType("application/json").content(changed.replace("\"revision\":0", "\"revision\":0,\"ownerId\":\"untrusted\"")))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/preferences").with(first)).andExpect(jsonPath("$.timeZone").value("Europe/London"));
     }
 }
