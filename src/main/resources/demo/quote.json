@@ -1,5 +1,5 @@
 {
-  "contractVersion": "0.5.0",
+  "contractVersion": "0.6.0",
   "requestId": "demo-quote-1",
   "listing": {
     "listingId": "demo-nse-alpha",

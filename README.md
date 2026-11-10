@@ -4,7 +4,7 @@ Java 25 and Spring Boot 4.1.2 backend for an India-first portfolio intelligence 
 
 ## Repository status
 
-The application includes OIDC sign-in, PostgreSQL-backed private sessions, CSRF-protected logout, a fixed synthetic demo endpoint, separate migration/runtime database roles and readiness checks. The existing Yahoo client returns unaccepted acquisition candidates; no live prices or user portfolios are served by the demo. Portfolio workflows and Excel/EOD parsers are not implemented yet.
+The application includes OIDC sign-in, PostgreSQL-backed private sessions, CSRF-protected logout, owner-scoped portfolios/source accounts and a manual instrument catalogue, plus a fixed synthetic public demo. The existing Yahoo client returns unaccepted acquisition candidates. The financial ledger and Excel/EOD parsers are not implemented yet.
 
 ## Run locally
 
@@ -26,7 +26,7 @@ On Linux/macOS export the same variables and create the external directory, then
 
 Setup creates random development credentials outside Git and preserves existing files. PostgreSQL bootstrap, migration, identity-provider and runtime identities are distinct: the application role cannot create tables or read migration history. Restore existing secrets if they are lost; setup does not reset passwords in an existing database. Stop only this project's services with `docker compose stop`; no data removal is part of startup or shutdown.
 
-The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.5.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read/save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision; concurrent changes return 409. Delivery is explicitly unavailable until its own implementation. User-supplied owner IDs are not accepted. Uploads are disabled.
+The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.6.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read/save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision; concurrent changes return 409. Delivery is explicitly unavailable until its own implementation. User-supplied owner IDs are not accepted. Uploads are disabled.
 
 Run the frontend at exactly `http://127.0.0.1:5173` and use its same-origin proxies. Sign in redirects to the local Keycloak realm at `http://localhost:8180/realms/finn-local`. Development-only synthetic account credentials are generated in the private `secrets/identity/demo-users.json` file under the working directory. Never commit or share that file. Keycloak stores identity records in its own database; the app stores only an issuer/subject link and display name. The packaged JAR is under `FINN_WORKSPACE_ROOT/build/backend`; running it needs Java and configuration but does not need Node.
 
@@ -41,6 +41,8 @@ API requests receive server-generated `X-Request-ID` references and no-store res
 The GitHub workflow runs the application and existing Python contract/adapter checks without live providers or personal reports. Build actions and the PostgreSQL image are pinned to verified immutable identifiers. Python check tools must use external environments/caches; their component READMEs document standalone commands.
 
 ## Available components
+
+- Portfolios and source accounts: authenticated `/api/v1/portfolios`, `/{id}`, `/{id}/accounts` and `/{id}/accounts/{accountId}`. Create INR tracking records with Groww/manual/other sources and unknown initial history. `POST /{id}/archive` accepts `archived` and the read revision to archive/restore; history stays readable and archived portfolios block new writes. All nested account queries bind the authenticated owner and actual portfolio. Scope is at most 100 portfolios per owner and 100 accounts per portfolio. No broker credentials or connection are required.
 
 - Manual instrument catalogue: authenticated `/api/v1/catalog/companies`, `/securities`, `/securities/{id}`, `/securities/{id}/listings` and `/listings/{id}/symbols`. Companies, securities and exchange listings have distinct IDs. ISIN check digits are validated but never establish a listing. Explicit manually confirmed Yahoo symbols are optional and venue-checked. Effective-dated symbol history retains the same listing ID. Searches are owner-scoped and bounded; inaccessible nested IDs return 404. This is a personal catalogue, not a downloaded official exchange security master. Listings/history have explicit 100-record bounds per security/listing. The limited runtime role can lock operational columns without changing owner/identity columns.
 

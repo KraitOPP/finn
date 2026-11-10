@@ -87,7 +87,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.5.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.6.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())
@@ -157,5 +157,34 @@ class FoundationIntegrationTest {
         mvc.perform(post(symbols).with(first).with(csrf()).contentType("application/json").content(rename)).andExpect(status().isConflict());
         mvc.perform(get(path).with(first)).andExpect(jsonPath("$.listings.length()").value(2)).andExpect(jsonPath("$.listings[0].symbol").value("DEMOOLD"));
         mvc.perform(post(symbols).with(first).with(csrf()).contentType("application/json").content(rename.replace(".NS",".BO"))).andExpect(status().isUnprocessableContent());
+    }
+
+    @Test void portfolioAccountsStayOwnedAndArchivePreservesHistory() throws Exception {
+        var first=oidcLogin().idToken(token->token.claim("iss","http://127.0.0.1:1/test-issuer").subject("fictional-portfolio-one"));
+        var second=oidcLogin().idToken(token->token.claim("iss","http://127.0.0.1:1/test-issuer").subject("fictional-portfolio-two"));
+        var json=tools.jackson.databind.json.JsonMapper.builder().build();
+        String create="{\"name\":\"Fictional long-term portfolio\"}";
+        var portfolio=json.readTree(mvc.perform(post("/api/v1/portfolios").with(first).with(csrf()).contentType("application/json").content(create)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        var another=json.readTree(mvc.perform(post("/api/v1/portfolios").with(first).with(csrf()).contentType("application/json").content(create)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        String path="/api/v1/portfolios/"+portfolio.get("portfolioId").asText();
+        String accountInput="{\"name\":\"Fictional Groww source\",\"source\":\"GROWW\",\"currency\":\"INR\"}";
+        var account=json.readTree(mvc.perform(post(path+"/accounts").with(first).with(csrf()).contentType("application/json").content(accountInput))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.historyStatus").value("UNKNOWN")).andExpect(jsonPath("$.historyStartDate").isEmpty()).andReturn().getResponse().getContentAsString());
+        String accountPath=path+"/accounts/"+account.get("accountId").asText();
+        mvc.perform(get(path).with(second)).andExpect(status().isNotFound());
+        mvc.perform(get(accountPath).with(second)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/portfolios/"+another.get("portfolioId").asText()+"/accounts/"+account.get("accountId").asText()).with(first)).andExpect(status().isNotFound());
+        mvc.perform(post(path+"/accounts").with(second).with(csrf()).contentType("application/json").content(accountInput)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/portfolios").with(second)).andExpect(jsonPath("$.items.length()").value(0));
+        mvc.perform(post(path+"/archive").with(first).with(csrf()).contentType("application/json").content("{\"archived\":true,\"revision\":0}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.archived").value(true)).andExpect(jsonPath("$.revision").value(1));
+        mvc.perform(post(path+"/accounts").with(first).with(csrf()).contentType("application/json").content(accountInput)).andExpect(status().isConflict());
+        mvc.perform(get(accountPath).with(first)).andExpect(status().isOk()).andExpect(jsonPath("$.accountId").value(account.get("accountId").asText()));
+        mvc.perform(post(path+"/archive").with(first).with(csrf()).contentType("application/json").content("{\"archived\":false,\"revision\":0}"))
+                .andExpect(status().isConflict());
+        mvc.perform(post(path+"/archive").with(first).with(csrf()).contentType("application/json").content("{\"archived\":false,\"revision\":1}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.archived").value(false));
+        mvc.perform(get(path).with(first)).andExpect(jsonPath("$.accounts.length()").value(1));
+        mvc.perform(post(path+"/accounts").with(first).with(csrf()).contentType("application/json").content(accountInput.replace("INR","USD"))).andExpect(status().isUnprocessableContent());
     }
 }

@@ -3,8 +3,8 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.5.0",
-    "description": "Identity/session, preferences, manual catalogue and fixed synthetic demo routes are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."
+    "version": "0.6.0",
+    "description": "Identity, preferences, manual catalogue, portfolios/accounts and fixed synthetic demo routes are implemented. Ledger and market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
     {
@@ -17,7 +17,7 @@
       "sessionCookie": []
     }
   ],
-  "x-finn-status": "PARTIALLY_IMPLEMENTED_PRIVATE_CATALOGUE",
+  "x-finn-status": "PARTIALLY_IMPLEMENTED_PORTFOLIO_ACCOUNTS",
   "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
   "paths": {
     "/api/v1/demo/quote": {
@@ -1011,11 +1011,645 @@
         }
       }
     },
+    "/api/v1/portfolios": {
+      "get": {
+        "operationId": "getPortfolios",
+        "summary": "List owned active and archived portfolios",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPortfolio",
+        "summary": "Create an INR tracking portfolio",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate identity or non-monotonic symbol change; review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{id}": {
+      "get": {
+        "operationId": "getPortfolio",
+        "summary": "Inspect an owned portfolio and its source accounts",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{id}/archive": {
+      "post": {
+        "operationId": "archivePortfolio",
+        "summary": "Archive or restore a portfolio without deleting history",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate identity or non-monotonic symbol change; review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioArchiveInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{id}/accounts": {
+      "post": {
+        "operationId": "createInvestmentAccount",
+        "summary": "Record an INR source account with unknown initial history",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate identity or non-monotonic symbol change; review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{id}/accounts/{accountId}": {
+      "get": {
+        "operationId": "getInvestmentAccount",
+        "summary": "Read an account only under its actual owned portfolio",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/catalog/companies": {
       "get": {
         "operationId": "getCatalogueCompanies",
         "summary": "List up to 100 owned companies",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [],
         "responses": {
@@ -1094,7 +1728,7 @@
       "post": {
         "operationId": "createCatalogueCompany",
         "summary": "Record a manually identified company",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
@@ -1206,7 +1840,7 @@
       "get": {
         "operationId": "searchCatalogueSecurities",
         "summary": "Search the owned manual catalogue",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
@@ -1316,7 +1950,7 @@
       "post": {
         "operationId": "createCatalogueSecurity",
         "summary": "Record a security separately from its exchange listings",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
@@ -1428,7 +2062,7 @@
       "get": {
         "operationId": "getCatalogueSecurity",
         "summary": "Inspect owned security and distinct listings",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
@@ -1521,7 +2155,7 @@
       "post": {
         "operationId": "createCatalogueListing",
         "summary": "Confirm an exchange listing and optional Yahoo mapping",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
@@ -1644,7 +2278,7 @@
       "get": {
         "operationId": "getListingSymbols",
         "summary": "Inspect retained listing symbol history",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
@@ -1735,7 +2369,7 @@
       "post": {
         "operationId": "changeListingSymbol",
         "summary": "Append a reviewed effective symbol change without changing listing identity",
-        "description": "Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied.",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
@@ -1867,7 +2501,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.5.0"
+        "const": "0.6.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -3862,6 +4496,230 @@
           "$ref": "#/components/schemas/SymbolHistory"
         },
         "maxItems": 100
+      },
+      "PortfolioSummary": {
+        "type": "object",
+        "properties": {
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "currency": {
+            "const": "INR"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "portfolioId",
+          "name",
+          "currency",
+          "archived",
+          "revision"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioSummary"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false,
+        "description": "Includes active and archived portfolios. At most 100 may be created per owner in this supported scope."
+      },
+      "PortfolioInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioArchiveInput": {
+        "type": "object",
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "archived",
+          "revision"
+        ],
+        "additionalProperties": false
+      },
+      "InvestmentAccount": {
+        "description": "A source account is a private tracking record, never a broker API connection or trading permission. Creation does not establish history coverage.",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "accountId": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "portfolioId": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "GROWW",
+                  "MANUAL",
+                  "OTHER"
+                ]
+              },
+              "currency": {
+                "const": "INR"
+              },
+              "historyStatus": {
+                "const": "UNKNOWN"
+              },
+              "historyStartDate": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "accountId",
+              "portfolioId",
+              "name",
+              "source",
+              "currency",
+              "historyStatus",
+              "historyStartDate"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "accountId": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "portfolioId": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "GROWW",
+                  "MANUAL",
+                  "OTHER"
+                ]
+              },
+              "currency": {
+                "const": "INR"
+              },
+              "historyStatus": {
+                "type": "string",
+                "enum": [
+                  "HOLDINGS_ONLY",
+                  "PARTIAL_TRADES"
+                ]
+              },
+              "historyStartDate": {
+                "$ref": "#/components/schemas/SessionDate"
+              }
+            },
+            "required": [
+              "accountId",
+              "portfolioId",
+              "name",
+              "source",
+              "currency",
+              "historyStatus",
+              "historyStartDate"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "AccountInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "GROWW",
+              "MANUAL",
+              "OTHER"
+            ]
+          },
+          "currency": {
+            "const": "INR"
+          }
+        },
+        "required": [
+          "name",
+          "source",
+          "currency"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioDetail": {
+        "type": "object",
+        "properties": {
+          "portfolio": {
+            "$ref": "#/components/schemas/PortfolioSummary"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvestmentAccount"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "portfolio",
+          "accounts"
+        ],
+        "additionalProperties": false,
+        "description": "Archive blocks financial writes and preserves readable account/ledger history. Restore is supported; no deletion is exposed."
       },
       "SessionResponse": {
         "oneOf": [

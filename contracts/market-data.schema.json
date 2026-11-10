@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.5.0",
+  "$id": "urn:finn:contracts:market-data:0.6.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.5.0"
+      "const": "0.6.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2002,6 +2002,230 @@
         "$ref": "#/$defs/SymbolHistory"
       },
       "maxItems": 100
+    },
+    "PortfolioSummary": {
+      "type": "object",
+      "properties": {
+        "portfolioId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "currency": {
+          "const": "INR"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "portfolioId",
+        "name",
+        "currency",
+        "archived",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "PortfolioList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortfolioSummary"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false,
+      "description": "Includes active and archived portfolios. At most 100 may be created per owner in this supported scope."
+    },
+    "PortfolioInput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "PortfolioArchiveInput": {
+      "type": "object",
+      "properties": {
+        "archived": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "archived",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "InvestmentAccount": {
+      "description": "A source account is a private tracking record, never a broker API connection or trading permission. Creation does not establish history coverage.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "portfolioId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "GROWW",
+                "MANUAL",
+                "OTHER"
+              ]
+            },
+            "currency": {
+              "const": "INR"
+            },
+            "historyStatus": {
+              "const": "UNKNOWN"
+            },
+            "historyStartDate": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "accountId",
+            "portfolioId",
+            "name",
+            "source",
+            "currency",
+            "historyStatus",
+            "historyStartDate"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "portfolioId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "GROWW",
+                "MANUAL",
+                "OTHER"
+              ]
+            },
+            "currency": {
+              "const": "INR"
+            },
+            "historyStatus": {
+              "type": "string",
+              "enum": [
+                "HOLDINGS_ONLY",
+                "PARTIAL_TRADES"
+              ]
+            },
+            "historyStartDate": {
+              "$ref": "#/$defs/SessionDate"
+            }
+          },
+          "required": [
+            "accountId",
+            "portfolioId",
+            "name",
+            "source",
+            "currency",
+            "historyStatus",
+            "historyStartDate"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AccountInput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "GROWW",
+            "MANUAL",
+            "OTHER"
+          ]
+        },
+        "currency": {
+          "const": "INR"
+        }
+      },
+      "required": [
+        "name",
+        "source",
+        "currency"
+      ],
+      "additionalProperties": false
+    },
+    "PortfolioDetail": {
+      "type": "object",
+      "properties": {
+        "portfolio": {
+          "$ref": "#/$defs/PortfolioSummary"
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InvestmentAccount"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "portfolio",
+        "accounts"
+      ],
+      "additionalProperties": false,
+      "description": "Archive blocks financial writes and preserves readable account/ledger history. Restore is supported; no deletion is exposed."
     },
     "SessionResponse": {
       "oneOf": [

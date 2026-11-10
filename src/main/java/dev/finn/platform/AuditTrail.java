@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class AuditTrail {
-    public enum Action { PREFERENCES_CHANGED, PORTFOLIO_CREATED, PORTFOLIO_ARCHIVED, ACCOUNT_CREATED,
+    public enum Action { PREFERENCES_CHANGED, PORTFOLIO_CREATED, PORTFOLIO_ARCHIVED, PORTFOLIO_RESTORED, ACCOUNT_CREATED,
         LEDGER_RECORDED, IMPORT_PREVIEWED, IMPORT_COMMITTED, CORPORATE_ACTION_APPLIED, EXPORT_CREATED, PRICE_REQUESTED }
     private final JdbcTemplate jdbc;
     public AuditTrail(JdbcTemplate jdbc) { this.jdbc = jdbc; }

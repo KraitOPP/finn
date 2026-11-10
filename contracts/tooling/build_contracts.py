@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -261,6 +261,14 @@ def definitions() -> dict:
     d["CatalogueSecurityPage"] = obj({"items": array(ref("CatalogueSecurity"), maxItems=100), "limit": {"type": "integer", "minimum": 1, "maximum": 100}, "offset": {"type": "integer", "minimum": 0, "maximum": 10000}, "hasMore": {"type": "boolean"}})
     d["SymbolHistory"] = obj({"symbol": text(maxLength=64), "validFrom": ref("SessionDate"), "validTo": nullable(ref("SessionDate")), "source": {"const": "MANUAL_USER"}})
     d["SymbolHistoryList"] = array(ref("SymbolHistory"), maxItems=100)
+    d["PortfolioSummary"] = obj({"portfolioId": ref("OpaqueId"), "name": text(maxLength=120), "currency": {"const":"INR"}, "archived": {"type":"boolean"}, "revision": {"type":"integer","minimum":0,"maximum":9007199254740991}})
+    d["PortfolioList"] = obj({"items": array(ref("PortfolioSummary"),maxItems=100)}, "Includes active and archived portfolios. At most 100 may be created per owner in this supported scope.")
+    d["PortfolioInput"] = obj({"name":text(maxLength=120)})
+    d["PortfolioArchiveInput"] = obj({"archived":{"type":"boolean"},"revision":{"type":"integer","minimum":0,"maximum":9007199254740991}})
+    account_fields={"accountId":ref("OpaqueId"),"portfolioId":ref("OpaqueId"),"name":text(maxLength=120),"source":enum(["GROWW","MANUAL","OTHER"]),"currency":{"const":"INR"}}
+    d["InvestmentAccount"] = {"description":"A source account is a private tracking record, never a broker API connection or trading permission. Creation does not establish history coverage.","oneOf":[obj({**account_fields,"historyStatus":{"const":"UNKNOWN"},"historyStartDate":{"type":"null"}}),obj({**account_fields,"historyStatus":enum(["HOLDINGS_ONLY","PARTIAL_TRADES"]),"historyStartDate":ref("SessionDate")})]}
+    d["AccountInput"] = obj({"name":text(maxLength=120),"source":enum(["GROWW","MANUAL","OTHER"]),"currency":{"const":"INR"}})
+    d["PortfolioDetail"] = obj({"portfolio":ref("PortfolioSummary"),"accounts":array(ref("InvestmentAccount"),maxItems=100)}, "Archive blocks financial writes and preserves readable account/ledger history. Restore is supported; no deletion is exposed.")
     d["SessionResponse"] = {"oneOf": [
         obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
         obj({**page_common, "authenticated": {"const": False}, "user": {"type": "null"}, "csrf": ref("CsrfInformation")}),
@@ -355,7 +363,7 @@ def public_api_document() -> dict:
     }
     def maintained(op_id, summary, result, parameters=(), input_name=None):
         result_op=operation(op_id, summary, result, list(parameters), True, "IMPLEMENTED")
-        result_op["description"]="Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied."
+        result_op["description"]="Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied."
         if input_name:
             result_op["parameters"].append(parameter("X-CSRF-TOKEN", "header", text(maxLength=2048), True))
             result_op["requestBody"]={"required": True, "content": {"application/json": {"schema": ref(input_name)}}}
@@ -363,6 +371,11 @@ def public_api_document() -> dict:
         return result_op
     identifier=[parameter("id", "path", text(format="uuid"), True)]
     paths.update({
+        "/api/v1/portfolios": {"get":maintained("getPortfolios","List owned active and archived portfolios","PortfolioList"),"post":maintained("createPortfolio","Create an INR tracking portfolio","PortfolioSummary",input_name="PortfolioInput")},
+        "/api/v1/portfolios/{id}": {"get":maintained("getPortfolio","Inspect an owned portfolio and its source accounts","PortfolioDetail",identifier)},
+        "/api/v1/portfolios/{id}/archive": {"post":maintained("archivePortfolio","Archive or restore a portfolio without deleting history","PortfolioSummary",identifier,"PortfolioArchiveInput")},
+        "/api/v1/portfolios/{id}/accounts": {"post":maintained("createInvestmentAccount","Record an INR source account with unknown initial history","InvestmentAccount",identifier,"AccountInput")},
+        "/api/v1/portfolios/{id}/accounts/{accountId}": {"get":maintained("getInvestmentAccount","Read an account only under its actual owned portfolio","InvestmentAccount",[*identifier,parameter("accountId","path",text(format="uuid"),True)])},
         "/api/v1/catalog/companies": {"get": maintained("getCatalogueCompanies", "List up to 100 owned companies", "CatalogueCompanies"), "post": maintained("createCatalogueCompany", "Record a manually identified company", "CatalogueCompany", input_name="CompanyInput")},
         "/api/v1/catalog/securities": {"get": maintained("searchCatalogueSecurities", "Search the owned manual catalogue", "CatalogueSecurityPage", [parameter("query", "query", text(maxLength=100,minLength=0)), parameter("limit", "query", {"type":"integer","minimum":1,"maximum":100}),parameter("offset", "query", {"type":"integer","minimum":0,"maximum":10000})]), "post": maintained("createCatalogueSecurity", "Record a security separately from its exchange listings", "CatalogueSecurity", input_name="SecurityInput")},
         "/api/v1/catalog/securities/{id}": {"get": maintained("getCatalogueSecurity", "Inspect owned security and distinct listings", "CatalogueSecurityDetail", identifier)},
@@ -372,10 +385,10 @@ def public_api_document() -> dict:
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "Identity/session, preferences, manual catalogue and fixed synthetic demo routes are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
+                 "description": "Identity, preferences, manual catalogue, portfolios/accounts and fixed synthetic demo routes are implemented. Ledger and market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
-        "x-finn-status": "PARTIALLY_IMPLEMENTED_PRIVATE_CATALOGUE",
+        "x-finn-status": "PARTIALLY_IMPLEMENTED_PORTFOLIO_ACCOUNTS",
         "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
         "paths": paths,
         "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-FINN_SESSION",

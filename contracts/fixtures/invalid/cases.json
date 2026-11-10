@@ -765,5 +765,18 @@
       }
     ],
     "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-unknown-account-coverage-date",
+    "baseCaseId": "source-account-unknown-history",
+    "changes": [
+      {
+        "path": [
+          "historyStartDate"
+        ],
+        "value": "2030-01-02"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
   }
 ]
