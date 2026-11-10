@@ -12,8 +12,6 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      FINN_WORKSPACE_ROOT: ${{ runner.temp }}/finn-workspace
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -22,7 +20,9 @@ jobs:
         with:
           node-version: "24.22.1"
       - name: Prepare external working directory
-        run: mkdir -p "$FINN_WORKSPACE_ROOT"
+        run: |
+          mkdir -p "$RUNNER_TEMP/finn-workspace"
+          echo "FINN_WORKSPACE_ROOT=$RUNNER_TEMP/finn-workspace" >> "$GITHUB_ENV"
       - name: Install locked dependencies
         run: node scripts/install.mjs
       - name: Verify reviewed contract snapshot
