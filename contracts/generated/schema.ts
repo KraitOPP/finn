@@ -1,10 +1,11 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.5.0",
+  "contractVersion": "0.6.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "100b3f8b8877af4838fb5c97cc5be677ebccb493072bbc8e0d10c9f9c175555a",
+  "sourceSha256": "a52817b0c6ff8642c77645a0c1b3d3964a29d3f67a639e83845b9c4c75ef931c",
   "schemaNames": [
+    "AccountInput",
     "AcquisitionEnvelope",
     "AdjustmentBasis",
     "AsyncJobStatus",
@@ -26,10 +27,16 @@ export const contractMetadata = {
     "InstrumentPage",
     "InstrumentResult",
     "IntegerString",
+    "InvestmentAccount",
     "ListingIdentity",
     "ListingInput",
     "NonNegativeDecimalString",
     "OpaqueId",
+    "PortfolioArchiveInput",
+    "PortfolioDetail",
+    "PortfolioInput",
+    "PortfolioList",
+    "PortfolioSummary",
     "PositiveDecimalString",
     "Preferences",
     "PreferencesUpdate",
@@ -58,6 +65,33 @@ export const contractMetadata = {
 } as const;
 
 export const contractSchemas = {
+  "AccountInput": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "GROWW",
+          "MANUAL",
+          "OTHER"
+        ]
+      },
+      "currency": {
+        "const": "INR"
+      }
+    },
+    "required": [
+      "name",
+      "source",
+      "currency"
+    ],
+    "additionalProperties": false
+  },
   "AcquisitionEnvelope": {
     "type": "object",
     "properties": {
@@ -740,7 +774,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.5.0"
+    "const": "0.6.0"
   },
   "CsrfInformation": {
     "type": "object",
@@ -1159,6 +1193,101 @@ export const contractSchemas = {
     "maxLength": 32,
     "pattern": "^(?:0|[1-9][0-9]*)$"
   },
+  "InvestmentAccount": {
+    "description": "A source account is a private tracking record, never a broker API connection or trading permission. Creation does not establish history coverage.",
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "GROWW",
+              "MANUAL",
+              "OTHER"
+            ]
+          },
+          "currency": {
+            "const": "INR"
+          },
+          "historyStatus": {
+            "const": "UNKNOWN"
+          },
+          "historyStartDate": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "accountId",
+          "portfolioId",
+          "name",
+          "source",
+          "currency",
+          "historyStatus",
+          "historyStartDate"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "GROWW",
+              "MANUAL",
+              "OTHER"
+            ]
+          },
+          "currency": {
+            "const": "INR"
+          },
+          "historyStatus": {
+            "type": "string",
+            "enum": [
+              "HOLDINGS_ONLY",
+              "PARTIAL_TRADES"
+            ]
+          },
+          "historyStartDate": {
+            "$ref": "#/components/schemas/SessionDate"
+          }
+        },
+        "required": [
+          "accountId",
+          "portfolioId",
+          "name",
+          "source",
+          "currency",
+          "historyStatus",
+          "historyStartDate"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
   "ListingIdentity": {
     "type": "object",
     "properties": {
@@ -1286,6 +1415,108 @@ export const contractSchemas = {
     "minLength": 1,
     "maxLength": 128,
     "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+  },
+  "PortfolioArchiveInput": {
+    "type": "object",
+    "properties": {
+      "archived": {
+        "type": "boolean"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      }
+    },
+    "required": [
+      "archived",
+      "revision"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioDetail": {
+    "type": "object",
+    "properties": {
+      "portfolio": {
+        "$ref": "#/components/schemas/PortfolioSummary"
+      },
+      "accounts": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/InvestmentAccount"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "portfolio",
+      "accounts"
+    ],
+    "additionalProperties": false,
+    "description": "Archive blocks financial writes and preserves readable account/ledger history. Restore is supported; no deletion is exposed."
+  },
+  "PortfolioInput": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PortfolioSummary"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false,
+    "description": "Includes active and archived portfolios. At most 100 may be created per owner in this supported scope."
+  },
+  "PortfolioSummary": {
+    "type": "object",
+    "properties": {
+      "portfolioId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "currency": {
+        "const": "INR"
+      },
+      "archived": {
+        "type": "boolean"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      }
+    },
+    "required": [
+      "portfolioId",
+      "name",
+      "currency",
+      "archived",
+      "revision"
+    ],
+    "additionalProperties": false
   },
   "PositiveDecimalString": {
     "type": "string",

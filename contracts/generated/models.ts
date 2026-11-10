@@ -1,4 +1,10 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
+export type AccountInput = ({
+  "name": (string);
+  "source": ("GROWW" | "MANUAL" | "OTHER") & (string);
+  "currency": ("INR");
+});
+
 export type AcquisitionEnvelope = ({
   "contractVersion": (ContractVersion);
   "requestId": (OpaqueId);
@@ -137,7 +143,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.5.0") & (string);
+export type ContractVersion = ("0.6.0") & (string);
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -216,6 +222,24 @@ export type InstrumentResult = ((({
 
 export type IntegerString = (string);
 
+export type InvestmentAccount = ((({
+  "accountId": (OpaqueId);
+  "portfolioId": (OpaqueId);
+  "name": (string);
+  "source": ("GROWW" | "MANUAL" | "OTHER") & (string);
+  "currency": ("INR");
+  "historyStatus": ("UNKNOWN");
+  "historyStartDate": (null);
+})) | (({
+  "accountId": (OpaqueId);
+  "portfolioId": (OpaqueId);
+  "name": (string);
+  "source": ("GROWW" | "MANUAL" | "OTHER") & (string);
+  "currency": ("INR");
+  "historyStatus": ("HOLDINGS_ONLY" | "PARTIAL_TRADES") & (string);
+  "historyStartDate": (SessionDate);
+})));
+
 export type ListingIdentity = ({
   "listingId": (OpaqueId);
   "securityId": (OpaqueId);
@@ -240,6 +264,32 @@ export type ListingInput = ({
 export type NonNegativeDecimalString = (string);
 
 export type OpaqueId = (string);
+
+export type PortfolioArchiveInput = ({
+  "archived": (boolean);
+  "revision": (number);
+});
+
+export type PortfolioDetail = ({
+  "portfolio": (PortfolioSummary);
+  "accounts": (Array<(InvestmentAccount)>);
+});
+
+export type PortfolioInput = ({
+  "name": (string);
+});
+
+export type PortfolioList = ({
+  "items": (Array<(PortfolioSummary)>);
+});
+
+export type PortfolioSummary = ({
+  "portfolioId": (OpaqueId);
+  "name": (string);
+  "currency": ("INR");
+  "archived": (boolean);
+  "revision": (number);
+});
 
 export type PositiveDecimalString = (string);
 
@@ -455,6 +505,7 @@ export type Warning = ({
 });
 
 export interface ContractTypes {
+  AccountInput: AccountInput;
   AcquisitionEnvelope: AcquisitionEnvelope;
   AdjustmentBasis: AdjustmentBasis;
   AsyncJobStatus: AsyncJobStatus;
@@ -476,10 +527,16 @@ export interface ContractTypes {
   InstrumentPage: InstrumentPage;
   InstrumentResult: InstrumentResult;
   IntegerString: IntegerString;
+  InvestmentAccount: InvestmentAccount;
   ListingIdentity: ListingIdentity;
   ListingInput: ListingInput;
   NonNegativeDecimalString: NonNegativeDecimalString;
   OpaqueId: OpaqueId;
+  PortfolioArchiveInput: PortfolioArchiveInput;
+  PortfolioDetail: PortfolioDetail;
+  PortfolioInput: PortfolioInput;
+  PortfolioList: PortfolioList;
+  PortfolioSummary: PortfolioSummary;
   PositiveDecimalString: PositiveDecimalString;
   Preferences: Preferences;
   PreferencesUpdate: PreferencesUpdate;

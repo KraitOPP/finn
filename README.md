@@ -4,7 +4,7 @@ React 19 and TypeScript frontend for an India-first portfolio intelligence and i
 
 ## Repository status
 
-The application displays a fictional stock snapshot and provides OIDC sign-in/out through the Java backend. It includes checked API types, source/freshness labels, loading/error states, retry and session-expiry feedback. No real portfolio is imported by this demo. Portfolio workflows are later feature slices.
+The application provides OIDC sign-in/out, private portfolios/source accounts, a manual securities catalogue and settings through the Java backend. The public overview remains a fictional stock snapshot. No real report is imported by this demo. Ledger and report-review workflows are later feature slices.
 
 ## Run locally
 
@@ -26,6 +26,8 @@ Keyboard-accessible workspace navigation links Overview, Portfolio, Watchlists, 
 Settings save account-specific IANA time zone and notification choices, defaulting to Asia/Kolkata and INR. Source timestamps remain unchanged; display formatting uses the saved zone. A stale revision asks the user to reload and review instead of overwriting another change. Notification choices do not enable delivery by themselves. Private responses are validated, bounded and held in memory; error details from the server are not rendered.
 
 Securities searches the signed-in user's saved manual catalogue. Record companies and securities, inspect distinct NSE/BSE listings, and explicitly confirm exchange/series/symbol and optional Yahoo mapping. Search never selects the first ambiguous result. Missing mappings stay visible and block unsupported price assumptions. The catalogue does not claim all-market coverage. Names and source text render as plain React text.
+
+Portfolio creates and selects INR tracking portfolios and friendly source accounts. History begins as unknown and becomes dated only when accepted records establish coverage. Archive/restore preserves accounts and readable history; archived portfolios cannot receive new financial writes. No broker login or account number is requested.
 
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 

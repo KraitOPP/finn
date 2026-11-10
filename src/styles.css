@@ -201,6 +201,23 @@ a {
   cursor: pointer;
   font-weight: 600;
 }
+.settings-card + .detail-card {
+  margin-top: 32px;
+}
+.section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+.account-workspace {
+  background: #fff;
+  border: 1px solid #c8d5c7;
+  padding: 24px;
+  margin-top: 28px;
+  border-radius: 12px;
+}
 @media (max-width: 640px) {
   .main-navigation {
     padding: 14px 16px 0;

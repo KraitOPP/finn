@@ -10,6 +10,7 @@ import {
   PrivateView,
   useRoute,
 } from "./Navigation.tsx";
+import { Portfolios } from "./portfolio/Portfolios.tsx";
 import {
   PreferencesProvider,
   usePreferences,
@@ -236,7 +237,9 @@ function WorkspaceApp() {
           </PendingView>
         ) : (
           <PrivateView key={route}>
-            {route === "instruments" ? (
+            {route === "portfolio" ? (
+              <Portfolios />
+            ) : route === "instruments" ? (
               <Securities />
             ) : route === "settings" ? (
               <Settings />
