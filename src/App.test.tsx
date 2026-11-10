@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import fixture from "../contracts/fixtures/quote.synthetic.json";
@@ -104,5 +104,44 @@ describe("synthetic workspace", () => {
     expect(
       screen.queryByText(`INR ${fixture.observation.close}`),
     ).not.toBeInTheDocument();
+  });
+
+  it("navigates to private pages without revealing account content and recovers unknown routes", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url) =>
+        Promise.resolve(
+          String(url) === "/api/v1/session" ? anonymous() : response(),
+        ),
+      ),
+    );
+    render(
+      <AuthProvider>
+        <App />
+      </AuthProvider>,
+    );
+    await screen.findByRole("link", { name: /^sign in$/i });
+    await userEvent.click(screen.getByRole("link", { name: "Portfolio" }));
+    expect(
+      await screen.findByRole("heading", { name: "Your private workspace" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Portfolio" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    window.location.hash = "#/missing";
+    expect(
+      await screen.findByRole("heading", { name: "Page not found" }),
+    ).toHaveFocus();
+    await userEvent.click(
+      screen.getByRole("link", { name: "Return to overview" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      ),
+    );
+    window.location.hash = "";
   });
 });

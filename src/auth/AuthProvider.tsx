@@ -1,11 +1,11 @@
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import type { SessionResponse } from "../../contracts/generated/models.ts";
 import { fetchSession } from "./session.ts";

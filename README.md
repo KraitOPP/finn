@@ -21,6 +21,8 @@ On Linux/macOS export the same variable, create that directory and run the same 
 
 The browser receives only a session profile and CSRF token, held in memory. Sign-out posts a native CSRF-protected form. Session status refreshes on focus and during recent activity; idle tabs stop polling, and expiry clears the account controls. Private feature views must additionally clear their own data when the authenticated identity changes. The backend remains authoritative for session expiry and resource access.
 
+Keyboard-accessible workspace navigation links Overview, Portfolio, Watchlists, Inbox, Research and Settings. Private pages require a valid session and unmount when identity changes. Features awaiting later phases show explicit availability messages. Unknown links offer a route back to Overview.
+
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 
 ## Verification

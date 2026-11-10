@@ -24,12 +24,73 @@ button {
   cursor: pointer;
 }
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid #b07519;
   outline-offset: 5px;
 }
 a {
   color: inherit;
+}
+.main-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 1240px;
+  margin: auto;
+  padding: 18px 46px 0;
+}
+.main-navigation a {
+  text-decoration: none;
+  color: #43594e;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+.main-navigation a[aria-current="page"] {
+  color: #fff;
+  background: #204f40;
+}
+.route-heading {
+  font-size: clamp(30px, 4vw, 46px);
+  margin: 40px 0 24px;
+  letter-spacing: -1.5px;
+}
+.route-heading:focus {
+  outline: none;
+}
+.empty-state {
+  padding: 32px;
+  border: 1px solid #dfe4dc;
+  border-radius: 16px;
+  background: #fff;
+  margin: 26px 0;
+}
+.empty-state h2 {
+  margin-top: 0;
+  font-size: 22px;
+}
+.empty-state p {
+  max-width: 65ch;
+  line-height: 1.7;
+  color: #53635a;
+}
+.workspace-section {
+  min-height: 400px;
+}
+@media (max-width: 640px) {
+  .main-navigation {
+    padding: 14px 16px 0;
+    gap: 4px;
+  }
+  .main-navigation a {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+  .empty-state {
+    padding: 22px;
+  }
 }
 .skip-link {
   position: fixed;

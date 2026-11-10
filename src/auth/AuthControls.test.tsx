@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { AuthProvider } from "./AuthProvider.tsx";
 import { AuthControls, SessionNotice } from "./AuthControls.tsx";
+import { AuthProvider } from "./AuthProvider.tsx";
 
 const payload = (authenticated: boolean) => ({
   contractVersion: "0.3.0",
