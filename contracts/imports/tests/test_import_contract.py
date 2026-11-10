@@ -1,4 +1,4 @@
-"""Contract checks use invented records; no actual Groww format is asserted."""
+"""Contract checks use invented records; actual user workbook data stays outside Git."""
 
 import copy
 import json
@@ -14,7 +14,7 @@ VALIDATOR = Draft202012Validator(SCHEMA, format_checker=FormatChecker())
 
 def synthetic_preview():
     return {
-        "contractVersion": "0.1.0", "previewOnly": True, "accountId": "synthetic-account",
+        "contractVersion": "0.2.0", "previewOnly": True, "accountId": "synthetic-account",
         "sourceKind": "SYNTHETIC", "sourceFormat": "XLSX", "reportKind": "EXECUTED_TRADES",
         "sourceMappingStatus": "UNVERIFIED", "mappingVersion": None, "parserVersion": None,
         "batchStatus": "MAPPING_REQUIRED", "sourceArtifact": {
@@ -130,6 +130,42 @@ class ImportContractTests(unittest.TestCase):
         VALIDATOR.validate(payload)
         payload["rows"][0]["rawPrice"] = "private malformed input"
         self.assert_invalid(payload)
+
+    def test_synthetic_holdings_fixture_preserves_snapshot_evidence(self):
+        payload = json.loads((Path(__file__).parents[1] / "fixtures/groww-holdings.synthetic.json").read_text(encoding="utf-8"))
+        VALIDATOR.validate(payload)
+        row = payload["rows"][0]
+        self.assertIsNone(row["listing"]["exchange"])
+        self.assertIsNone(row["listing"]["symbol"])
+        self.assertEqual(row["reportedValues"]["unrealisedPnl"], "-1.00")
+        self.assertEqual(row["historyCoverage"], "SNAPSHOT_ONLY")
+        self.assertEqual(row["sourceRowNumber"], 12)
+
+    def test_reported_holding_values_require_exact_decimals_and_explicit_missing_fields(self):
+        payload = json.loads((Path(__file__).parents[1] / "fixtures/groww-holdings.synthetic.json").read_text(encoding="utf-8"))
+        for key in ("buyValue", "closingValue", "unrealisedPnl"):
+            original = payload["rows"][0]["reportedValues"][key]
+            payload["rows"][0]["reportedValues"][key] = 10.0
+            self.assert_invalid(payload)
+            payload["rows"][0]["reportedValues"][key] = None
+            VALIDATOR.validate(payload)
+            del payload["rows"][0]["reportedValues"][key]
+            self.assert_invalid(payload)
+            payload["rows"][0]["reportedValues"][key] = original
+
+    def test_snapshot_summary_cannot_be_attached_to_a_trade_report(self):
+        payload = synthetic_preview()
+        payload["reportedHoldingsSummary"] = {"buyValue": "1.00", "closingValue": "2.00", "unrealisedPnl": "1.00"}
+        self.assert_invalid(payload)
+
+    def test_source_reported_closing_price_preserves_zero_and_missing_without_claiming_a_live_quote(self):
+        payload = json.loads((Path(__file__).parents[1] / "fixtures/groww-holdings.synthetic.json").read_text(encoding="utf-8"))
+        for value in ("0", None):
+            payload["rows"][0]["reportedClosingPrice"] = value
+            VALIDATOR.validate(payload)
+        for value in (-1, "-1", "NaN", "1e2"):
+            payload["rows"][0]["reportedClosingPrice"] = value
+            self.assert_invalid(payload)
 
 
 if __name__ == "__main__":

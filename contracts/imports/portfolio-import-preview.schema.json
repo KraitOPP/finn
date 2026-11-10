@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:portfolio-import-preview:0.1.0",
+  "$id": "urn:finn:contracts:portfolio-import-preview:0.2.0",
   "title": "FINN normalized portfolio import preview",
   "type": "object",
   "additionalProperties": false,
   "required": ["contractVersion", "previewOnly", "accountId", "sourceKind", "sourceFormat", "reportKind", "sourceMappingStatus", "mappingVersion", "parserVersion", "batchStatus", "sourceArtifact", "rows", "warnings"],
   "properties": {
-    "contractVersion": {"const": "0.1.0"},
+    "contractVersion": {"const": "0.2.0"},
     "previewOnly": {"const": true},
     "accountId": {"$ref": "#/$defs/nonempty"},
     "sourceKind": {"enum": ["GROWW_REPORT", "MANUAL", "SYNTHETIC"]},
@@ -17,10 +17,12 @@
     "parserVersion": {"type": ["string", "null"], "minLength": 1},
     "batchStatus": {"enum": ["MAPPING_REQUIRED", "READY_FOR_REVIEW", "VALIDATION_FAILED"]},
     "sourceArtifact": {"$ref": "#/$defs/sourceArtifact"},
+    "reportedHoldingsSummary": {"$ref": "#/$defs/holdingValues"},
     "rows": {"type": "array", "maxItems": 100000, "items": {"oneOf": [{"$ref": "#/$defs/tradeRow"}, {"$ref": "#/$defs/holdingRow"}, {"$ref": "#/$defs/cashRow"}, {"$ref": "#/$defs/orderRow"}, {"$ref": "#/$defs/rejectedRow"}]}},
     "warnings": {"type": "array", "items": {"$ref": "#/$defs/code"}}
   },
   "allOf": [
+    {"if": {"required": ["reportedHoldingsSummary"]}, "then": {"properties": {"reportKind": {"const": "HOLDINGS_SNAPSHOT"}}}},
     {"if": {"properties": {"sourceKind": {"const": "GROWW_REPORT"}}, "required": ["sourceKind"]}, "then": {"properties": {"sourceFormat": {"const": "XLSX"}}}},
     {
       "if": {"properties": {"sourceMappingStatus": {"const": "UNVERIFIED"}}, "required": ["sourceMappingStatus"]},
@@ -40,6 +42,7 @@
     "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,79}$"},
     "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "decimal": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+    "signedDecimal": {"type": "string", "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
     "positiveDecimal": {"type": "string", "pattern": "^(0\\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\\.[0-9]+)?)$", "maxLength": 80},
     "date": {"type": "string", "format": "date"},
     "nullableDate": {"oneOf": [{"$ref": "#/$defs/date"}, {"type": "null"}]},
@@ -90,6 +93,16 @@
          }}
       ], "unevaluatedProperties": false
     },
+    "holdingValues": {
+      "description": "Source-reported snapshot amounts, not live prices, recomputed accounting or historical returns. Null means absent. Reconciliation is a Java domain check; source discrepancies must remain visible.",
+      "type": "object", "additionalProperties": false,
+      "required": ["buyValue", "closingValue", "unrealisedPnl"],
+      "properties": {
+        "buyValue": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "closingValue": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "unrealisedPnl": {"oneOf": [{"$ref": "#/$defs/signedDecimal"}, {"type": "null"}]}
+      }
+    },
     "holdingRow": {
       "allOf": [
         {"$ref": "#/$defs/rowBase"},
@@ -97,6 +110,9 @@
          "properties": {
            "kind": {"const": "OPENING_HOLDING"}, "listing": {"$ref": "#/$defs/listingReference"}, "asOfDate": {"$ref": "#/$defs/date"},
            "quantity": {"$ref": "#/$defs/decimal"}, "averageCost": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+           "reportedName": {"type": "string", "minLength": 1, "maxLength": 256},
+           "reportedValues": {"$ref": "#/$defs/holdingValues"},
+           "reportedClosingPrice": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
            "currency": {"const": "INR"}, "historyCoverage": {"const": "SNAPSHOT_ONLY"}
          }}
       ], "unevaluatedProperties": false

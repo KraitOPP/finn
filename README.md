@@ -10,7 +10,7 @@ Phase 1 includes maintained market-data/API contracts, synthetic acceptance fixt
 
 - [Market-data and API contracts](contracts/README.md): exact decimals, listing identity, provenance, missing/stale states, planned routes and background-job states.
 - [Yahoo history client](integrations/yfinance/README.md): bounded daily acquisition for explicitly mapped NSE/BSE listings in private mode. Streaming and universal coverage are unverified.
-- [Portfolio import contract](contracts/imports/README.md): distinguishes executed trades, orders, holdings and cash movements. Groww Excel (`.xlsx`) is the selected input; actual workbook mapping awaits a redacted sample.
+- [Portfolio import contract](contracts/imports/README.md): distinguishes executed trades, orders, holdings and cash movements. A Groww holdings `.xlsx` layout has been inspected and recorded as a review-gated profile; the secure reader and other report layouts remain pending.
 - [Official EOD boundary](integrations/eod/README.md): acquisition references and parser acceptance requirements. Actual exchange-file schema validation remains pending; no EOD parser is shipped.
 
 Each component documents its checks. Install dependencies and retain caches/output outside the checkout using `FINN_WORKSPACE_ROOT`.

@@ -1,8 +1,24 @@
 # Portfolio import preview contract
 
-Version: 0.1.0. This is an internal normalized preview contract, not a Groww spreadsheet parser or a public HTTP route.
+Version: 0.2.0. This is an internal normalized preview contract, not a Groww spreadsheet parser or a public HTTP route. It is versioned separately from the market-data public API, which remains 0.1.0.
 
-`portfolio-import-preview.schema.json` defines the values an eventual parser must produce before the user reviews a batch. No ledger writes or broker access are implemented here. The user has selected **Groww Excel (`.xlsx`)** as the initial report input. Actual column names, worksheets, report variants, fill semantics, charges, encryption, and row identity remain **unverified until a user-provided redacted export has been inspected**. Synthetic fixtures are deliberately invented and are not representations of a Groww export.
+`portfolio-import-preview.schema.json` defines the values an eventual parser must produce before the user reviews a batch. No ledger writes or broker access are implemented here. One user-supplied Groww stock-holdings `.xlsx` layout has been inspected read-only. The [holdings profile](profiles/groww-holdings-xlsx-v1.json) records its headers, date caption, summary locations and mapping requirements without any source filename, account identity, securities or financial values. It is observed layout evidence, not an enabled parser or proof of other Groww variants. Trade/order/cash layouts and execution/charge semantics remain unverified.
+
+The entirely invented `fixtures/groww-holdings.synthetic.json` illustrates the normalized shape. It is not a copied/redacted real portfolio or a workbook fixture.
+
+## Observed holdings profile
+
+The observed worksheet is `Sheet1`, with date caption at `A4`, summary labels/values at `A7:B9`, headers at `A11:H11` and detail from row 12. The exact caption prefix is `Holdings statement for stocks as on ` followed by `dd-MM-uuuu`. Use strict date parsing and reject invalid dates; the filename is not the report-date authority. Validate header names, column order and summary labels before mapping; unsupported layouts must not be guessed. Preserve original row locations when skipping blank rows, and reject unexpected nonblank footer/data layouts until supported.
+
+Map stock name as a source display label, ISIN as a security lookup hint, quantity as reported whole units and average buy price as reported cost information. The source does not provide an exchange or ticker: leave both unresolved until the instruments/review step identifies an appropriate listing. ISIN alone must not silently choose an NSE/BSE venue. A reported average is not purchase dates, FIFO lots, fees or a verified tax basis.
+
+Version 0.2.0 adds optional `reportedName`, `reportedClosingPrice`, `reportedValues` and `reportedHoldingsSummary`. Existing snapshot fields remain; callers must explicitly adopt the new contract version. All reported amounts retain source precision as decimal strings, including negative unrealised P&L. Missing values stay null. A reported zero close may be retained as evidence and flagged for review; it is never a valid positive market-price observation or an automatic valuation. Source closing values belong to the report date, with no fabricated last-trade timestamp or live-feed claim.
+
+No explicit currency code was present in the reviewed layout. The initial profile requires the account's INR context to be confirmed during review. Do not infer currency from a filename, the magnitude of numbers or a security's name.
+
+The future Java reader must reconcile detail buy/closing/P&L amounts with the separately retained source summary and check row arithmetic with exact `BigDecimal` values. The profile's initial INR 0.01 comparison tolerance is a provisional review policy, not a verified Groww rounding guarantee. Preserve both sides of any mismatch, emit `SUMMARY_TOTAL_MISMATCH`, and block acceptance until reviewed; do not overwrite a source summary with a recomputed value, spread a difference across holdings or create fictitious transactions. One inspected sample showed that this reconciliation gate is necessary. Reconciliation, source-date equality, listing resolution, currency confirmation, duplicate-security checks and ownership are Java semantic checks not implemented by this JSON Schema.
+
+The supported outcome is an opening snapshot with `historyCoverage: SNAPSHOT_ONLY`; no trade history, realised P&L, dividends, cash flows or XIRR can be established from this report alone. Observed layout evidence does not change `sourceMappingStatus` to `VALIDATED`: the future secure reader must establish a supported profile and complete its acceptance checks first.
 
 ## Boundaries
 
