@@ -1,8 +1,8 @@
 # Frontend contract boundary
 
-This folder is maintained application contract source, not a React scaffold. It contains no market data credentials, real prices, or personal portfolio records.
+This folder is maintained application contract source, consumed by the React application. It contains no market data credentials, real prices, or personal portfolio records. Public contract 0.2.0 implements the fixed synthetic demo route; other market operations remain planned.
 
-The backend's `contracts/public-api/openapi.json` is the public DTO authority. `generate.mjs` derives TypeScript types, the runtime schema snapshot, and a version/SHA-256 manifest. Generated files are committed so a standalone frontend checkout can consume a reviewed snapshot; they are not a second handwritten schema authority.
+The backend's `contracts/public-api/openapi.json` is the public DTO authority. `generate.mjs` derives TypeScript types, the runtime schema snapshot, a byte-for-byte canonical OpenAPI copy and a version/SHA-256 manifest. Generated files are committed so a standalone frontend checkout can consume a reviewed snapshot; they are not a second handwritten schema authority. The sibling backend is authoritative when present; otherwise the generator verifies against the committed canonical copy. Explicit `--source` paths never fall back silently.
 
 Use a Node.js runtime supporting erasable TypeScript to run the contract checks before the application tooling is introduced. Commands below assume the repository root and a sibling backend checkout:
 

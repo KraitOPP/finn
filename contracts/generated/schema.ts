@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.1.0",
+  "contractVersion": "0.2.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "d89200239580c41ecb5817ac317e3938f3c1f23c481da791046399cb54fcf124",
+  "sourceSha256": "96700f1584a3b454bb6008fca6f64d2391b33c3a8199a763925af33c2da9442b",
   "schemaNames": [
     "AcquisitionEnvelope",
     "AdjustmentBasis",
@@ -488,7 +488,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.1.0"
+    "const": "0.2.0"
   },
   "DecimalString": {
     "type": "string",

@@ -1,10 +1,31 @@
 # FINN frontend
 
-React and TypeScript frontend for an India-first portfolio intelligence and investment research platform.
+React 19 and TypeScript frontend for an India-first portfolio intelligence and investment research platform.
 
 ## Repository status
 
-Phase 1 includes generated TypeScript API types, a checked schema snapshot, runtime response validation and display policies for synthetic/private prices, unknown delay, stale data and missing history. The React application and screens have not been scaffolded yet. Delivery follows the phased plan maintained separately from this repository.
+The application foundation displays a fictional stock snapshot from the Java backend, with checked API types, source/freshness labels, accessible loading/error states and retry. No real portfolio is imported by this demo. Identity and portfolio workflows are later feature slices.
+
+## Run locally
+
+Use Node.js 24.22.1 (also pinned in `.nvmrc`) and npm 11.19.1. From this repository, set an existing external working directory and install the reviewed lockfile:
+
+```powershell
+$env:FINN_WORKSPACE_ROOT = 'C:/path/to/private/finn-workspace'
+New-Item -ItemType Directory -Force -Path $env:FINN_WORKSPACE_ROOT | Out-Null
+node scripts/install.mjs
+npm run dev
+```
+
+On Linux/macOS export the same variable, create that directory and run the same Node/npm commands. Open `http://127.0.0.1:5173`. Start the backend separately using its README. The development server proxies same-origin `/api` requests to `http://127.0.0.1:8080`; configure server-side `FINN_BACKEND_ORIGIN` for another backend origin. No secret or provider credential belongs in a `VITE_` variable or browser storage.
+
+The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
+
+## Verification
+
+`npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors and rejection of private/incompatible demo responses.
+
+The GitHub workflow uses the same checks, pinned official actions and production dependency auditing. The immutable canonical OpenAPI copy permits a standalone frontend checkout to verify its reviewed snapshot. When the sibling backend exists, generation/checking uses that authority and detects drift. Pair frontend/backend releases by contract version and manifest SHA; an independent frontend check cannot discover an unpublished upstream contract change.
 
 ## Available component
 

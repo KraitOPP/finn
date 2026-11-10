@@ -4,10 +4,17 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const directory = dirname(fileURLToPath(import.meta.url));
-const sourcePath = resolve(process.argv.find((arg) => arg.startsWith('--source='))?.slice(9)
+const sourceArgument = process.argv.find((arg) => arg.startsWith('--source='))?.slice(9);
+const sourcePath = resolve(sourceArgument
   ?? resolve(directory, '../../finn-backend/contracts/public-api/openapi.json'));
 const check = process.argv.includes('--check');
-const source = await readFile(sourcePath);
+let source;
+try { source = await readFile(sourcePath); }
+catch (error) {
+  if (error.code !== 'ENOENT' || sourceArgument) throw error;
+  // Standalone frontend checkouts consume the reviewed immutable contract copy.
+  source = await readFile(resolve(directory, 'canonical.openapi.json'));
+}
 const document = JSON.parse(source.toString('utf8'));
 if (!document.openapi?.startsWith('3.1.') || !document.info?.version) {
   throw new Error('Expected a versioned OpenAPI 3.1 document.');
@@ -92,6 +99,7 @@ const models = warning + names.map((name) => `export type ${name} = ${typeOf(sch
 const registry = warning + `export const contractMetadata = ${JSON.stringify(metadata, null, 2)} as const;\n\n`
   + `export const contractSchemas = ${JSON.stringify(Object.fromEntries(names.map((name) => [name, schemas[name]])), null, 2)} as const;\n`;
 const outputs = {
+  'canonical.openapi.json': source.toString('utf8'),
   'generated/models.ts': models,
   'generated/schema.ts': registry,
   'generated/manifest.json': JSON.stringify(metadata, null, 2) + '\n',

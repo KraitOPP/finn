@@ -88,7 +88,7 @@ export type Capability = ({
   "evidence": (string);
 });
 
-export type ContractVersion = ("0.1.0") & (string);
+export type ContractVersion = ("0.2.0") & (string);
 
 export type DecimalString = (string);
 

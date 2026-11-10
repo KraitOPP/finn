@@ -1,5 +1,5 @@
 {
-  "contractVersion": "0.1.0",
+  "contractVersion": "0.2.0",
   "requestId": "synthetic-request-001",
   "listing": {
     "listingId": "synthetic-listing-001",
@@ -75,7 +75,11 @@
           "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED"
         ]
       },
-      "delay": { "kind": "UNKNOWN", "seconds": null, "basis": "UNKNOWN" },
+      "delay": {
+        "kind": "UNKNOWN",
+        "seconds": null,
+        "basis": "UNKNOWN"
+      },
       "rights": {
         "policyId": "synthetic-fixture-policy",
         "reviewedAt": "2026-11-06T12:00:00Z",
