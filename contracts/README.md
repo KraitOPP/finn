@@ -1,6 +1,6 @@
 # FINN contracts
 
-These contracts describe application and provider boundaries. Public contract 0.4.0 implements the fixed synthetic `/api/v1/demo/quote` route, OIDC session/profile/logout and owner-specific preference routes. Other operations remain explicitly `PLANNED`. The overall status is `PARTIALLY_IMPLEMENTED_IDENTITY_AND_SYNTHETIC_DEMO`. This is not proof of provider coverage, legal data entitlements or an implemented portfolio backend.
+These contracts describe application and provider boundaries. Public contract 0.5.0 implements the fixed synthetic demo, OIDC session/profile/logout, owner-specific preferences and the manual instrument catalogue. Other operations remain explicitly `PLANNED`. This is not proof of provider coverage, legal data entitlements or an implemented portfolio ledger.
 
 ## Files and ownership
 

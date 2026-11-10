@@ -739,5 +739,31 @@
       }
     ],
     "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-unconfirmed-security",
+    "baseCaseId": "catalogue-security-input",
+    "changes": [
+      {
+        "path": [
+          "confirmed"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-catalogue-owner-override",
+    "baseCaseId": "catalogue-security-input",
+    "changes": [
+      {
+        "path": [
+          "ownerId"
+        ],
+        "value": "untrusted"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
   }
 ]

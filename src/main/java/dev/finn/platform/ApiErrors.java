@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
@@ -17,6 +18,10 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 class ApiErrors {
+    @ExceptionHandler(DuplicateKeyException.class)
+    ResponseEntity<Map<String, Object>> duplicate(HttpServletRequest request) {
+        return Problems.response(request, 409, "DUPLICATE_RESOURCE");
+    }
     @ExceptionHandler(ApiFailure.class)
     ResponseEntity<Map<String, Object>> application(ApiFailure error, HttpServletRequest request) {
         return Problems.response(request, error.status(), error.code());

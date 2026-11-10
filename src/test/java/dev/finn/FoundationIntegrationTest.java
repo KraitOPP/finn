@@ -87,7 +87,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.4.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.5.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())
@@ -121,5 +121,41 @@ class FoundationIntegrationTest {
         mvc.perform(put("/api/v1/preferences").with(second).with(csrf()).contentType("application/json").content(changed.replace("\"revision\":0", "\"revision\":0,\"ownerId\":\"untrusted\"")))
                 .andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/preferences").with(first)).andExpect(jsonPath("$.timeZone").value("Europe/London"));
+    }
+
+    @Test void catalogueKeepsVenuesAndHistoryDistinctAndDeniesGuessedNestedIds() throws Exception {
+        var first=oidcLogin().idToken(token->token.claim("iss","http://127.0.0.1:1/test-issuer").subject("fictional-catalogue-one"));
+        var second=oidcLogin().idToken(token->token.claim("iss","http://127.0.0.1:1/test-issuer").subject("fictional-catalogue-two"));
+        var json=tools.jackson.databind.json.JsonMapper.builder().build();
+        var company=json.readTree(mvc.perform(post("/api/v1/catalog/companies").with(first).with(csrf()).contentType("application/json").content("{\"name\":\"Fictional Company\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        String input="""
+                {"companyId":"%s","name":"Fictional Equity","isin":"%s","confirmed":true}
+                """.formatted(company.get("companyId").asText(),dev.finn.instruments.CatalogueTest.fictionalIsin());
+        mvc.perform(post("/api/v1/catalog/securities").with(second).with(csrf()).contentType("application/json").content(input)).andExpect(status().isNotFound());
+        var security=json.readTree(mvc.perform(post("/api/v1/catalog/securities").with(first).with(csrf()).contentType("application/json").content(input)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        String id=security.get("securityId").asText(),path="/api/v1/catalog/securities/"+id;
+        mvc.perform(post("/api/v1/catalog/securities").with(first).with(csrf()).contentType("application/json").content(input)).andExpect(status().isConflict());
+        mvc.perform(get(path).with(first)).andExpect(jsonPath("$.listings.length()").value(0));
+        String listing="""
+                {"exchange":"NSE","series":"EQ","symbol":"DEMOOLD","providerSymbol":"DEMOOLD.NS","validFrom":"2020-01-01","confirmed":true}
+                """;
+        var nse=json.readTree(mvc.perform(post(path+"/listings").with(first).with(csrf()).contentType("application/json").content(listing)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        var bse=json.readTree(mvc.perform(post(path+"/listings").with(first).with(csrf()).contentType("application/json").content(listing.replace("NSE","BSE").replace(".NS", ".BO")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(nse.get("listingId").asText()).isNotEqualTo(bse.get("listingId").asText());
+        assertThat(nse.get("securityId")).isEqualTo(bse.get("securityId"));
+        mvc.perform(get(path).with(second)).andExpect(status().isNotFound());
+        mvc.perform(post(path+"/listings").with(second).with(csrf()).contentType("application/json").content(listing)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/catalog/securities").with(second)).andExpect(jsonPath("$.items.length()").value(0));
+        String symbols="/api/v1/catalog/listings/"+nse.get("listingId").asText()+"/symbols";
+        mvc.perform(get(symbols).with(second)).andExpect(status().isNotFound());
+        String rename="{\"symbol\":\"DEMONEW\",\"providerSymbol\":\"DEMONEW.NS\",\"effectiveDate\":\"2021-01-01\",\"confirmed\":true}";
+        mvc.perform(post(symbols).with(first).with(csrf()).contentType("application/json").content(rename))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.listingId").value(nse.get("listingId").asText())).andExpect(jsonPath("$.securityId").value(id));
+        mvc.perform(get(symbols).with(first)).andExpect(jsonPath("$[0].symbol").value("DEMOOLD")).andExpect(jsonPath("$[0].validTo").value("2021-01-01")).andExpect(jsonPath("$[1].symbol").value("DEMONEW"));
+        mvc.perform(post(symbols).with(first).with(csrf()).contentType("application/json").content(rename)).andExpect(status().isConflict());
+        mvc.perform(get(path).with(first)).andExpect(jsonPath("$.listings.length()").value(2)).andExpect(jsonPath("$.listings[0].symbol").value("DEMOOLD"));
+        mvc.perform(post(symbols).with(first).with(csrf()).contentType("application/json").content(rename.replace(".NS",".BO"))).andExpect(status().isUnprocessableContent());
     }
 }

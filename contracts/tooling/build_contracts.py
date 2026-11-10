@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -247,6 +247,20 @@ def definitions() -> dict:
                          "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}}
     d["PreferencesUpdate"] = obj(preference_fields, "Owner comes only from the authenticated session. Revision prevents silent lost updates. Only supported IANA zone IDs are accepted by Java.")
     d["Preferences"] = obj({**preference_fields, "deliveryAvailable": {"const": False}}, "Delivery choices are stored; no notification or email service is enabled yet.")
+    d["CatalogueCompany"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "source": {"const": "MANUAL_USER"}})
+    d["CatalogueCompanies"] = array(ref("CatalogueCompany"), maxItems=100)
+    d["CompanyInput"] = obj({"name": text(maxLength=120)})
+    isin = nullable(text(pattern=r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$", maxLength=12))
+    d["CatalogueSecurity"] = obj({"securityId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120), "name": text(maxLength=120), "isin": isin, "reviewStatus": enum(["USER_CONFIRMED", "UNRESOLVED"])})
+    d["SecurityInput"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "isin": isin, "confirmed": {"const": True}})
+    d["CatalogueListing"] = obj({**d["ListingIdentity"]["properties"], "providerSymbol": nullable(text(maxLength=72)), "reviewStatus": {"const": "USER_CONFIRMED"}, "source": {"const": "MANUAL_USER"}, "validFrom": ref("SessionDate")}, "Owner-scoped, manually confirmed listing and optional explicit Yahoo mapping. It is not an authoritative exchange security master. No ISIN-based exchange guess.")
+    listing_fields={"exchange": enum(["NSE", "BSE"]), "series": text(pattern=r"^[A-Z0-9_-]{1,16}$", maxLength=16), "symbol": text(pattern=r"^[A-Z0-9][A-Z0-9&._-]{0,63}$", maxLength=64), "providerSymbol": nullable(text(maxLength=72)), "validFrom": ref("SessionDate"), "confirmed": {"const": True}}
+    d["ListingInput"] = obj(listing_fields)
+    d["SymbolInput"] = obj({"symbol": listing_fields["symbol"], "providerSymbol": listing_fields["providerSymbol"], "effectiveDate": ref("SessionDate"), "confirmed": {"const": True}})
+    d["CatalogueSecurityDetail"] = obj({"security": ref("CatalogueSecurity"), "listings": array(ref("CatalogueListing"), maxItems=100)})
+    d["CatalogueSecurityPage"] = obj({"items": array(ref("CatalogueSecurity"), maxItems=100), "limit": {"type": "integer", "minimum": 1, "maximum": 100}, "offset": {"type": "integer", "minimum": 0, "maximum": 10000}, "hasMore": {"type": "boolean"}})
+    d["SymbolHistory"] = obj({"symbol": text(maxLength=64), "validFrom": ref("SessionDate"), "validTo": nullable(ref("SessionDate")), "source": {"const": "MANUAL_USER"}})
+    d["SymbolHistoryList"] = array(ref("SymbolHistory"), maxItems=100)
     d["SessionResponse"] = {"oneOf": [
         obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
         obj({**page_common, "authenticated": {"const": False}, "user": {"type": "null"}, "csrf": ref("CsrfInformation")}),
@@ -339,13 +353,29 @@ def public_api_document() -> dict:
             parameter("jobId", "path", ref("OpaqueId"), True,
                       "Owner-scoped job ID. Unknown and inaccessible jobs both return 404.")])},
     }
+    def maintained(op_id, summary, result, parameters=(), input_name=None):
+        result_op=operation(op_id, summary, result, list(parameters), True, "IMPLEMENTED")
+        result_op["description"]="Owner-scoped manual catalogue. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. No provider coverage or official security master is implied."
+        if input_name:
+            result_op["parameters"].append(parameter("X-CSRF-TOKEN", "header", text(maxLength=2048), True))
+            result_op["requestBody"]={"required": True, "content": {"application/json": {"schema": ref(input_name)}}}
+            result_op["responses"]["409"]=response("Duplicate identity or non-monotonic symbol change; review before retrying.", "Problem", "application/problem+json")
+        return result_op
+    identifier=[parameter("id", "path", text(format="uuid"), True)]
+    paths.update({
+        "/api/v1/catalog/companies": {"get": maintained("getCatalogueCompanies", "List up to 100 owned companies", "CatalogueCompanies"), "post": maintained("createCatalogueCompany", "Record a manually identified company", "CatalogueCompany", input_name="CompanyInput")},
+        "/api/v1/catalog/securities": {"get": maintained("searchCatalogueSecurities", "Search the owned manual catalogue", "CatalogueSecurityPage", [parameter("query", "query", text(maxLength=100,minLength=0)), parameter("limit", "query", {"type":"integer","minimum":1,"maximum":100}),parameter("offset", "query", {"type":"integer","minimum":0,"maximum":10000})]), "post": maintained("createCatalogueSecurity", "Record a security separately from its exchange listings", "CatalogueSecurity", input_name="SecurityInput")},
+        "/api/v1/catalog/securities/{id}": {"get": maintained("getCatalogueSecurity", "Inspect owned security and distinct listings", "CatalogueSecurityDetail", identifier)},
+        "/api/v1/catalog/securities/{id}/listings": {"post": maintained("createCatalogueListing", "Confirm an exchange listing and optional Yahoo mapping", "CatalogueListing", identifier, "ListingInput")},
+        "/api/v1/catalog/listings/{id}/symbols": {"get": maintained("getListingSymbols", "Inspect retained listing symbol history", "SymbolHistoryList", identifier), "post": maintained("changeListingSymbol", "Append a reviewed effective symbol change without changing listing identity", "CatalogueListing", identifier, "SymbolInput")},
+    })
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "Identity/session and fixed synthetic demo routes are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
+                 "description": "Identity/session, preferences, manual catalogue and fixed synthetic demo routes are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
-        "x-finn-status": "PARTIALLY_IMPLEMENTED_IDENTITY_AND_SYNTHETIC_DEMO",
+        "x-finn-status": "PARTIALLY_IMPLEMENTED_PRIVATE_CATALOGUE",
         "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
         "paths": paths,
         "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-FINN_SESSION",

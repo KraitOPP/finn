@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.4.0",
+  "$id": "urn:finn:contracts:market-data:0.5.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.4.0"
+      "const": "0.5.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1604,6 +1604,404 @@
       ],
       "additionalProperties": false,
       "description": "Delivery choices are stored; no notification or email service is enabled yet."
+    },
+    "CatalogueCompany": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "source": {
+          "const": "MANUAL_USER"
+        }
+      },
+      "required": [
+        "companyId",
+        "name",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogueCompanies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CatalogueCompany"
+      },
+      "maxItems": 100
+    },
+    "CompanyInput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogueSecurity": {
+      "type": "object",
+      "properties": {
+        "securityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "isin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewStatus": {
+          "type": "string",
+          "enum": [
+            "USER_CONFIRMED",
+            "UNRESOLVED"
+          ]
+        }
+      },
+      "required": [
+        "securityId",
+        "companyId",
+        "companyName",
+        "name",
+        "isin",
+        "reviewStatus"
+      ],
+      "additionalProperties": false
+    },
+    "SecurityInput": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "isin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confirmed": {
+          "const": true
+        }
+      },
+      "required": [
+        "companyId",
+        "name",
+        "isin",
+        "confirmed"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogueListing": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "securityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "segment": {
+          "type": "string",
+          "const": "CASH_EQUITY"
+        },
+        "series": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "currency": {
+          "type": "string",
+          "const": "INR"
+        },
+        "isin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "providerSymbol": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 72
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewStatus": {
+          "const": "USER_CONFIRMED"
+        },
+        "source": {
+          "const": "MANUAL_USER"
+        },
+        "validFrom": {
+          "$ref": "#/$defs/SessionDate"
+        }
+      },
+      "required": [
+        "listingId",
+        "securityId",
+        "companyId",
+        "exchange",
+        "segment",
+        "series",
+        "symbol",
+        "currency",
+        "isin",
+        "providerSymbol",
+        "reviewStatus",
+        "source",
+        "validFrom"
+      ],
+      "additionalProperties": false,
+      "description": "Owner-scoped, manually confirmed listing and optional explicit Yahoo mapping. It is not an authoritative exchange security master. No ISIN-based exchange guess."
+    },
+    "ListingInput": {
+      "type": "object",
+      "properties": {
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "series": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "pattern": "^[A-Z0-9_-]{1,16}$"
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+        },
+        "providerSymbol": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 72
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validFrom": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "confirmed": {
+          "const": true
+        }
+      },
+      "required": [
+        "exchange",
+        "series",
+        "symbol",
+        "providerSymbol",
+        "validFrom",
+        "confirmed"
+      ],
+      "additionalProperties": false
+    },
+    "SymbolInput": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+        },
+        "providerSymbol": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 72
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effectiveDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "confirmed": {
+          "const": true
+        }
+      },
+      "required": [
+        "symbol",
+        "providerSymbol",
+        "effectiveDate",
+        "confirmed"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogueSecurityDetail": {
+      "type": "object",
+      "properties": {
+        "security": {
+          "$ref": "#/$defs/CatalogueSecurity"
+        },
+        "listings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogueListing"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "security",
+        "listings"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogueSecurityPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogueSecurity"
+          },
+          "maxItems": 100
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "limit",
+        "offset",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "SymbolHistory": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "validFrom": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "validTo": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "const": "MANUAL_USER"
+        }
+      },
+      "required": [
+        "symbol",
+        "validFrom",
+        "validTo",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "SymbolHistoryList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SymbolHistory"
+      },
+      "maxItems": 100
     },
     "SessionResponse": {
       "oneOf": [
