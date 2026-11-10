@@ -4,7 +4,7 @@ Java 25 and Spring Boot 4.1.2 backend for an India-first portfolio intelligence 
 
 ## Repository status
 
-The application includes OIDC sign-in, PostgreSQL-backed private sessions, CSRF-protected logout, owner-scoped portfolios/source accounts and a manual instrument catalogue, plus a fixed synthetic public demo. The existing Yahoo client returns unaccepted acquisition candidates. The financial ledger and Excel/EOD parsers are not implemented yet.
+The application includes OIDC sign-in, PostgreSQL-backed private sessions, CSRF-protected logout, owner-scoped portfolios/source accounts and a manual instrument catalogue, plus a fixed synthetic public demo. The existing Yahoo client returns unaccepted acquisition candidates. Exact ledger calculations are implemented internally; journal persistence/API and Excel/EOD parsers are not implemented yet.
 
 ## Run locally
 
@@ -41,6 +41,8 @@ API requests receive server-generated `X-Request-ID` references and no-store res
 The GitHub workflow runs the application and existing Python contract/adapter checks without live providers or personal reports. Build actions and the PostgreSQL image are pinned to verified immutable identifiers. Python check tools must use external environments/caches; their component READMEs document standalone commands.
 
 ## Available components
+
+- Exact ledger engine: immutable inputs, whole cash-equity units, moving weighted-average recorded cost, known/unknown fees and cost, explicit closing cash/holdings baselines, linked reversal/replacement replay, and short-position rejection. Cost allocation uses eight decimal places with HALF_EVEN rounding and allocates residual cost on final closure. Opening snapshots cannot create past purchases/returns; deposits never become gains. Missing starting cash or fees prevents a complete cash balance. This internal engine does not yet expose journal writes. Its ten independent calculation/invariant tests run in the normal Java suite.
 
 - Portfolios and source accounts: authenticated `/api/v1/portfolios`, `/{id}`, `/{id}/accounts` and `/{id}/accounts/{accountId}`. Create INR tracking records with Groww/manual/other sources and unknown initial history. `POST /{id}/archive` accepts `archived` and the read revision to archive/restore; history stays readable and archived portfolios block new writes. All nested account queries bind the authenticated owner and actual portfolio. Scope is at most 100 portfolios per owner and 100 accounts per portfolio. No broker credentials or connection are required.
 
