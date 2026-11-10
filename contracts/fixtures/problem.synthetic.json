@@ -1,0 +1,9 @@
+{
+  "type": "https://finn.invalid/problems/data-source-unavailable",
+  "title": "Data source unavailable",
+  "status": 503,
+  "detail": "The fictional test source is temporarily unavailable.",
+  "instance": "/api/v1/quotes/synthetic-listing-001",
+  "code": "DATA_SOURCE_UNAVAILABLE",
+  "traceId": "synthetic-trace-001"
+}

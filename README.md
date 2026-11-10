@@ -4,7 +4,11 @@ React and TypeScript frontend for an India-first portfolio intelligence and inve
 
 ## Repository status
 
-Repository initialized. The application has not been scaffolded or implemented yet. Delivery follows the phased plan maintained separately from this repository.
+Phase 1 includes generated TypeScript API types, a checked schema snapshot, runtime response validation and display policies for synthetic/private prices, unknown delay, stale data and missing history. The React application and screens have not been scaffolded yet. Delivery follows the phased plan maintained separately from this repository.
+
+## Available component
+
+See [the contract boundary](contracts/README.md) for generation, compatibility checks, synthetic fixtures and verification instructions. Types are generated from the backend's versioned OpenAPI contract and committed with a source checksum so this checkout can be consumed independently. Planned API routes are not running services.
 
 ## Planned experience
 

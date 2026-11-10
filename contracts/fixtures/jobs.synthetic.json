@@ -1,0 +1,74 @@
+[
+  {
+    "contractVersion": "0.1.0",
+    "requestId": "synthetic-job-request",
+    "jobId": "synthetic-job-queued",
+    "revision": 1,
+    "createdAt": "2030-01-02T10:00:00Z",
+    "updatedAt": "2030-01-02T10:02:00Z",
+    "state": "QUEUED",
+    "startedAt": null,
+    "finishedAt": null,
+    "failureCode": null
+  },
+  {
+    "contractVersion": "0.1.0",
+    "requestId": "synthetic-job-request",
+    "jobId": "synthetic-job-running",
+    "revision": 1,
+    "createdAt": "2030-01-02T10:00:00Z",
+    "updatedAt": "2030-01-02T10:02:00Z",
+    "state": "RUNNING",
+    "startedAt": "2030-01-02T10:01:00Z",
+    "finishedAt": null,
+    "failureCode": null
+  },
+  {
+    "contractVersion": "0.1.0",
+    "requestId": "synthetic-job-request",
+    "jobId": "synthetic-job-succeeded",
+    "revision": 1,
+    "createdAt": "2030-01-02T10:00:00Z",
+    "updatedAt": "2030-01-02T10:02:00Z",
+    "state": "SUCCEEDED",
+    "startedAt": "2030-01-02T10:01:00Z",
+    "finishedAt": "2030-01-02T10:02:00Z",
+    "failureCode": null
+  },
+  {
+    "contractVersion": "0.1.0",
+    "requestId": "synthetic-job-request",
+    "jobId": "synthetic-job-partially_succeeded",
+    "revision": 1,
+    "createdAt": "2030-01-02T10:00:00Z",
+    "updatedAt": "2030-01-02T10:02:00Z",
+    "state": "PARTIALLY_SUCCEEDED",
+    "startedAt": "2030-01-02T10:01:00Z",
+    "finishedAt": "2030-01-02T10:02:00Z",
+    "failureCode": "PARTIAL_RESULT"
+  },
+  {
+    "contractVersion": "0.1.0",
+    "requestId": "synthetic-job-request",
+    "jobId": "synthetic-job-failed",
+    "revision": 1,
+    "createdAt": "2030-01-02T10:00:00Z",
+    "updatedAt": "2030-01-02T10:02:00Z",
+    "state": "FAILED",
+    "startedAt": "2030-01-02T10:01:00Z",
+    "finishedAt": "2030-01-02T10:02:00Z",
+    "failureCode": "SOURCE_UNAVAILABLE"
+  },
+  {
+    "contractVersion": "0.1.0",
+    "requestId": "synthetic-job-request",
+    "jobId": "synthetic-job-cancelled",
+    "revision": 1,
+    "createdAt": "2030-01-02T10:00:00Z",
+    "updatedAt": "2030-01-02T10:02:00Z",
+    "state": "CANCELLED",
+    "startedAt": null,
+    "finishedAt": "2030-01-02T10:02:00Z",
+    "failureCode": null
+  }
+]
