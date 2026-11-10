@@ -1,14 +1,15 @@
 {
-  "contractVersion": "0.2.0",
+  "contractVersion": "0.3.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "96700f1584a3b454bb6008fca6f64d2391b33c3a8199a763925af33c2da9442b",
+  "sourceSha256": "e6851a4ec2cd32a5025dfda432a4ce3c12ef383579fc992785680289fadc6dde",
   "schemaNames": [
     "AcquisitionEnvelope",
     "AdjustmentBasis",
     "AsyncJobStatus",
     "Capability",
     "ContractVersion",
+    "CsrfInformation",
     "DecimalString",
     "Delay",
     "Freshness",
@@ -33,7 +34,9 @@
     "QuoteResponse",
     "Rights",
     "SessionDate",
+    "SessionResponse",
     "SourceTimes",
+    "UserProfile",
     "UtcInstant",
     "Warning"
   ]

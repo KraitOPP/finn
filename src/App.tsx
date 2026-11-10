@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { QuoteResponse } from "../contracts/generated/models.ts";
 import { quotePresentation } from "../contracts/presentation.ts";
 import { loadDemoQuote } from "./api/demo.ts";
+import { AuthControls, SessionNotice } from "./auth/AuthControls.tsx";
 
 type Snapshot =
   | { state: "loading" }
@@ -53,8 +54,10 @@ export function App() {
           <span aria-hidden="true" />
           Synthetic demo
         </span>
+        <AuthControls />
       </header>
       <main id="main">
+        <SessionNotice />
         <section className="intro">
           <p className="eyebrow">CLARITY, BEFORE THE NEXT MOVE</p>
           <h1>

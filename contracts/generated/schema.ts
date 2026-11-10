@@ -1,15 +1,16 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.2.0",
+  "contractVersion": "0.3.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "96700f1584a3b454bb6008fca6f64d2391b33c3a8199a763925af33c2da9442b",
+  "sourceSha256": "e6851a4ec2cd32a5025dfda432a4ce3c12ef383579fc992785680289fadc6dde",
   "schemaNames": [
     "AcquisitionEnvelope",
     "AdjustmentBasis",
     "AsyncJobStatus",
     "Capability",
     "ContractVersion",
+    "CsrfInformation",
     "DecimalString",
     "Delay",
     "Freshness",
@@ -34,7 +35,9 @@ export const contractMetadata = {
     "QuoteResponse",
     "Rights",
     "SessionDate",
+    "SessionResponse",
     "SourceTimes",
+    "UserProfile",
     "UtcInstant",
     "Warning"
   ]
@@ -488,7 +491,29 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.2.0"
+    "const": "0.3.0"
+  },
+  "CsrfInformation": {
+    "type": "object",
+    "properties": {
+      "headerName": {
+        "const": "X-CSRF-TOKEN"
+      },
+      "parameterName": {
+        "const": "_csrf"
+      },
+      "token": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "required": [
+      "headerName",
+      "parameterName",
+      "token"
+    ],
+    "additionalProperties": false
   },
   "DecimalString": {
     "type": "string",
@@ -1750,6 +1775,66 @@ export const contractSchemas = {
     "format": "date",
     "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
   },
+  "SessionResponse": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "contractVersion": {
+            "$ref": "#/components/schemas/ContractVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "authenticated": {
+            "const": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserProfile"
+          },
+          "csrf": {
+            "$ref": "#/components/schemas/CsrfInformation"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "requestId",
+          "authenticated",
+          "user",
+          "csrf"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "contractVersion": {
+            "$ref": "#/components/schemas/ContractVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "authenticated": {
+            "const": false
+          },
+          "user": {
+            "type": "null"
+          },
+          "csrf": {
+            "$ref": "#/components/schemas/CsrfInformation"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "requestId",
+          "authenticated",
+          "user",
+          "csrf"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
   "SourceTimes": {
     "type": "object",
     "properties": {
@@ -1832,6 +1917,25 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Source and FINN processing times are distinct. Null timestamps require matching unknownTimeReasons; checked by semantic validation."
+  },
+  "UserProfile": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "displayName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
+    "required": [
+      "userId",
+      "displayName"
+    ],
+    "additionalProperties": false,
+    "description": "Application identity only. Provider claims, subject, tokens and secrets are never serialized here."
   },
   "UtcInstant": {
     "type": "string",

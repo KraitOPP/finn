@@ -4,7 +4,7 @@ React 19 and TypeScript frontend for an India-first portfolio intelligence and i
 
 ## Repository status
 
-The application foundation displays a fictional stock snapshot from the Java backend, with checked API types, source/freshness labels, accessible loading/error states and retry. No real portfolio is imported by this demo. Identity and portfolio workflows are later feature slices.
+The application displays a fictional stock snapshot and provides OIDC sign-in/out through the Java backend. It includes checked API types, source/freshness labels, loading/error states, retry and session-expiry feedback. No real portfolio is imported by this demo. Portfolio workflows are later feature slices.
 
 ## Run locally
 
@@ -17,13 +17,15 @@ node scripts/install.mjs
 npm run dev
 ```
 
-On Linux/macOS export the same variable, create that directory and run the same Node/npm commands. Open `http://127.0.0.1:5173`. Start the backend separately using its README. The development server proxies same-origin `/api` requests to `http://127.0.0.1:8080`; configure server-side `FINN_BACKEND_ORIGIN` for another backend origin. No secret or provider credential belongs in a `VITE_` variable or browser storage.
+On Linux/macOS export the same variable, create that directory and run the same Node/npm commands. Open exactly `http://127.0.0.1:5173`. Start the backend and local identity provider using the backend README. The development server proxies `/api`, `/oauth2` and `/login/oauth2` to `http://127.0.0.1:8080`; configure server-side `FINN_BACKEND_ORIGIN` for another backend origin. Use the same paths behind a production same-origin HTTPS reverse proxy. No secret or provider credential belongs in a `VITE_` variable or browser storage.
+
+The browser receives only a session profile and CSRF token, held in memory. Sign-out posts a native CSRF-protected form. Session status refreshes on focus and during recent activity; idle tabs stop polling, and expiry clears the account controls. Private feature views must additionally clear their own data when the authenticated identity changes. The backend remains authoritative for session expiry and resource access.
 
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 
 ## Verification
 
-`npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors and rejection of private/incompatible demo responses.
+`npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors, sign-in/out controls, CSRF form fields, expired-session clearing and rejection of private/incompatible demo responses.
 
 The GitHub workflow uses the same checks, pinned official actions and production dependency auditing. The immutable canonical OpenAPI copy permits a standalone frontend checkout to verify its reviewed snapshot. When the sibling backend exists, generation/checking uses that authority and detects drift. Pair frontend/backend releases by contract version and manifest SHA; an independent frontend check cannot discover an unpublished upstream contract change.
 

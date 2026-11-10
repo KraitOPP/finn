@@ -113,7 +113,7 @@ main {
   font-size: 10px;
   letter-spacing: 1.9px;
   font-weight: 750;
-  color: #6c7e6b;
+  color: #56654f;
   margin: 0 0 17px;
 }
 h1 {
@@ -170,7 +170,7 @@ h1 {
   border-radius: 5px;
   font-size: 9px;
   white-space: nowrap;
-  color: #718071;
+  color: #5f705f;
   padding: 5px 8px;
 }
 .security-heading {
@@ -198,7 +198,7 @@ h1 {
 }
 .security-heading p {
   font-size: 10px;
-  color: #7d877f;
+  color: #657062;
   margin: 0;
 }
 .price-block {
@@ -206,7 +206,7 @@ h1 {
 }
 .field-label {
   font-size: 10px;
-  color: #7d877f;
+  color: #657062;
   margin: 0 0 7px;
 }
 .price {
@@ -217,7 +217,7 @@ h1 {
 }
 .session {
   font-size: 10px;
-  color: #7d877f;
+  color: #657062;
   margin: 8px 0 0;
 }
 .price-grid {
@@ -235,7 +235,7 @@ h1 {
 }
 dt {
   font-size: 10px;
-  color: #778373;
+  color: #5b6b56;
   margin-bottom: 5px;
 }
 dd {
@@ -349,7 +349,7 @@ dd {
 }
 .demo-note {
   font-size: 10px;
-  color: #788373;
+  color: #617059;
   margin-top: 19px;
   line-height: 1.7;
 }
@@ -366,13 +366,13 @@ dd {
 }
 .footer-caption {
   font-size: 10px;
-  color: #7d877f;
+  color: #657062;
   font-weight: 400;
   padding-left: 12px;
 }
 .page-footer > span:last-child {
   font-size: 9px;
-  color: #7d877f;
+  color: #657062;
   font-weight: 400;
   align-self: center;
 }
@@ -386,7 +386,7 @@ dd {
   padding: 30px;
   text-align: center;
   gap: 12px;
-  color: #718071;
+  color: #5f705f;
   font-size: 13px;
 }
 .spinner {
@@ -476,5 +476,79 @@ dd {
   }
   .demo-note {
     margin-top: 17px;
+  }
+}
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.auth-controls form {
+  margin: 0;
+}
+.account-name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.sign-in-button {
+  display: inline-block;
+  border: 1px solid #c6d2c1;
+  border-radius: 7px;
+  padding: 8px 12px;
+  background: #fff;
+  color: #234e36;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.auth-status {
+  font-size: 11px;
+  color: #62725e;
+}
+.session-notice {
+  border: 1px solid #d8c9a3;
+  background: #fcf6e9;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  color: #61522f;
+  margin: 0 0 24px;
+}
+.auth-reconnect {
+  font-size: 11px;
+  max-width: 100px;
+}
+.topbar {
+  gap: 24px;
+}
+@media (max-width: 520px) {
+  .topbar {
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    padding: 16px 24px;
+    gap: 12px;
+  }
+  .brand {
+    grid-column: 1;
+  }
+  .auth-controls,
+  .auth-status,
+  .auth-reconnect {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .demo-badge {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-left: 0;
+  }
+  .account-name {
+    max-width: 80px;
   }
 }

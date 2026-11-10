@@ -88,7 +88,13 @@ export type Capability = ({
   "evidence": (string);
 });
 
-export type ContractVersion = ("0.2.0") & (string);
+export type ContractVersion = ("0.3.0") & (string);
+
+export type CsrfInformation = ({
+  "headerName": ("X-CSRF-TOKEN");
+  "parameterName": ("_csrf");
+  "token": (string);
+});
 
 export type DecimalString = (string);
 
@@ -314,6 +320,20 @@ export type Rights = ((({
 
 export type SessionDate = (string);
 
+export type SessionResponse = ((({
+  "contractVersion": (ContractVersion);
+  "requestId": (OpaqueId);
+  "authenticated": (true);
+  "user": (UserProfile);
+  "csrf": (CsrfInformation);
+})) | (({
+  "contractVersion": (ContractVersion);
+  "requestId": (OpaqueId);
+  "authenticated": (false);
+  "user": (null);
+  "csrf": (CsrfInformation);
+})));
+
 export type SourceTimes = ({
   "observedAt": (((UtcInstant)) | ((null)));
   "publishedAt": (((UtcInstant)) | ((null)));
@@ -322,6 +342,11 @@ export type SourceTimes = ({
   "ingestedAt": (((UtcInstant)) | ((null)));
   "acceptedAt": (((UtcInstant)) | ((null)));
   "unknownTimeReasons": (Array<("OBSERVATION_TIME_NOT_PROVIDED" | "PUBLICATION_TIME_NOT_PROVIDED" | "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED" | "NOT_YET_INGESTED" | "NOT_YET_ACCEPTED") & (string)>);
+});
+
+export type UserProfile = ({
+  "userId": (OpaqueId);
+  "displayName": (string);
 });
 
 export type UtcInstant = (string);
@@ -337,6 +362,7 @@ export interface ContractTypes {
   AsyncJobStatus: AsyncJobStatus;
   Capability: Capability;
   ContractVersion: ContractVersion;
+  CsrfInformation: CsrfInformation;
   DecimalString: DecimalString;
   Delay: Delay;
   Freshness: Freshness;
@@ -361,7 +387,9 @@ export interface ContractTypes {
   QuoteResponse: QuoteResponse;
   Rights: Rights;
   SessionDate: SessionDate;
+  SessionResponse: SessionResponse;
   SourceTimes: SourceTimes;
+  UserProfile: UserProfile;
   UtcInstant: UtcInstant;
   Warning: Warning;
 }

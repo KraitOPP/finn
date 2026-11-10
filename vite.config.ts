@@ -27,7 +27,11 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
-    proxy: { "/api": { target: origin.origin } },
+    proxy: {
+      "/api": { target: origin.origin },
+      "/oauth2": { target: origin.origin },
+      "/login/oauth2": { target: origin.origin },
+    },
   },
   build: { outDir: join(root, "build/frontend"), emptyOutDir: true },
   test: {
