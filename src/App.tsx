@@ -60,9 +60,15 @@ function WorkspaceApp() {
       : null;
   return (
     <>
-      <a className="skip-link" href="#main">
+      <button
+        className="skip-link"
+        type="button"
+        onClick={() => {
+          document.getElementById("main")?.focus();
+        }}
+      >
         Skip to content
-      </a>
+      </button>
       <header className="topbar">
         <a href="/" className="brand" aria-label="FINN home">
           <span className="brand-mark" aria-hidden="true">
@@ -80,7 +86,7 @@ function WorkspaceApp() {
         <AuthControls />
       </header>
       <Navigation route={route} />
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <SessionNotice />
         {route === "overview" ? (
           <>

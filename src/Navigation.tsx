@@ -62,7 +62,7 @@ export function PrivateView({ children }: { children: ReactNode }) {
   if (authentication.status === "unavailable")
     return (
       <div className="empty-state" role="alert">
-        <h2>Your account is unavailable</h2>
+        <RouteHeading>Your account is unavailable</RouteHeading>
         <p>Reconnect to open your private workspace.</p>
         <button type="button" onClick={authentication.refresh}>
           Reconnect
@@ -72,7 +72,7 @@ export function PrivateView({ children }: { children: ReactNode }) {
   if (!authentication.session.authenticated)
     return (
       <div className="empty-state">
-        <h2>Your private workspace</h2>
+        <RouteHeading>Your private workspace</RouteHeading>
         <p>Sign in to manage your portfolio and saved preferences.</p>
         <a className="sign-in-button" href="/oauth2/authorization/finn">
           Sign in to continue

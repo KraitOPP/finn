@@ -121,6 +121,13 @@ describe("synthetic workspace", () => {
       </AuthProvider>,
     );
     await screen.findByRole("link", { name: /^sign in$/i });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Skip to content" }),
+    );
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(
+      screen.queryByRole("heading", { name: "Page not found" }),
+    ).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("link", { name: "Portfolio" }));
     expect(
       await screen.findByRole("heading", { name: "Your private workspace" }),
