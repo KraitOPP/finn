@@ -94,10 +94,15 @@ export function usePreferences() {
 }
 export function useDisplayInstant() {
   const { value } = usePreferences();
-  return (instant: string) =>
-    new Intl.DateTimeFormat("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: value?.timeZone ?? "Asia/Kolkata",
-    }).format(new Date(instant));
+  return (instant: string) => {
+    try {
+      return new Intl.DateTimeFormat("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: value?.timeZone ?? "Asia/Kolkata",
+      }).format(new Date(instant));
+    } catch {
+      return "Time unavailable";
+    }
+  };
 }

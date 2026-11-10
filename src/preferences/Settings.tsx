@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 import type { Preferences } from "../../contracts/generated/models.ts";
 import { ApiError } from "../api/request.ts";
 import { RouteHeading } from "../Navigation.tsx";
@@ -32,11 +32,6 @@ function PreferencesForm({ value }: { value: Preferences }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    setZone(value.timeZone);
-    setInApp(value.inAppNotifications);
-    setEmail(value.emailNotifications);
-  }, [value]);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
