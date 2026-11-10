@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.3.0",
+  "contractVersion": "0.4.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "e6851a4ec2cd32a5025dfda432a4ce3c12ef383579fc992785680289fadc6dde",
+  "sourceSha256": "cff7dc12bd24a24f0b0f18729d776ecf250987c0082b568f2cbf40ddcac251b5",
   "schemaNames": [
     "AcquisitionEnvelope",
     "AdjustmentBasis",
@@ -22,6 +22,8 @@
     "NonNegativeDecimalString",
     "OpaqueId",
     "PositiveDecimalString",
+    "Preferences",
+    "PreferencesUpdate",
     "PriceBasis",
     "PriceObservation",
     "Problem",

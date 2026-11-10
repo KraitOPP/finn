@@ -9,6 +9,11 @@ import {
   PrivateView,
   useRoute,
 } from "./Navigation.tsx";
+import {
+  PreferencesProvider,
+  usePreferences,
+} from "./preferences/PreferencesProvider.tsx";
+import { Settings } from "./preferences/Settings.tsx";
 
 type Snapshot =
   | { state: "loading" }
@@ -25,7 +30,15 @@ const sessionLabel = (value: string | null) =>
     : "Session unavailable";
 
 export function App() {
+  return (
+    <PreferencesProvider>
+      <WorkspaceApp />
+    </PreferencesProvider>
+  );
+}
+function WorkspaceApp() {
   const route = useRoute();
+  const preferences = usePreferences();
   const [attempt, setAttempt] = useState(0);
   const [snapshot, setSnapshot] = useState<Snapshot>({ state: "loading" });
   useEffect(() => {
@@ -216,43 +229,47 @@ export function App() {
           </PendingView>
         ) : (
           <PrivateView key={route}>
-            <PendingView
-              key={route}
-              title={
-                {
-                  portfolio: "Portfolio",
-                  watchlists: "Watchlists",
-                  inbox: "Inbox",
-                  research: "Research",
-                  settings: "Settings",
-                }[route]
-              }
-            >
-              {route === "inbox" ? (
-                <>
-                  <h2>Monitoring is not enabled yet</h2>
-                  <p>
-                    Alerts and reminders arrive in a later phase. This page does
-                    not indicate that your portfolio has no alerts.
-                  </p>
-                </>
-              ) : route === "research" ? (
-                <>
-                  <h2>Research is not enabled yet</h2>
-                  <p>
-                    Company evidence, news and summaries will become available
-                    after their sources are connected and checked.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h2>Your workspace is taking shape</h2>
-                  <p>
-                    This feature is being implemented. Your account is ready.
-                  </p>
-                </>
-              )}
-            </PendingView>
+            {route === "settings" ? (
+              <Settings />
+            ) : (
+              <PendingView
+                key={route}
+                title={
+                  {
+                    portfolio: "Portfolio",
+                    watchlists: "Watchlists",
+                    inbox: "Inbox",
+                    research: "Research",
+                    settings: "Settings",
+                  }[route]
+                }
+              >
+                {route === "inbox" ? (
+                  <>
+                    <h2>Monitoring is not enabled yet</h2>
+                    <p>
+                      Alerts and reminders arrive in a later phase. This page
+                      does not indicate that your portfolio has no alerts.
+                    </p>
+                  </>
+                ) : route === "research" ? (
+                  <>
+                    <h2>Research is not enabled yet</h2>
+                    <p>
+                      Company evidence, news and summaries will become available
+                      after their sources are connected and checked.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2>Your workspace is taking shape</h2>
+                    <p>
+                      This feature is being implemented. Your account is ready.
+                    </p>
+                  </>
+                )}
+              </PendingView>
+            )}
           </PrivateView>
         )}
       </main>
@@ -261,7 +278,9 @@ export function App() {
           finn.{" "}
           <span className="footer-caption">A little more perspective.</span>
         </span>
-        <span>India · INR · Asia/Kolkata</span>
+        <span>
+          India · INR · {preferences.value?.timeZone ?? "Asia/Kolkata"}
+        </span>
       </footer>
     </>
   );

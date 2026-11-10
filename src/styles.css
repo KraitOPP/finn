@@ -79,6 +79,66 @@ a {
 .workspace-section {
   min-height: 400px;
 }
+.settings-card {
+  max-width: 700px;
+  padding: 32px;
+  border: 1px solid #dfe4dc;
+  border-radius: 16px;
+  background: #fff;
+}
+.settings-card h2 {
+  margin-top: 0;
+}
+.settings-card > label {
+  display: block;
+  margin: 28px 0 10px;
+  font-weight: 600;
+}
+.settings-card input:not([type="checkbox"]),
+.settings-card select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #a9b7ab;
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+  color: #1d302a;
+}
+.settings-card fieldset {
+  border: 1px solid #dfe4dc;
+  border-radius: 8px;
+  margin: 30px 0;
+  padding: 18px;
+}
+.check-label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+}
+.check-label input {
+  width: 18px;
+  height: 18px;
+  accent-color: #204f40;
+}
+.field-help,
+.muted-copy {
+  color: #53635a;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.primary-button {
+  background: #204f40;
+  color: #fff;
+  padding: 12px 20px;
+  border: 1px solid #204f40;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.primary-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
 @media (max-width: 640px) {
   .main-navigation {
     padding: 14px 16px 0;

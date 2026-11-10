@@ -23,6 +23,8 @@ The browser receives only a session profile and CSRF token, held in memory. Sign
 
 Keyboard-accessible workspace navigation links Overview, Portfolio, Watchlists, Inbox, Research and Settings. Private pages require a valid session and unmount when identity changes. Features awaiting later phases show explicit availability messages. Unknown links offer a route back to Overview.
 
+Settings save account-specific IANA time zone and notification choices, defaulting to Asia/Kolkata and INR. Source timestamps remain unchanged; display formatting uses the saved zone. A stale revision asks the user to reload and review instead of overwriting another change. Notification choices do not enable delivery by themselves. Private responses are validated, bounded and held in memory; error details from the server are not rendered.
+
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 
 ## Verification

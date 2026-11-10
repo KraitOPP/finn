@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.3.0",
+  "contractVersion": "0.4.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "e6851a4ec2cd32a5025dfda432a4ce3c12ef383579fc992785680289fadc6dde",
+  "sourceSha256": "cff7dc12bd24a24f0b0f18729d776ecf250987c0082b568f2cbf40ddcac251b5",
   "schemaNames": [
     "AcquisitionEnvelope",
     "AdjustmentBasis",
@@ -23,6 +23,8 @@ export const contractMetadata = {
     "NonNegativeDecimalString",
     "OpaqueId",
     "PositiveDecimalString",
+    "Preferences",
+    "PreferencesUpdate",
     "PriceBasis",
     "PriceObservation",
     "Problem",
@@ -491,7 +493,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.3.0"
+    "const": "0.4.0"
   },
   "CsrfInformation": {
     "type": "object",
@@ -993,6 +995,76 @@ export const contractSchemas = {
     "maxLength": 80,
     "description": "A present traded price must be positive. Missing price is not zero.",
     "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.[0-9]*[1-9][0-9]*)$"
+  },
+  "Preferences": {
+    "type": "object",
+    "properties": {
+      "timeZone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "currency": {
+        "const": "INR"
+      },
+      "inAppNotifications": {
+        "type": "boolean"
+      },
+      "emailNotifications": {
+        "type": "boolean"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "deliveryAvailable": {
+        "const": false
+      }
+    },
+    "required": [
+      "timeZone",
+      "currency",
+      "inAppNotifications",
+      "emailNotifications",
+      "revision",
+      "deliveryAvailable"
+    ],
+    "additionalProperties": false,
+    "description": "Delivery choices are stored; no notification or email service is enabled yet."
+  },
+  "PreferencesUpdate": {
+    "type": "object",
+    "properties": {
+      "timeZone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "currency": {
+        "const": "INR"
+      },
+      "inAppNotifications": {
+        "type": "boolean"
+      },
+      "emailNotifications": {
+        "type": "boolean"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      }
+    },
+    "required": [
+      "timeZone",
+      "currency",
+      "inAppNotifications",
+      "emailNotifications",
+      "revision"
+    ],
+    "additionalProperties": false,
+    "description": "Owner comes only from the authenticated session. Revision prevents silent lost updates. Only supported IANA zone IDs are accepted by Java."
   },
   "PriceBasis": {
     "type": "object",

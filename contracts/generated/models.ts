@@ -88,7 +88,7 @@ export type Capability = ({
   "evidence": (string);
 });
 
-export type ContractVersion = ("0.3.0") & (string);
+export type ContractVersion = ("0.4.0") & (string);
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -184,6 +184,23 @@ export type NonNegativeDecimalString = (string);
 export type OpaqueId = (string);
 
 export type PositiveDecimalString = (string);
+
+export type Preferences = ({
+  "timeZone": (string);
+  "currency": ("INR");
+  "inAppNotifications": (boolean);
+  "emailNotifications": (boolean);
+  "revision": (number);
+  "deliveryAvailable": (false);
+});
+
+export type PreferencesUpdate = ({
+  "timeZone": (string);
+  "currency": ("INR");
+  "inAppNotifications": (boolean);
+  "emailNotifications": (boolean);
+  "revision": (number);
+});
 
 export type PriceBasis = ({
   "ohlcPrice": (AdjustmentBasis);
@@ -375,6 +392,8 @@ export interface ContractTypes {
   NonNegativeDecimalString: NonNegativeDecimalString;
   OpaqueId: OpaqueId;
   PositiveDecimalString: PositiveDecimalString;
+  Preferences: Preferences;
+  PreferencesUpdate: PreferencesUpdate;
   PriceBasis: PriceBasis;
   PriceObservation: PriceObservation;
   Problem: Problem;
