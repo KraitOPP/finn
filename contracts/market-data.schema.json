@@ -1,0 +1,1827 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:finn:contracts:market-data:0.1.0",
+  "title": "FINN market data contract",
+  "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
+  "$ref": "#/$defs/AcquisitionEnvelope",
+  "$defs": {
+    "ContractVersion": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "OpaqueId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "DecimalString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Exact base-10 decimal; no exponent, separators, or financial JSON numbers.",
+      "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+    },
+    "NonNegativeDecimalString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+    },
+    "PositiveDecimalString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "A present traded price must be positive. Missing price is not zero.",
+      "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.[0-9]*[1-9][0-9]*)$"
+    },
+    "IntegerString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^(?:0|[1-9][0-9]*)$"
+    },
+    "SessionDate": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10,
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "UtcInstant": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 27,
+      "description": "UTC RFC3339 instant. A session date must not be expanded into a fabricated observation time.",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,6})?Z$"
+    },
+    "Provider": {
+      "type": "string",
+      "enum": [
+        "SYNTHETIC",
+        "YAHOO_YFINANCE",
+        "NSE_EOD_FILE",
+        "BSE_EOD_FILE"
+      ]
+    },
+    "AdjustmentBasis": {
+      "type": "string",
+      "enum": [
+        "AS_REPORTED_EXCHANGE",
+        "SPLIT_ADJUSTED",
+        "TOTAL_RETURN_ADJUSTED",
+        "PROVIDER_DEFINED",
+        "UNKNOWN"
+      ]
+    },
+    "Warning": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "ListingIdentity": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "securityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "segment": {
+          "type": "string",
+          "const": "CASH_EQUITY"
+        },
+        "series": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "currency": {
+          "type": "string",
+          "const": "INR"
+        },
+        "isin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "listingId",
+        "securityId",
+        "companyId",
+        "exchange",
+        "segment",
+        "series",
+        "symbol",
+        "currency",
+        "isin"
+      ],
+      "additionalProperties": false,
+      "description": "Stable listing identity. NSE and BSE listings remain distinct even for one security. ISIN may be unknown; ticker is not a permanent identifier."
+    },
+    "Delay": {
+      "description": "Delay is source-declared or unknown; FINN receipt time is not evidence of zero upstream delay.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "EOD"
+            },
+            "seconds": {
+              "type": "null"
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "SOURCE_DECLARED",
+                "UNKNOWN"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "seconds",
+            "basis"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "UNKNOWN"
+            },
+            "seconds": {
+              "type": "null"
+            },
+            "basis": {
+              "type": "string",
+              "const": "UNKNOWN"
+            }
+          },
+          "required": [
+            "kind",
+            "seconds",
+            "basis"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "DELAYED"
+            },
+            "seconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "basis": {
+              "type": "string",
+              "const": "SOURCE_DECLARED"
+            }
+          },
+          "required": [
+            "kind",
+            "seconds",
+            "basis"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Rights": {
+      "description": "A routing restriction, not a legal entitlement. Public real-data distribution is outside this contract's validated modes.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "policyId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "reviewedAt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "retentionUntil": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "attribution": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mode": {
+              "type": "string",
+              "const": "SYNTHETIC_PUBLIC_DEMO"
+            },
+            "reviewStatus": {
+              "type": "string",
+              "const": "VERIFIED"
+            },
+            "publicDisplayAllowed": {
+              "type": "boolean",
+              "const": true
+            },
+            "externalAiAllowed": {
+              "type": "boolean",
+              "const": false
+            }
+          },
+          "required": [
+            "policyId",
+            "reviewedAt",
+            "retentionUntil",
+            "attribution",
+            "mode",
+            "reviewStatus",
+            "publicDisplayAllowed",
+            "externalAiAllowed"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "policyId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "reviewedAt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "retentionUntil": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "attribution": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mode": {
+              "type": "string",
+              "const": "PRIVATE_PERSONAL"
+            },
+            "reviewStatus": {
+              "type": "string",
+              "const": "VERIFIED"
+            },
+            "publicDisplayAllowed": {
+              "type": "boolean",
+              "const": false
+            },
+            "externalAiAllowed": {
+              "type": "boolean",
+              "const": false
+            }
+          },
+          "required": [
+            "policyId",
+            "reviewedAt",
+            "retentionUntil",
+            "attribution",
+            "mode",
+            "reviewStatus",
+            "publicDisplayAllowed",
+            "externalAiAllowed"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "policyId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "reviewedAt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "retentionUntil": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "attribution": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mode": {
+              "type": "string",
+              "const": "RESTRICTED_UNVERIFIED"
+            },
+            "reviewStatus": {
+              "type": "string",
+              "const": "UNVERIFIED"
+            },
+            "publicDisplayAllowed": {
+              "type": "boolean",
+              "const": false
+            },
+            "externalAiAllowed": {
+              "type": "boolean",
+              "const": false
+            }
+          },
+          "required": [
+            "policyId",
+            "reviewedAt",
+            "retentionUntil",
+            "attribution",
+            "mode",
+            "reviewStatus",
+            "publicDisplayAllowed",
+            "externalAiAllowed"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SourceTimes": {
+      "type": "object",
+      "properties": {
+        "observedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "providerAvailableAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "firstSeenAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "ingestedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acceptedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknownTimeReasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "OBSERVATION_TIME_NOT_PROVIDED",
+              "PUBLICATION_TIME_NOT_PROVIDED",
+              "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED",
+              "NOT_YET_INGESTED",
+              "NOT_YET_ACCEPTED"
+            ]
+          },
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "observedAt",
+        "publishedAt",
+        "providerAvailableAt",
+        "firstSeenAt",
+        "ingestedAt",
+        "acceptedAt",
+        "unknownTimeReasons"
+      ],
+      "additionalProperties": false,
+      "description": "Source and FINN processing times are distinct. Null timestamps require matching unknownTimeReasons; checked by semantic validation."
+    },
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/Provider"
+        },
+        "providerInstrumentId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "mappingVersion": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "adapterVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "sourceName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sourceLocator": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifactSha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceRevision": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "parserVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "sourceTimezone": {
+          "type": "string",
+          "const": "Asia/Kolkata"
+        },
+        "times": {
+          "$ref": "#/$defs/SourceTimes"
+        },
+        "delay": {
+          "$ref": "#/$defs/Delay"
+        },
+        "rights": {
+          "$ref": "#/$defs/Rights"
+        },
+        "quality": {
+          "type": "string",
+          "enum": [
+            "VALIDATED",
+            "REVIEW_REQUIRED"
+          ]
+        },
+        "qualityFlags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpaqueId"
+          },
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "provider",
+        "providerInstrumentId",
+        "mappingVersion",
+        "adapterVersion",
+        "sourceName",
+        "sourceLocator",
+        "artifactSha256",
+        "sourceRevision",
+        "parserVersion",
+        "sourceTimezone",
+        "times",
+        "delay",
+        "rights",
+        "quality",
+        "qualityFlags"
+      ],
+      "additionalProperties": false,
+      "description": "No personal local paths, credentials, cookies, private object URLs, or source payloads in public provenance."
+    },
+    "PriceBasis": {
+      "type": "object",
+      "properties": {
+        "ohlcPrice": {
+          "$ref": "#/$defs/AdjustmentBasis"
+        },
+        "adjustedClose": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AdjustmentBasis"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "volume": {
+          "type": "string",
+          "enum": [
+            "AS_REPORTED",
+            "SPLIT_ADJUSTED",
+            "PROVIDER_DEFINED",
+            "UNKNOWN"
+          ]
+        },
+        "adjustmentAsOf": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "ohlcPrice",
+        "adjustedClose",
+        "volume",
+        "adjustmentAsOf"
+      ],
+      "additionalProperties": false
+    },
+    "PriceObservation": {
+      "type": "object",
+      "properties": {
+        "observationId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "listing": {
+          "$ref": "#/$defs/ListingIdentity"
+        },
+        "sessionDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "interval": {
+          "type": "string",
+          "const": "ONE_DAY"
+        },
+        "open": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "high": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "low": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "close": {
+          "$ref": "#/$defs/PositiveDecimalString"
+        },
+        "adjustedClose": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "volume": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IntegerString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "turnover": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "basis": {
+          "$ref": "#/$defs/PriceBasis"
+        },
+        "finality": {
+          "type": "string",
+          "enum": [
+            "FINAL",
+            "PROVISIONAL",
+            "UNKNOWN"
+          ]
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "observationId",
+        "listing",
+        "sessionDate",
+        "interval",
+        "open",
+        "high",
+        "low",
+        "close",
+        "adjustedClose",
+        "volume",
+        "turnover",
+        "basis",
+        "finality",
+        "provenance"
+      ],
+      "additionalProperties": false,
+      "description": "One present EOD observation. A missing close is represented by unavailable result and no observation. Partial OHLC/volume stay null. As-traded and adjusted series are never interchangeable."
+    },
+    "InstrumentResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "listing": {
+              "$ref": "#/$defs/ListingIdentity"
+            },
+            "reasonCode": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Warning"
+              },
+              "maxItems": 32
+            },
+            "availability": {
+              "type": "string",
+              "const": "AVAILABLE"
+            },
+            "observations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PriceObservation"
+              },
+              "maxItems": 1000,
+              "minItems": 1
+            }
+          },
+          "required": [
+            "listing",
+            "reasonCode",
+            "warnings",
+            "availability",
+            "observations"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "listing": {
+              "$ref": "#/$defs/ListingIdentity"
+            },
+            "reasonCode": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Warning"
+              },
+              "maxItems": 32
+            },
+            "availability": {
+              "type": "string",
+              "enum": [
+                "NOT_YET_PUBLISHED",
+                "NO_TRADE",
+                "NOT_COVERED",
+                "TEMPORARILY_UNAVAILABLE",
+                "INVALID_DATA",
+                "UNKNOWN"
+              ]
+            },
+            "observations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PriceObservation"
+              },
+              "maxItems": 0
+            }
+          },
+          "required": [
+            "listing",
+            "reasonCode",
+            "warnings",
+            "availability",
+            "observations"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AcquisitionEnvelope": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "$ref": "#/$defs/ContractVersion"
+        },
+        "requestId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "provider": {
+          "$ref": "#/$defs/Provider"
+        },
+        "adapterVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "requestedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "completedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "COMPLETE",
+            "PARTIAL",
+            "UNAVAILABLE"
+          ]
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InstrumentResult"
+          },
+          "maxItems": 100,
+          "minItems": 1
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          },
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "contractVersion",
+        "requestId",
+        "provider",
+        "adapterVersion",
+        "requestedAt",
+        "completedAt",
+        "outcome",
+        "results",
+        "warnings"
+      ],
+      "additionalProperties": false,
+      "description": "Internal acquisition response: per-listing partial success is explicit. COMPLETE means every requested listing has observations; it does not prove complete date-range coverage."
+    },
+    "Freshness": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "FRESH",
+            "STALE",
+            "UNKNOWN",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "evaluatedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "expectedSessionDate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latestSessionDate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/OpaqueId"
+        }
+      },
+      "required": [
+        "state",
+        "evaluatedAt",
+        "expectedSessionDate",
+        "latestSessionDate",
+        "reasonCode"
+      ],
+      "additionalProperties": false,
+      "description": "Calendar-aware age/eligibility assessment. A weekend does not make the newest expected completed session stale. FRESH requires equal known latest/expected sessions."
+    },
+    "Capability": {
+      "type": "object",
+      "properties": {
+        "capability": {
+          "type": "string",
+          "enum": [
+            "QUOTE",
+            "DAILY_HISTORY",
+            "INTRADAY_HISTORY",
+            "STREAMING",
+            "CORPORATE_ACTIONS",
+            "FILINGS",
+            "NEWS",
+            "FUNDAMENTALS"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "VALIDATED",
+            "DOCUMENTED_UNVERIFIED",
+            "UNSUPPORTED",
+            "TEMPORARILY_UNAVAILABLE"
+          ]
+        },
+        "coverage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "capability",
+        "status",
+        "coverage",
+        "evidence"
+      ],
+      "additionalProperties": false,
+      "description": "A documented library interface does not establish validated Indian listing coverage, timing, or rights."
+    },
+    "ProviderCapabilities": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "$ref": "#/$defs/ContractVersion"
+        },
+        "provider": {
+          "$ref": "#/$defs/Provider"
+        },
+        "adapterVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "evaluatedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          },
+          "maxItems": 8,
+          "minItems": 8
+        },
+        "rights": {
+          "$ref": "#/$defs/Rights"
+        }
+      },
+      "required": [
+        "contractVersion",
+        "provider",
+        "adapterVersion",
+        "evaluatedAt",
+        "capabilities",
+        "rights"
+      ],
+      "additionalProperties": false,
+      "description": "Exactly one entry per declared capability; uniqueness/completeness are semantic checks."
+    },
+    "ProviderStatus": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/Provider"
+        },
+        "health": {
+          "type": "string",
+          "enum": [
+            "HEALTHY",
+            "DEGRADED",
+            "UNAVAILABLE",
+            "UNTESTED"
+          ]
+        },
+        "checkedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "lastSuccessfulAcquisitionAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/ProviderCapabilities"
+        }
+      },
+      "required": [
+        "provider",
+        "health",
+        "checkedAt",
+        "lastSuccessfulAcquisitionAt",
+        "reasonCode",
+        "capabilities"
+      ],
+      "additionalProperties": false,
+      "description": "Operational status is distinct from market-data freshness. No service SLA or live exchange certification is implied."
+    },
+    "ProblemField": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "code": {
+          "$ref": "#/$defs/OpaqueId"
+        }
+      },
+      "required": [
+        "field",
+        "code"
+      ],
+      "additionalProperties": false
+    },
+    "Problem": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "status": {
+          "type": "integer",
+          "minimum": 400,
+          "maximum": 599
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "instance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "MALFORMED_REQUEST",
+            "VALIDATION_FAILED",
+            "AUTHENTICATION_REQUIRED",
+            "RESOURCE_NOT_FOUND",
+            "OPERATION_FORBIDDEN",
+            "CONFLICT",
+            "RATE_LIMITED",
+            "DATA_SOURCE_UNAVAILABLE",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "traceId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProblemField"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "status",
+        "detail",
+        "instance",
+        "code",
+        "traceId"
+      ],
+      "additionalProperties": false,
+      "description": "RFC9457 problem response. Do not expose stack traces, private rows, tokens, or upstream cookies."
+    },
+    "InstrumentPage": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "$ref": "#/$defs/ContractVersion"
+        },
+        "requestId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ListingIdentity"
+          },
+          "maxItems": 100
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "contractVersion",
+        "requestId",
+        "items",
+        "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "QuoteResponse": {
+      "description": "Latest eligible stored EOD observation, not a tick or a promised live quote. Unavailability is a normal domain result; service/auth failures use Problem.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "listing": {
+              "$ref": "#/$defs/ListingIdentity"
+            },
+            "freshness": {
+              "$ref": "#/$defs/Freshness"
+            },
+            "selectionReason": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Warning"
+              },
+              "maxItems": 32
+            },
+            "availability": {
+              "type": "string",
+              "const": "AVAILABLE"
+            },
+            "observation": {
+              "$ref": "#/$defs/PriceObservation"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "listing",
+            "freshness",
+            "selectionReason",
+            "warnings",
+            "availability",
+            "observation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "listing": {
+              "$ref": "#/$defs/ListingIdentity"
+            },
+            "freshness": {
+              "$ref": "#/$defs/Freshness"
+            },
+            "selectionReason": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Warning"
+              },
+              "maxItems": 32
+            },
+            "availability": {
+              "type": "string",
+              "enum": [
+                "NOT_YET_PUBLISHED",
+                "NO_TRADE",
+                "NOT_COVERED",
+                "TEMPORARILY_UNAVAILABLE",
+                "INVALID_DATA",
+                "UNKNOWN"
+              ]
+            },
+            "observation": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "listing",
+            "freshness",
+            "selectionReason",
+            "warnings",
+            "availability",
+            "observation"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "HistoryCoverage": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "COMPLETE",
+            "PARTIAL",
+            "UNKNOWN",
+            "NONE"
+          ]
+        },
+        "expectedSessions": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "availableSessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missingSessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SessionDate"
+          },
+          "maxItems": 1000
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/OpaqueId"
+        }
+      },
+      "required": [
+        "state",
+        "expectedSessions",
+        "availableSessions",
+        "missingSessions",
+        "reasonCode"
+      ],
+      "additionalProperties": false,
+      "description": "Coverage describes the entire requested range at selectionSnapshotId, not this page. COMPLETE requires a verified calendar, equal expected/available counts, and no missing sessions. availableSessions may exceed the current page length."
+    },
+    "HistoryResponse": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "$ref": "#/$defs/ContractVersion"
+        },
+        "requestId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "listing": {
+          "$ref": "#/$defs/ListingIdentity"
+        },
+        "from": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "toExclusive": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "requestedBasis": {
+          "$ref": "#/$defs/AdjustmentBasis"
+        },
+        "selectionSnapshotId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "AVAILABLE",
+            "NOT_YET_PUBLISHED",
+            "NO_TRADE",
+            "NOT_COVERED",
+            "TEMPORARILY_UNAVAILABLE",
+            "INVALID_DATA",
+            "UNKNOWN"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PriceObservation"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "$ref": "#/$defs/HistoryCoverage"
+        },
+        "freshness": {
+          "$ref": "#/$defs/Freshness"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          },
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "contractVersion",
+        "requestId",
+        "listing",
+        "from",
+        "toExclusive",
+        "requestedBasis",
+        "selectionSnapshotId",
+        "availability",
+        "items",
+        "nextCursor",
+        "coverage",
+        "freshness",
+        "warnings"
+      ],
+      "additionalProperties": false,
+      "description": "Ascending sessionDate/observationId order. ONE_DAY only. Never fill gaps with zero or a silent previous close. Cursors bind listing, range, basis and source-selection snapshot."
+    },
+    "ProviderStatusPage": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "$ref": "#/$defs/ContractVersion"
+        },
+        "requestId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderStatus"
+          },
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "contractVersion",
+        "requestId",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "AsyncJobStatus": {
+      "description": "Owner-scoped status snapshot, not a queue implementation. Revision is server-assigned and increases on committed changes. Terminal states are immutable; retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "jobId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "updatedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "state": {
+              "type": "string",
+              "const": "QUEUED"
+            },
+            "startedAt": {
+              "type": "null"
+            },
+            "finishedAt": {
+              "type": "null"
+            },
+            "failureCode": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "jobId",
+            "revision",
+            "createdAt",
+            "updatedAt",
+            "state",
+            "startedAt",
+            "finishedAt",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "jobId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "updatedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "state": {
+              "type": "string",
+              "const": "RUNNING"
+            },
+            "startedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "finishedAt": {
+              "type": "null"
+            },
+            "failureCode": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "jobId",
+            "revision",
+            "createdAt",
+            "updatedAt",
+            "state",
+            "startedAt",
+            "finishedAt",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "jobId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "updatedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "state": {
+              "type": "string",
+              "const": "SUCCEEDED"
+            },
+            "startedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "finishedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "failureCode": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "jobId",
+            "revision",
+            "createdAt",
+            "updatedAt",
+            "state",
+            "startedAt",
+            "finishedAt",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "jobId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "updatedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "state": {
+              "type": "string",
+              "const": "PARTIALLY_SUCCEEDED"
+            },
+            "startedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "finishedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "failureCode": {
+              "type": "string",
+              "const": "PARTIAL_RESULT"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "jobId",
+            "revision",
+            "createdAt",
+            "updatedAt",
+            "state",
+            "startedAt",
+            "finishedAt",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "jobId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "updatedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "state": {
+              "type": "string",
+              "const": "FAILED"
+            },
+            "startedAt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "finishedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "failureCode": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "jobId",
+            "revision",
+            "createdAt",
+            "updatedAt",
+            "state",
+            "startedAt",
+            "finishedAt",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contractVersion": {
+              "$ref": "#/$defs/ContractVersion"
+            },
+            "requestId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "jobId": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "updatedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "state": {
+              "type": "string",
+              "const": "CANCELLED"
+            },
+            "startedAt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "finishedAt": {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            "failureCode": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "contractVersion",
+            "requestId",
+            "jobId",
+            "revision",
+            "createdAt",
+            "updatedAt",
+            "state",
+            "startedAt",
+            "finishedAt",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
