@@ -10,6 +10,7 @@ The library requires Python 3.13 and the pinned `requirements.txt`. Install depe
 - A request contains one to five already mapped NSE/BSE listings and a positive date window of at most 31 calendar days.
 - Daily history uses inclusive start and exclusive end and excludes the current session. Intraday and streaming remain separate feasibility work.
 - Adjustment and repair defaults are explicit. Close and Adjusted Close remain separate; both retain `PROVIDER_DEFINED` basis until source semantics are independently validated.
+- Missing Adjusted Close remains null with an unavailable-field marker while a valid Close is retained. Invalid present adjusted values still reject the source result.
 - Decimal and volume values become strings. Invalid/NaN values, impossible OHLC, missing timezone, duplicate dates, and out-of-range rows reject the listing result.
 - Empty results remain unknown; provider failure remains unavailable. Neither becomes a zero price, unsupported-symbol declaration, or live quote.
 - A daily bar's source index is retained; it is not claimed to be a last-trade/publication instant. Delay remains unknown.

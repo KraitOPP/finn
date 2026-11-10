@@ -95,8 +95,10 @@ def _normalise(frame: Any, query: HistoryQuery) -> list[dict[str, Any]]:
         if volume != volume.to_integral_value():
             raise InvalidProviderData("Share volume must be integral.")
         adjusted = None
-        if "Adj Close" in frame.columns:
-            adjusted = _decimal(row["Adj Close"], "Adj Close", positive=True)
+        adjusted_raw = row["Adj Close"] if "Adj Close" in frame.columns else None
+        adjusted_missing = adjusted_raw is None or str(adjusted_raw) in {"nan", "NaN", "<NA>", "NaT"}
+        if not adjusted_missing:
+            adjusted = _decimal(adjusted_raw, "Adj Close", positive=True)
         bars.append({
             "sessionDate": session.isoformat(),
             "sourceIndex": index.isoformat(),
@@ -105,6 +107,7 @@ def _normalise(frame: Any, query: HistoryQuery) -> list[dict[str, Any]]:
             "interval": "1d",
             **values,
             "adjustedClose": adjusted,
+            "unavailableFields": ["adjustedClose"] if adjusted is None else [],
             "volume": str(int(volume)),
             "priceBasis": "PROVIDER_DEFINED",
         })
@@ -181,11 +184,14 @@ class YahooHistoryClient:
                 item["availability"] = "TEMPORARILY_UNAVAILABLE"
                 item["reason"] = "PROVIDER_REQUEST_FAILED"
             items.append(item)
+        completed = self._clock()
+        if completed.tzinfo is None or completed < now:
+            raise ValueError("The completion clock must be aware and not precede acquisition start.")
         return {
             "adapterContractVersion": "0.1.0",
             "provider": "YAHOO_YFINANCE",
             "startedAt": now.astimezone(timezone.utc).isoformat(),
-            "completedAt": self._clock().astimezone(timezone.utc).isoformat(),
+            "completedAt": completed.astimezone(timezone.utc).isoformat(),
             "rights": {"mode": "RESTRICTED_UNVERIFIED", "publicDisplayAllowed": False,
                        "externalAiAllowed": False},
             "items": items,

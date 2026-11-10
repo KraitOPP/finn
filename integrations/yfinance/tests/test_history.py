@@ -65,6 +65,22 @@ class YahooHistoryTests(unittest.TestCase):
         self.assertEqual(item["availability"], "UNKNOWN")
         self.assertEqual(item["candles"], [])
 
+    def test_missing_adjusted_close_preserves_valid_unadjusted_candidate(self):
+        for frame in (self.frame(**{"Adj Close": float("nan")}), self.frame().drop(columns=["Adj Close"])):
+            with self.subTest(columns=list(frame.columns)):
+                item = self.fetch(Mock(return_value=frame))["items"][0]
+                self.assertEqual(item["availability"], "AVAILABLE")
+                self.assertEqual(item["candles"][0]["close"], "105.25")
+                self.assertIsNone(item["candles"][0]["adjustedClose"])
+                self.assertEqual(item["candles"][0]["unavailableFields"], ["adjustedClose"])
+
+    def test_invalid_completion_clock_cannot_publish_a_candidate(self):
+        for completed in (datetime(2026, 11, 10), datetime(2026, 11, 9, tzinfo=timezone.utc)):
+            client = YahooHistoryClient(self.root, fetcher=Mock(return_value=self.frame()),
+                                        clock=Mock(side_effect=[self.now, completed]))
+            with self.subTest(completed=completed), self.assertRaises(ValueError):
+                client.fetch_history(self.query, data_mode="PRIVATE_PERSONAL")
+
     def test_invalid_values_are_rejected_without_fabricated_candles(self):
         for changes in ({"Close": float("nan")}, {"High": float("inf")},
                         {"Volume": -1}, {"Volume": 1.5}, {"Low": 106},
