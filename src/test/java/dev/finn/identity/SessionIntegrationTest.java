@@ -128,4 +128,14 @@ class SessionIntegrationTest {
         assertThat(session().get("authenticated").asBoolean()).isFalse();
         assertThat(get("/api/v1/me").statusCode()).isEqualTo(401);
     }
+
+    @Test void activeSessionsStillHaveAnAbsoluteLifetime() throws Exception {
+        session();
+        login();
+        assertThat(session().get("authenticated").asBoolean()).isTrue();
+        jdbc.update("UPDATE finn.spring_session SET creation_time=1 WHERE session_id=?", cookie());
+        var denied = get("/api/v1/me");
+        assertThat(denied.statusCode()).isEqualTo(401);
+        assertThat(denied.body()).contains(denied.headers().firstValue("X-Request-ID").orElseThrow());
+    }
 }

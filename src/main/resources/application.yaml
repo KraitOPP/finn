@@ -30,6 +30,8 @@ spring:
   jackson:
     deserialization:
       fail-on-unknown-properties: true
+  mvc:
+    log-request-details: false
 finn:
   public-origin: ${FINN_PUBLIC_ORIGIN:}
   oidc:
@@ -38,6 +40,15 @@ finn:
 server:
   address: 127.0.0.1
   port: 8080
+  max-http-request-header-size: 16KB
+  tomcat:
+    threads:
+      max: 48
+    max-connections: 128
+    accept-count: 32
+    max-http-form-post-size: 64KB
+    max-swallow-size: 5MB
+    connection-timeout: 10s
   error:
     include-message: never
     include-stacktrace: never
