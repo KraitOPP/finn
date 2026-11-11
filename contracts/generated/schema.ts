@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.17.0",
+  "contractVersion": "0.18.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "cb7868b26bb40e4034b5b3e4ee59f48d30c837d6343655a70e7001c500a86aae",
+  "sourceSha256": "d46d308d6d3a709f3fbd30b8550f320a1faf1d833fb06c2f429794081de3c999",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -83,6 +83,10 @@ export const contractMetadata = {
     "PriceFetchWindow",
     "PriceObservation",
     "PriceQuota",
+    "PriceRule",
+    "PriceRuleEdit",
+    "PriceRuleList",
+    "PriceRuleSettings",
     "PriceRun",
     "PrivateClose",
     "PrivateCloseHistory",
@@ -926,7 +930,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.17.0"
+    "const": "0.18.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -4223,6 +4227,153 @@ export const contractSchemas = {
       "pending",
       "pendingLimit",
       "status"
+    ],
+    "additionalProperties": false
+  },
+  "PriceRule": {
+    "type": "object",
+    "properties": {
+      "ruleId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "settings": {
+        "$ref": "#/components/schemas/PriceRuleSettings"
+      },
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "createdAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "ruleId",
+      "revision",
+      "settings",
+      "exchange",
+      "symbol",
+      "createdAt"
+    ],
+    "additionalProperties": false
+  },
+  "PriceRuleEdit": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "settings": {
+        "$ref": "#/components/schemas/PriceRuleSettings"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "settings"
+    ],
+    "additionalProperties": false
+  },
+  "PriceRuleList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PriceRule"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "PriceRuleSettings": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "MANUAL_REVIEWED",
+          "YAHOO_YFINANCE"
+        ]
+      },
+      "comparison": {
+        "type": "string",
+        "enum": [
+          "ABOVE",
+          "BELOW",
+          "CROSS_ABOVE",
+          "CROSS_BELOW",
+          "MOVE_UP",
+          "MOVE_DOWN"
+        ]
+      },
+      "threshold": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "maxAgeDays": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 4
+      },
+      "cooldownMinutes": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10080
+      },
+      "rearm": {
+        "type": "boolean"
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "expiresOn": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "listingId",
+      "name",
+      "source",
+      "comparison",
+      "threshold",
+      "maxAgeDays",
+      "cooldownMinutes",
+      "rearm",
+      "enabled",
+      "expiresOn"
     ],
     "additionalProperties": false
   },

@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.17.0",
+  "contractVersion": "0.18.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "cb7868b26bb40e4034b5b3e4ee59f48d30c837d6343655a70e7001c500a86aae",
+  "sourceSha256": "d46d308d6d3a709f3fbd30b8550f320a1faf1d833fb06c2f429794081de3c999",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -82,6 +82,10 @@
     "PriceFetchWindow",
     "PriceObservation",
     "PriceQuota",
+    "PriceRule",
+    "PriceRuleEdit",
+    "PriceRuleList",
+    "PriceRuleSettings",
     "PriceRun",
     "PrivateClose",
     "PrivateCloseHistory",

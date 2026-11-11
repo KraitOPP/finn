@@ -162,7 +162,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.17.0") & (string);
+export type ContractVersion = ("0.18.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -715,6 +715,37 @@ export type PriceQuota = ({
   "status": ("AVAILABLE" | "HOURLY_LIMIT_REACHED" | "PENDING_LIMIT_REACHED") & (string);
 });
 
+export type PriceRule = ({
+  "ruleId": (OpaqueId);
+  "revision": (number);
+  "settings": (PriceRuleSettings);
+  "exchange": ("NSE" | "BSE") & (string);
+  "symbol": (string);
+  "createdAt": (UtcInstant);
+});
+
+export type PriceRuleEdit = ({
+  "expectedRevision": (number);
+  "settings": (PriceRuleSettings);
+});
+
+export type PriceRuleList = ({
+  "items": (Array<(PriceRule)>);
+});
+
+export type PriceRuleSettings = ({
+  "listingId": (OpaqueId);
+  "name": (string);
+  "source": ("MANUAL_REVIEWED" | "YAHOO_YFINANCE") & (string);
+  "comparison": ("ABOVE" | "BELOW" | "CROSS_ABOVE" | "CROSS_BELOW" | "MOVE_UP" | "MOVE_DOWN") & (string);
+  "threshold": (PositiveDecimalString);
+  "maxAgeDays": (number);
+  "cooldownMinutes": (number);
+  "rearm": (boolean);
+  "enabled": (boolean);
+  "expiresOn": (((SessionDate)) | ((null)));
+});
+
 export type PriceRun = ({
   "jobId": (OpaqueId);
   "listingId": (OpaqueId);
@@ -1095,6 +1126,10 @@ export interface ContractTypes {
   PriceFetchWindow: PriceFetchWindow;
   PriceObservation: PriceObservation;
   PriceQuota: PriceQuota;
+  PriceRule: PriceRule;
+  PriceRuleEdit: PriceRuleEdit;
+  PriceRuleList: PriceRuleList;
+  PriceRuleSettings: PriceRuleSettings;
   PriceRun: PriceRun;
   PrivateClose: PrivateClose;
   PrivateCloseHistory: PrivateCloseHistory;

@@ -1,8 +1,8 @@
 import { type FormEvent, useState } from "react";
 import type { InvestmentAccount } from "../../contracts/generated/models.ts";
-import { ApiError, requestContract } from "../api/request.ts";
+import { requestContract } from "../api/request.ts";
+import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
-import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { ValuationHistory } from "../market/ValuationHistory.tsx";
 import {
   AccountValuationPanel,
@@ -87,40 +87,6 @@ function LoadError({
       </button>
     </div>
   );
-}
-function usePrivateCommand() {
-  const authentication = useAuthentication();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  return {
-    busy,
-    error,
-    run: async <T,>(
-      action: (
-        csrf: NonNullable<typeof authentication.session>["csrf"],
-      ) => Promise<T>,
-    ): Promise<T | undefined> => {
-      if (authentication.status !== "ready" || busy) return;
-      setBusy(true);
-      setError(null);
-      try {
-        return await action(authentication.session.csrf);
-      } catch (error) {
-        if (
-          error instanceof ApiError &&
-          (error.status === 401 || error.status === 403)
-        )
-          authentication.refresh();
-        setError(
-          error instanceof ApiError
-            ? error.message
-            : "The change couldn’t be saved. Check your records before trying again.",
-        );
-      } finally {
-        setBusy(false);
-      }
-    },
-  };
 }
 function CreatePortfolio({ onCreated }: { onCreated: (id: string) => void }) {
   const [name, setName] = useState("");

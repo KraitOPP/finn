@@ -5,10 +5,12 @@ import { loadDemoQuote } from "./api/demo.ts";
 import { AuthControls, SessionNotice } from "./auth/AuthControls.tsx";
 import { Securities } from "./instruments/Securities.tsx";
 import { Watchlists } from "./market/Watchlists.tsx";
+import { PriceRules } from "./monitoring/PriceRules.tsx";
 import {
   Navigation,
   PendingView,
   PrivateView,
+  RouteHeading,
   useRoute,
 } from "./Navigation.tsx";
 import { Portfolios } from "./portfolio/Portfolios.tsx";
@@ -244,45 +246,20 @@ function WorkspaceApp() {
               <Securities />
             ) : route === "watchlists" ? (
               <Watchlists />
+            ) : route === "inbox" ? (
+              <section className="workspace-section">
+                <RouteHeading>Inbox</RouteHeading>
+                <PriceRules />
+              </section>
             ) : route === "settings" ? (
               <Settings />
             ) : (
-              <PendingView
-                key={route}
-                title={
-                  {
-                    portfolio: "Portfolio",
-                    watchlists: "Watchlists",
-                    inbox: "Inbox",
-                    research: "Research",
-                    settings: "Settings",
-                  }[route]
-                }
-              >
-                {route === "inbox" ? (
-                  <>
-                    <h2>Monitoring is not enabled yet</h2>
-                    <p>
-                      Alerts and reminders arrive in a later phase. This page
-                      does not indicate that your portfolio has no alerts.
-                    </p>
-                  </>
-                ) : route === "research" ? (
-                  <>
-                    <h2>Research is not enabled yet</h2>
-                    <p>
-                      Company evidence, news and summaries will become available
-                      after their sources are connected and checked.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h2>Your workspace is taking shape</h2>
-                    <p>
-                      This feature is being implemented. Your account is ready.
-                    </p>
-                  </>
-                )}
+              <PendingView title="Research">
+                <h2>Research is not enabled yet</h2>
+                <p>
+                  Company evidence, news and summaries will become available
+                  after their sources are connected and checked.
+                </p>
               </PendingView>
             )}
           </PrivateView>

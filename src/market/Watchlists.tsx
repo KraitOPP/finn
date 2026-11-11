@@ -3,6 +3,7 @@ import type { WatchlistItem } from "../../contracts/generated/models.ts";
 import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
+import { ListingPicker } from "../instruments/ListingPicker.tsx";
 import { RouteHeading } from "../Navigation.tsx";
 import { DataStatus } from "./DataStatus.tsx";
 import { ListingMarketDetail } from "./ListingHistory.tsx";
@@ -210,7 +211,9 @@ function WatchlistDetails({ id }: { id: string }) {
       {open && <WatchedListing key={open.listingId} item={open} />}
       <ListingPicker
         busy={busy}
-        onAdd={(listingId) => void track(listingId, true)}
+        summary="Add a listing to this watchlist"
+        action="Track"
+        onChoose={(listing) => void track(listing.listingId, true)}
       />
     </section>
   );
@@ -248,120 +251,5 @@ function WatchedListing({ item }: { item: WatchlistItem }) {
         <p>This listing’s details are unavailable.</p>
       )}
     </section>
-  );
-}
-
-function ListingPicker({
-  busy,
-  onAdd,
-}: {
-  busy: boolean;
-  onAdd: (id: string) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [search, setSearch] = useState<string | null>(null);
-  const [selected, setSelected] = useState("");
-  const [offset, setOffset] = useState(0);
-  const path =
-    search === null
-      ? null
-      : `/api/v1/catalog/securities?${new URLSearchParams({ query: search, limit: "25", offset: String(offset) })}`;
-  const results = useResource("CatalogueSecurityPage", path);
-  const detail = useResource(
-    "CatalogueSecurityDetail",
-    selected ? `/api/v1/catalog/securities/${selected}` : null,
-  );
-  return (
-    <details className="settings-card">
-      <summary>Add a listing to this watchlist</summary>
-      <p>
-        Search your saved catalogue. Add new securities or verify their listings
-        in <a href="#/instruments">Securities</a>.
-      </p>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          setSearch(query);
-          setSelected("");
-          setOffset(0);
-          results.reload();
-        }}
-      >
-        <label>
-          Security name or ISIN{" "}
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            maxLength={100}
-          />
-        </label>
-        <button type="submit">Find saved securities</button>
-      </form>
-      {results.error && <p role="alert">{results.error}</p>}
-      {results.loading && <p role="status">Searching your catalogue…</p>}
-      {results.value?.items.length === 0 && <p>No saved securities match.</p>}
-      {results.value && results.value.items.length > 0 && (
-        <>
-          <label>
-            Choose a security{" "}
-            <select
-              value={selected}
-              onChange={(event) => setSelected(event.target.value)}
-            >
-              <option value="">Select a security</option>
-              {results.value.items.map((item) => (
-                <option key={item.securityId} value={item.securityId}>
-                  {item.name} · {item.isin ?? "ISIN unknown"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="pagination">
-            <button
-              type="button"
-              disabled={offset === 0}
-              onClick={() => {
-                setOffset(offset - 25);
-                setSelected("");
-              }}
-            >
-              Previous securities
-            </button>
-            <button
-              type="button"
-              disabled={!results.value.hasMore}
-              onClick={() => {
-                setOffset(offset + 25);
-                setSelected("");
-              }}
-            >
-              Next securities
-            </button>
-          </div>
-        </>
-      )}
-      {detail.error && <p role="alert">{detail.error}</p>}
-      {detail.loading && <p role="status">Loading reviewed listings…</p>}
-      {detail.value?.listings.length === 0 && (
-        <p>
-          This security has no reviewed listing. Add one in Securities first.
-        </p>
-      )}
-      {detail.value && (
-        <ul className="security-list">
-          {detail.value.listings.map((item) => (
-            <li key={item.listingId}>
-              <button
-                disabled={busy}
-                type="button"
-                onClick={() => onAdd(item.listingId)}
-              >
-                Track {item.symbol} on {item.exchange}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </details>
   );
 }
