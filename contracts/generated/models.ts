@@ -172,7 +172,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.20.0") & (string);
+export type ContractVersion = ("0.21.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -658,6 +658,7 @@ export type NotificationDeliveryPage = ({
 export type NotificationDetail = ({
   "notification": (Notification);
   "price": (((PriceEvaluation)) | ((null)));
+  "reminder": (((ReminderEvidence)) | ((null)));
   "deliveries": (Array<(NotificationDelivery)>);
   "attempts": (Array<(NotificationAttempt)>);
 });
@@ -933,11 +934,48 @@ export type QuoteResponse = ((({
   "observation": (null);
 })));
 
+export type ReminderEdit = ({
+  "expectedRevision": (number);
+  "settings": (ReminderSettings);
+});
+
+export type ReminderEvidence = ({
+  "revision": (number);
+  "dueAt": (UtcInstant);
+  "deliverAt": (UtcInstant);
+});
+
+export type ReminderList = ({
+  "items": (Array<(ReviewReminder)>);
+});
+
+export type ReminderScheduleChange = ({
+  "expectedRevision": (number);
+  "snoozeUntil": (((string)) | ((null)));
+});
+
+export type ReminderSettings = ({
+  "title": (string);
+  "scheduledLocal": (string);
+  "timeZone": (string);
+  "recurrence": ("ONCE" | "DAILY" | "WEEKLY") & (string);
+  "quietStart": (((string)) | ((null)));
+  "quietEnd": (((string)) | ((null)));
+});
+
 export type ReviewCloseInput = ({
   "sessionDate": (SessionDate);
   "close": (PositiveDecimalString);
   "sourceReference": (string);
   "reviewed": (true) & (boolean);
+});
+
+export type ReviewReminder = ({
+  "reminderId": (OpaqueId);
+  "revision": (number);
+  "state": ("ACTIVE" | "CANCELLED" | "COMPLETED") & (string);
+  "settings": (ReminderSettings);
+  "nextAt": (((UtcInstant)) | ((null)));
 });
 
 export type Rights = ((({
@@ -1227,7 +1265,13 @@ export interface ContractTypes {
   ProviderStatus: ProviderStatus;
   ProviderStatusPage: ProviderStatusPage;
   QuoteResponse: QuoteResponse;
+  ReminderEdit: ReminderEdit;
+  ReminderEvidence: ReminderEvidence;
+  ReminderList: ReminderList;
+  ReminderScheduleChange: ReminderScheduleChange;
+  ReminderSettings: ReminderSettings;
   ReviewCloseInput: ReviewCloseInput;
+  ReviewReminder: ReviewReminder;
   Rights: Rights;
   SecurityInput: SecurityInput;
   SessionDate: SessionDate;

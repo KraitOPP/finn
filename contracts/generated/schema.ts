@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.20.0",
+  "contractVersion": "0.21.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "c1bc4d153a16957a02581fc98458e1c0a047aad37cec09b0bfd11d9820bed3e9",
+  "sourceSha256": "a9f472567d14c7c22b59a3e6485dd79015db29c5ecd326ccb17db0a64f2dc30c",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -108,7 +108,13 @@ export const contractMetadata = {
     "ProviderStatus",
     "ProviderStatusPage",
     "QuoteResponse",
+    "ReminderEdit",
+    "ReminderEvidence",
+    "ReminderList",
+    "ReminderScheduleChange",
+    "ReminderSettings",
     "ReviewCloseInput",
+    "ReviewReminder",
     "Rights",
     "SecurityInput",
     "SessionDate",
@@ -986,7 +992,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.20.0"
+    "const": "0.21.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -4022,6 +4028,16 @@ export const contractSchemas = {
           }
         ]
       },
+      "reminder": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ReminderEvidence"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "deliveries": {
         "type": "array",
         "items": {
@@ -4040,6 +4056,7 @@ export const contractSchemas = {
     "required": [
       "notification",
       "price",
+      "reminder",
       "deliveries",
       "attempts"
     ],
@@ -5368,6 +5385,154 @@ export const contractSchemas = {
       }
     ]
   },
+  "ReminderEdit": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "settings": {
+        "$ref": "#/components/schemas/ReminderSettings"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "settings"
+    ],
+    "additionalProperties": false
+  },
+  "ReminderEvidence": {
+    "type": "object",
+    "properties": {
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "dueAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "deliverAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "revision",
+      "dueAt",
+      "deliverAt"
+    ],
+    "additionalProperties": false
+  },
+  "ReminderList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ReviewReminder"
+        },
+        "maxItems": 50
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "ReminderScheduleChange": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "snoozeUntil": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "snoozeUntil"
+    ],
+    "additionalProperties": false
+  },
+  "ReminderSettings": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "scheduledLocal": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 16,
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"
+      },
+      "timeZone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "recurrence": {
+        "type": "string",
+        "enum": [
+          "ONCE",
+          "DAILY",
+          "WEEKLY"
+        ]
+      },
+      "quietStart": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5,
+            "pattern": "^[0-9]{2}:[0-9]{2}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "quietEnd": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5,
+            "pattern": "^[0-9]{2}:[0-9]{2}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "title",
+      "scheduledLocal",
+      "timeZone",
+      "recurrence",
+      "quietStart",
+      "quietEnd"
+    ],
+    "additionalProperties": false
+  },
   "ReviewCloseInput": {
     "type": "object",
     "properties": {
@@ -5392,6 +5557,48 @@ export const contractSchemas = {
       "close",
       "sourceReference",
       "reviewed"
+    ],
+    "additionalProperties": false
+  },
+  "ReviewReminder": {
+    "type": "object",
+    "properties": {
+      "reminderId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "CANCELLED",
+          "COMPLETED"
+        ]
+      },
+      "settings": {
+        "$ref": "#/components/schemas/ReminderSettings"
+      },
+      "nextAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "reminderId",
+      "revision",
+      "state",
+      "settings",
+      "nextAt"
     ],
     "additionalProperties": false
   },

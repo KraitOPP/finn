@@ -7,9 +7,10 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
-import { usePreferences } from "../preferences/PreferencesProvider.tsx";
+import { LocalTime } from "./LocalTime.tsx";
 import { CloseEvidence } from "./PriceEvaluations.tsx";
 import { PriceRules } from "./PriceRules.tsx";
+import { ReviewCalendar } from "./ReviewCalendar.tsx";
 
 const path = "/api/v1/monitoring/notifications";
 const kinds = {
@@ -30,26 +31,13 @@ const statuses = {
 const channelLabel = (value: NotificationDelivery["channel"]) =>
   value === "IN_APP" ? "In-app" : "Local email preview";
 
-export function LocalTime({ value }: { value: string }) {
-  const { value: preferences } = usePreferences();
-  const timeZone = preferences?.timeZone ?? "Asia/Kolkata";
-  return (
-    <time dateTime={value}>
-      {new Intl.DateTimeFormat(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone,
-      }).format(new Date(value))}
-    </time>
-  );
-}
-
 export function Inbox() {
   return (
     <section className="workspace-section">
       <RouteHeading>Inbox</RouteHeading>
       <NotificationList />
       <DeliveryStatus />
+      <ReviewCalendar />
       <PriceRules />
     </section>
   );
@@ -184,6 +172,13 @@ function NotificationDetails({
               </p>
               <CloseEvidence value={detail.value.price.observation} />
             </>
+          )}
+          {detail.value.reminder && (
+            <p>
+              Scheduled for <LocalTime value={detail.value.reminder.dueAt} /> ·
+              Eligible from{" "}
+              <LocalTime value={detail.value.reminder.deliverAt} />.
+            </p>
           )}
           <ul>
             {detail.value.deliveries.map((delivery) => (

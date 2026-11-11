@@ -18,7 +18,7 @@ const defaults = {
   deliveryAvailable: true,
 };
 const session = (authenticated = true) => ({
-  contractVersion: "0.20.0",
+  contractVersion: "0.21.0",
   requestId: "fictional-session",
   authenticated,
   user: authenticated
@@ -89,7 +89,9 @@ it("saves with CSRF and revision, updates display time and clears private settin
     emailNotifications: true,
   });
   expect(screen.getByLabelText("Example instant")).toHaveTextContent("12:00");
-  expect(screen.getByText(/Email needs a configured provider/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Email needs a configured provider/),
+  ).toBeInTheDocument();
   authenticated = false;
   await act(async () => window.dispatchEvent(new Event("focus")));
   expect(
