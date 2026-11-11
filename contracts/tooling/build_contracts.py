@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.15.0"
+VERSION = "0.16.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -145,6 +145,15 @@ def definitions() -> dict:
         "points": array(ref("ValuationPoint"),maxItems=90),
     })
     d["ValuationSnapshotDetail"] = obj({"snapshot": ref("ValuationPoint"), "valuation": nullable(ref("AccountValuation"))})
+    d["WatchlistName"] = obj({"name": text(maxLength=80)})
+    d["WatchlistSummary"] = obj({"watchlistId": ref("OpaqueId"), "name": text(maxLength=80)})
+    d["WatchlistIndex"] = obj({"items": array(ref("WatchlistSummary"),maxItems=20)})
+    d["WatchlistTrack"] = obj({"listingId": ref("OpaqueId"), "tracked": {"type":"boolean"}})
+    d["WatchlistItem"] = obj({
+        "listingId": ref("OpaqueId"), "securityId": ref("OpaqueId"), "securityName": text(maxLength=120),
+        "exchange": enum(["NSE","BSE"]), "symbol": text(maxLength=64), "latest": nullable(ref("PrivateClose")),
+    })
+    d["WatchlistDetail"] = obj({"watchlist": ref("WatchlistSummary"), "items": array(ref("WatchlistItem"),maxItems=100)})
     d["ListingIdentity"] = obj({
         "listingId": ref("OpaqueId"), "securityId": ref("OpaqueId"),
         "companyId": ref("OpaqueId"), "exchange": enum(["NSE", "BSE"]),
@@ -521,6 +530,12 @@ def public_api_document() -> dict:
             "post":maintained("buildValuationSnapshots","Save up to 14 dated values and explicit coverage gaps","ValuationSeries",ledger_account,"PriceFetchWindow"),
         },
         journal_path+"/valuation/snapshots/{id}":{"get":maintained("getValuationSnapshot","Read the immutable result and inputs of an owned snapshot","ValuationSnapshotDetail",import_id)},
+        "/api/v1/watchlists":{
+            "get":maintained("listWatchlists","List the signed-in owner's named watchlists","WatchlistIndex"),
+            "post":maintained("createWatchlist","Create an owned watchlist or return the existing name","WatchlistSummary",input_name="WatchlistName"),
+        },
+        "/api/v1/watchlists/{id}":{"get":maintained("getWatchlist","Read owned listings and their latest stored closes","WatchlistDetail",identifier)},
+        "/api/v1/watchlists/{id}/items":{"post":maintained("setWatchlistItem","Idempotently add or remove an owned listing","WatchlistDetail",identifier,"WatchlistTrack")},
         journal_path+"/transactions/export":{"post":ledger_export},
         journal_path+"/corporate-actions":{"get":maintained("listCorporateActions","List reviewed corporate actions for the owned account","CorporateActionList",ledger_account),"post":maintained("applyCorporateAction","Record a confirmed source-backed action or an unsupported review","CorporateActionRecord",ledger_account,"CorporateActionApproval")},
         journal_path+"/corporate-actions/preview":{"post":maintained("previewCorporateAction","Preview units, cost and cash effects without posting","CorporateActionEffect",ledger_account,"CorporateActionInput")},

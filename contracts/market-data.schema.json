@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.15.0",
+  "$id": "urn:finn:contracts:market-data:0.16.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.15.0"
+      "const": "0.16.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -887,6 +887,137 @@
       "required": [
         "snapshot",
         "valuation"
+      ],
+      "additionalProperties": false
+    },
+    "WatchlistName": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "WatchlistSummary": {
+      "type": "object",
+      "properties": {
+        "watchlistId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "watchlistId",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "WatchlistIndex": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WatchlistSummary"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "WatchlistTrack": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "tracked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "listingId",
+        "tracked"
+      ],
+      "additionalProperties": false
+    },
+    "WatchlistItem": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "securityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "securityName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "latest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrivateClose"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "listingId",
+        "securityId",
+        "securityName",
+        "exchange",
+        "symbol",
+        "latest"
+      ],
+      "additionalProperties": false
+    },
+    "WatchlistDetail": {
+      "type": "object",
+      "properties": {
+        "watchlist": {
+          "$ref": "#/$defs/WatchlistSummary"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WatchlistItem"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "watchlist",
+        "items"
       ],
       "additionalProperties": false
     },
