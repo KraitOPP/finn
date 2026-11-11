@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MarketPrices {
     static final ZoneId INDIA=ZoneId.of("Asia/Kolkata");
+    static final int OWNER_HOURLY=8;
+    static final int OWNER_PENDING=3;
     static final String SELECT_COLUMNS="observation_id,listing_id,session_date,source,price_basis,close,source_ref,received_at";
     public record Observation(UUID observationId,UUID listingId,LocalDate sessionDate,String source,String priceBasis,
                               String currency,String close,String sourceReference,String receivedAt,String freshness) {}
@@ -79,9 +81,9 @@ public class MarketPrices {
         // Serialize global admission across replicas; per-user admission already holds the user row.
         jdbc.query("SELECT pg_advisory_xact_lock(46004001)",row->{});
         if(count("SELECT count(*) FROM finn.market_fetch WHERE created_at>clock_timestamp()-interval '1 hour'")>=30
-                || count("SELECT count(*) FROM finn.market_fetch WHERE owner_id=? AND created_at>clock_timestamp()-interval '1 hour'",owner)>=8)
+                || count("SELECT count(*) FROM finn.market_fetch WHERE owner_id=? AND created_at>clock_timestamp()-interval '1 hour'",owner)>=OWNER_HOURLY)
             throw new ApiFailure(429,"PRICE_REFRESH_BUDGET");
-        if(count("SELECT count(*) FROM finn.app_job WHERE owner_id=? AND kind='YAHOO_DAILY_HISTORY' AND state IN ('QUEUED','RUNNING')",owner)>=3
+        if(count("SELECT count(*) FROM finn.app_job WHERE owner_id=? AND kind='YAHOO_DAILY_HISTORY' AND state IN ('QUEUED','RUNNING')",owner)>=OWNER_PENDING
                 || count("SELECT count(*) FROM finn.app_job WHERE kind='YAHOO_DAILY_HISTORY' AND state IN ('QUEUED','RUNNING')")>=30)
             throw new ApiFailure(429,"PRICE_REFRESH_BACKLOG");
         var job=jobs.enqueue(owner,JobQueue.Kind.YAHOO_DAILY_HISTORY,listing);

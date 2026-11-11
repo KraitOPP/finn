@@ -4,7 +4,7 @@ Java 25 and Spring Boot 4.1.2 backend for an India-first portfolio intelligence 
 
 ## Repository status
 
-The application includes OIDC sign-in, owner-scoped portfolios and accounts, a manual instrument catalogue, an immutable investment journal, private Groww previews and reviewed opening snapshots, plus a fixed synthetic public demo. Previewing does not post holdings. The existing Yahoo client returns unaccepted acquisition candidates. Official EOD parsing remains pending.
+The application includes OIDC sign-in, an owner-scoped investment journal, private Groww holdings review and reconciliation, corporate actions, CSV export, watchlists, and traceable current and dated valuations. Public demos are synthetic. Private Yahoo completed-session acquisition is opt-in. Official exchange file imports and open-session streaming remain gated on source verification.
 
 ## Run locally
 
@@ -26,7 +26,7 @@ On Linux/macOS export the same variables and create the external directory, then
 
 Setup creates random development credentials outside Git and preserves existing files. PostgreSQL bootstrap, migration, identity-provider and runtime identities are distinct: the application role cannot create tables or read migration history. Restore existing secrets if they are lost; setup does not reset passwords in an existing database. Stop only this project's services with `docker compose stop`; no data removal is part of startup or shutdown.
 
-The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.16.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read/save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision; concurrent changes return 409. Delivery is explicitly unavailable until its own implementation. User-supplied owner IDs are not accepted. The holdings route accepts bounded raw workbook bytes; multipart remains disabled.
+The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.17.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read/save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision; concurrent changes return 409. Delivery is explicitly unavailable until its own implementation. User-supplied owner IDs are not accepted. The holdings route accepts bounded raw workbook bytes; multipart remains disabled.
 
 Run the frontend at exactly `http://127.0.0.1:5173` and use its same-origin proxies. Sign in redirects to the local Keycloak realm at `http://localhost:8180/realms/finn-local`. Development-only synthetic account credentials are generated in the private `secrets/identity/demo-users.json` file under the working directory. Never commit or share that file. Keycloak stores identity records in its own database; the app stores only an issuer/subject link and display name. The packaged JAR is under `FINN_WORKSPACE_ROOT/build/backend`; running it needs Java and configuration but does not need Node.
 
@@ -67,7 +67,7 @@ Each component documents its checks. Install dependencies and retain caches/outp
 - Watchlists, reliable alerts, reminders, filings, news, and evidence-based research.
 - Investment thesis tracking, management guidance comparisons, and explainable stock screening.
 
-Java will own domain logic and database writes. The Python yfinance client is production source inside this repository because yfinance is a Python library; it currently returns acquisition candidates without Java mapping or persistence. Its Indian-symbol coverage, freshness, and data-use conditions require further evaluation before live-data claims are made.
+Java owns domain logic and database writes. The bounded Python subprocess acquires Yahoo candidates; Java validates, retains, and selects observations. See the [private Yahoo setup](integrations/yfinance/README.md#run-private-daily-downloads). Choose an explicitly reviewed listing for each position. Reviewed exchange closes and optional Yahoo current estimates stay distinguishable. Historical snapshots use reviewed same-date closes and preserve the ledger revision, observation IDs, and calculation version. Missing data stays null.
 
 ## Repository boundaries
 

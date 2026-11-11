@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.16.0",
+  "$id": "urn:finn:contracts:market-data:0.17.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.16.0"
+      "const": "0.17.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1020,6 +1020,224 @@
         "items"
       ],
       "additionalProperties": false
+    },
+    "PriceCoverage": {
+      "type": "object",
+      "properties": {
+        "trackedListings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "withClose": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recentClose": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "trackedListings",
+        "withClose",
+        "recentClose"
+      ],
+      "additionalProperties": false
+    },
+    "PriceQuota": {
+      "type": "object",
+      "properties": {
+        "requestsLastHour": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hourlyLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "remaining": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pendingLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "AVAILABLE",
+            "HOURLY_LIMIT_REACHED",
+            "PENDING_LIMIT_REACHED"
+          ]
+        }
+      },
+      "required": [
+        "requestsLastHour",
+        "hourlyLimit",
+        "remaining",
+        "pending",
+        "pendingLimit",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "PriceRun": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 72
+        },
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "SUCCEEDED",
+            "PARTIALLY_SUCCEEDED",
+            "FAILED",
+            "CANCELLED"
+          ]
+        },
+        "failureCode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "rowsReturned": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "jobId",
+        "listingId",
+        "symbol",
+        "exchange",
+        "state",
+        "failureCode",
+        "updatedAt",
+        "rowsReturned"
+      ],
+      "additionalProperties": false
+    },
+    "MarketDiagnostics": {
+      "type": "object",
+      "properties": {
+        "yahooCapability": {
+          "type": "string",
+          "enum": [
+            "DISABLED",
+            "CONFIGURATION_REQUIRED",
+            "PRIVATE_DAILY"
+          ]
+        },
+        "officialFiles": {
+          "type": "string",
+          "enum": [
+            "UNVERIFIED"
+          ]
+        },
+        "streaming": {
+          "type": "string",
+          "enum": [
+            "UNVERIFIED"
+          ]
+        },
+        "providerDelay": {
+          "type": "string",
+          "enum": [
+            "UNKNOWN"
+          ]
+        },
+        "providerQuota": {
+          "type": "string",
+          "enum": [
+            "UNKNOWN"
+          ]
+        },
+        "lastSuccessfulAcquisition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceValidationFailuresLastDay": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedRunsLastDay": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "$ref": "#/$defs/PriceCoverage"
+        },
+        "quota": {
+          "$ref": "#/$defs/PriceQuota"
+        },
+        "recentRuns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PriceRun"
+          },
+          "maxItems": 15
+        }
+      },
+      "required": [
+        "yahooCapability",
+        "officialFiles",
+        "streaming",
+        "providerDelay",
+        "providerQuota",
+        "lastSuccessfulAcquisition",
+        "sourceValidationFailuresLastDay",
+        "failedRunsLastDay",
+        "coverage",
+        "quota",
+        "recentRuns"
+      ],
+      "additionalProperties": false,
+      "description": "Owner-scoped diagnostics. The quota is FINN's application limit and says nothing about the provider's quota."
     },
     "ListingIdentity": {
       "type": "object",

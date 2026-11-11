@@ -114,6 +114,19 @@ public final class MarketDatabaseChecks {
                 .andExpect(jsonPath("$.failureCode").value("PROVIDER_REQUEST_FAILED"))
                 .andExpect(jsonPath("$.lastSuccessAt").isString()).andExpect(jsonPath("$.latest.close").value("103.125"));
         read(mvc,history,other).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/market/status")).andExpect(status().isUnauthorized());
+        read(mvc,"/api/v1/market/status",equity.owner()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.sourceValidationFailuresLastDay").value(1))
+                .andExpect(jsonPath("$.failedRunsLastDay").value(2))
+                .andExpect(jsonPath("$.quota.remaining").value(4))
+                .andExpect(jsonPath("$.recentRuns[0].failureCode").value("PROVIDER_REQUEST_FAILED"))
+                .andExpect(jsonPath("$.lastSuccessfulAcquisition").isString())
+                .andExpect(jsonPath("$.providerDelay").value("UNKNOWN"));
+        read(mvc,"/api/v1/market/status",other).andExpect(status().isOk()).andExpect(jsonPath("$.recentRuns").isEmpty())
+                .andExpect(jsonPath("$.quota.remaining").value(8)).andExpect(jsonPath("$.lastSuccessfulAcquisition").isEmpty());
+        var account=ValuationDatabaseChecks.account(mvc,equity.owner());
+        ValuationDatabaseChecks.event(mvc,account,TODAY.minusDays(2),"BUY",equity.security(),"1","100",null,"0");
+        read(mvc,account.base()+"/ledger",equity.owner()).andExpect(status().isOk()).andExpect(jsonPath("$.positions[0].quantity").value("1"));
         prices.expireYahoo();
     }
 }

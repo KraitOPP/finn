@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.16.0"
+VERSION = "0.17.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -154,6 +154,27 @@ def definitions() -> dict:
         "exchange": enum(["NSE","BSE"]), "symbol": text(maxLength=64), "latest": nullable(ref("PrivateClose")),
     })
     d["WatchlistDetail"] = obj({"watchlist": ref("WatchlistSummary"), "items": array(ref("WatchlistItem"),maxItems=100)})
+    diagnostic_count = {"type":"integer","minimum":0}
+    d["PriceCoverage"] = obj({field: diagnostic_count for field in ("trackedListings","withClose","recentClose")})
+    d["PriceQuota"] = obj({
+        **{field: diagnostic_count for field in ("requestsLastHour","hourlyLimit","remaining","pending","pendingLimit")},
+        "status": enum(["AVAILABLE","HOURLY_LIMIT_REACHED","PENDING_LIMIT_REACHED"]),
+    })
+    d["PriceRun"] = obj({
+        "jobId": ref("OpaqueId"), "listingId": ref("OpaqueId"), "symbol": text(maxLength=72), "exchange": enum(["NSE","BSE"]),
+        "state": enum(["QUEUED","RUNNING","SUCCEEDED","PARTIALLY_SUCCEEDED","FAILED","CANCELLED"]),
+        "failureCode": nullable(ref("OpaqueId")), "updatedAt": ref("UtcInstant"),
+        "rowsReturned": nullable({"type":"integer","minimum":0,"maximum":31}),
+    })
+    d["MarketDiagnostics"] = obj({
+        "yahooCapability": enum(["DISABLED","CONFIGURATION_REQUIRED","PRIVATE_DAILY"]),
+        **{field: enum(["UNVERIFIED"]) for field in ("officialFiles","streaming")},
+        **{field: enum(["UNKNOWN"]) for field in ("providerDelay","providerQuota")},
+        "lastSuccessfulAcquisition": nullable(ref("UtcInstant")),
+        "sourceValidationFailuresLastDay": diagnostic_count, "failedRunsLastDay": diagnostic_count,
+        "coverage": ref("PriceCoverage"), "quota": ref("PriceQuota"),
+        "recentRuns": array(ref("PriceRun"),maxItems=15),
+    }, "Owner-scoped diagnostics. The quota is FINN's application limit and says nothing about the provider's quota.")
     d["ListingIdentity"] = obj({
         "listingId": ref("OpaqueId"), "securityId": ref("OpaqueId"),
         "companyId": ref("OpaqueId"), "exchange": enum(["NSE", "BSE"]),
@@ -536,6 +557,7 @@ def public_api_document() -> dict:
         },
         "/api/v1/watchlists/{id}":{"get":maintained("getWatchlist","Read owned listings and their latest stored closes","WatchlistDetail",identifier)},
         "/api/v1/watchlists/{id}/items":{"post":maintained("setWatchlistItem","Idempotently add or remove an owned listing","WatchlistDetail",identifier,"WatchlistTrack")},
+        "/api/v1/market/status":{"get":maintained("getMarketDiagnostics","Read acquisition health and coverage for the signed-in owner","MarketDiagnostics")},
         journal_path+"/transactions/export":{"post":ledger_export},
         journal_path+"/corporate-actions":{"get":maintained("listCorporateActions","List reviewed corporate actions for the owned account","CorporateActionList",ledger_account),"post":maintained("applyCorporateAction","Record a confirmed source-backed action or an unsupported review","CorporateActionRecord",ledger_account,"CorporateActionApproval")},
         journal_path+"/corporate-actions/preview":{"post":maintained("previewCorporateAction","Preview units, cost and cash effects without posting","CorporateActionEffect",ledger_account,"CorporateActionInput")},
