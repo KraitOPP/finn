@@ -38,6 +38,16 @@ public class Catalogue {
     public Listing listing(UUID owner,UUID id) {
         return jdbc.query(LISTING_SQL+"WHERE l.owner_id=? AND l.listing_id=?",this::listingRow,owner,id).stream().findFirst().orElseThrow(ApiFailure::notFound);
     }
+    public UUID resolveReviewedHolding(UUID owner,String reportedName,String isin){
+        if(!Isin.valid(isin))throw ApiFailure.invalid();
+        var existing=jdbc.query("SELECT security_id FROM finn.security WHERE owner_id=? AND isin=?",(row,index)->row.getObject(1,UUID.class),owner,isin).stream().findFirst();
+        if(existing.isPresent())return existing.get();
+        if(reportedName==null||reportedName.length()>120)throw new ApiFailure(422,"SECURITY_LABEL_REVIEW_REQUIRED");
+        UUID company=UUID.randomUUID(),security=UUID.randomUUID();
+        jdbc.update("INSERT INTO finn.company(company_id,owner_id,name,source) VALUES (?,?,?,'GROWW_HOLDINGS')",company,owner,"Unresolved issuer for "+isin);
+        jdbc.update("INSERT INTO finn.security(security_id,owner_id,company_id,name,isin,review_status) VALUES (?,?,?,?,?,'UNRESOLVED')",security,owner,company,cleanName(reportedName),isin);
+        return security;
+    }
     @Transactional public SecurityPage search(String query,int limit,int offset) {
         UUID owner=users.requireId();
         if(query==null || query.length()>100 || limit<1 || limit>100 || offset<0 || offset>10000) throw ApiFailure.invalid();

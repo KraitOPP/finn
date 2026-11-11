@@ -851,19 +851,6 @@
     "expectedError": "SCHEMA_INVALID"
   },
   {
-    "caseId": "reject-preview-unreviewed-posting",
-    "baseCaseId": "holdings-preview-mismatch",
-    "changes": [
-      {
-        "path": [
-          "commitAvailable"
-        ],
-        "value": true
-      }
-    ],
-    "expectedError": "SCHEMA_INVALID"
-  },
-  {
     "caseId": "reject-preview-account-metadata",
     "baseCaseId": "holdings-preview-mismatch",
     "changes": [
@@ -873,6 +860,45 @@
           "accountNumber"
         ],
         "value": "fictional-forbidden-identifier"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-acceptance-inr",
+    "baseCaseId": "holdings-confirmed-acceptance",
+    "changes": [
+      {
+        "path": [
+          "confirmInr"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-acceptance-venue",
+    "baseCaseId": "holdings-confirmed-acceptance",
+    "changes": [
+      {
+        "path": [
+          "retainUnresolvedListings"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-acceptance-cost-mode",
+    "baseCaseId": "holdings-confirmed-acceptance",
+    "changes": [
+      {
+        "path": [
+          "costMode"
+        ],
+        "value": "ESTIMATE_COST"
       }
     ],
     "expectedError": "SCHEMA_INVALID"

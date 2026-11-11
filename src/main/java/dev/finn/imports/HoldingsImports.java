@@ -1,5 +1,7 @@
 package dev.finn.imports;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
@@ -8,7 +10,10 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import dev.finn.identity.CurrentUser;
+import dev.finn.instruments.Catalogue;
 import dev.finn.jobs.JobQueue;
+import dev.finn.ledger.Journal;
+import dev.finn.ledger.LedgerRules;
 import dev.finn.platform.ApiFailure;
 import dev.finn.platform.AuditTrail;
 import dev.finn.portfolio.Portfolios;
@@ -26,7 +31,13 @@ public class HoldingsImports {
                            List<GrowwHoldingsReader.Comparison> comparisons,List<String> warnings,int rowCount){}
     public record PreviewRow(GrowwHoldingsReader.Row source,UUID matchedSecurityId,String mappingStatus){}
     public record PreviewPage(UUID importId,UUID jobId,long ledgerRevisionAtPreview,Metadata metadata,List<PreviewRow> rows,
-                              Integer nextOffset,boolean requiresInrConfirmation,boolean commitAvailable){}
+                              Integer nextOffset,boolean requiresInrConfirmation,boolean commitAvailable,ReviewPlan review){}
+    public record Receipt(UUID importId,String outcome,String costMode,int acceptedRows,int skippedRows,int duplicateRows,
+                          long ledgerRevision,UUID originalImportId,boolean replayed,String acceptedAt){}
+    public record ReviewPlan(String state,long currentLedgerRevision,int eligibleRows,int duplicateRows,int conflictRows,
+                             boolean reportedCostAvailable,boolean differencesRequireAcknowledgement,Receipt receipt){}
+    private record Prior(Receipt receipt,LocalDate date,boolean acknowledged){}
+    private record Preparation(ReviewPlan plan,List<GrowwHoldingsReader.Row> rows,UUID original){}
     private record Stage(UUID jobId,long ledgerRevision,Metadata metadata){}
     private record Original(byte[] contents,String sha256){}
     private static final String SOURCE="""
@@ -35,8 +46,8 @@ public class HoldingsImports {
             WHERE s.owner_id=? AND s.portfolio_id=? AND s.account_id=?
             """;
     private final JdbcTemplate jdbc;private final CurrentUser users;private final Portfolios portfolios;
-    private final JobQueue jobs;private final AuditTrail audit;private final JsonMapper json;
-    public HoldingsImports(JdbcTemplate jdbc,CurrentUser users,Portfolios portfolios,JobQueue jobs,AuditTrail audit,JsonMapper json){this.jdbc=jdbc;this.users=users;this.portfolios=portfolios;this.jobs=jobs;this.audit=audit;this.json=json;}
+    private final JobQueue jobs;private final AuditTrail audit;private final JsonMapper json;private final Journal journal;private final Catalogue catalogue;
+    public HoldingsImports(JdbcTemplate jdbc,CurrentUser users,Portfolios portfolios,JobQueue jobs,AuditTrail audit,JsonMapper json,Journal journal,Catalogue catalogue){this.jdbc=jdbc;this.users=users;this.portfolios=portfolios;this.jobs=jobs;this.audit=audit;this.json=json;this.journal=journal;this.catalogue=catalogue;}
 
     @Transactional public Ticket upload(UUID portfolio,UUID account,byte[] bytes){
         UUID owner=users.requireId();
@@ -84,7 +95,81 @@ public class HoldingsImports {
                 WHERE r.owner_id=? AND r.import_id=? ORDER BY r.row_number LIMIT ? OFFSET ?
                 """,(row,index)->{UUID match=row.getObject("security_id",UUID.class);return new PreviewRow(json.readValue(row.getString(1),GrowwHoldingsReader.Row.class),match,match==null?"UNRESOLVED_SECURITY":"EXISTING_SECURITY");},owner,id,limit,offset);
         Integer next=offset+rows.size()<stage.metadata().rowCount()?offset+rows.size():null;
-        return new PreviewPage(id,source.jobId(),stage.ledgerRevision(),stage.metadata(),rows,next,true,false);
+        var plan=prepare(owner,account,id,stage,portfolios.require(owner,portfolio,false,false).archived()).plan();
+        return new PreviewPage(id,source.jobId(),stage.ledgerRevision(),stage.metadata(),rows,next,true,Set.of("READY","DUPLICATE").contains(plan.state()),plan);
+    }
+    @Transactional public Receipt accept(UUID portfolio,UUID account,UUID id,String costMode,boolean acknowledged,long expectedRevision){
+        UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);require(owner,portfolio,account,id);
+        if(!Set.of("UNITS_ONLY","REPORTED_ROW_COST").contains(costMode))throw ApiFailure.invalid();
+        Prior existing=accepted(owner,id);
+        if(existing!=null)return replay(existing,costMode,acknowledged);
+        portfolios.requireAccount(owner,portfolio,account,true);
+        existing=accepted(owner,id);if(existing!=null)return replay(existing,costMode,acknowledged);
+        var stage=stage(owner,id);var preparation=prepare(owner,account,id,stage,false);var plan=preparation.plan();
+        if(plan.currentLedgerRevision()!=expectedRevision)throw new ApiFailure(409,"IMPORT_LEDGER_CHANGED");
+        if(!Set.of("READY","DUPLICATE").contains(plan.state()))throw new ApiFailure(409,switch(plan.state()){
+            case "SOURCE_CONFLICT"->"IMPORT_SOURCE_CONFLICT";case "RECONCILIATION_ONLY"->"IMPORT_RECONCILIATION_REQUIRED";default->"IMPORT_ROWS_BLOCKED";
+        });
+        if(plan.differencesRequireAcknowledgement()&&!acknowledged)throw new ApiFailure(422,"IMPORT_DIFFERENCES_REQUIRE_REVIEW");
+        boolean duplicate=plan.state().equals("DUPLICATE");long revision=plan.currentLedgerRevision();int count=0,skipped=0;
+        if(!duplicate){
+            if(costMode.equals("REPORTED_ROW_COST")&&!plan.reportedCostAvailable())throw new ApiFailure(422,"IMPORT_REPORTED_COST_UNAVAILABLE");
+            var holdings=new ArrayList<Journal.Opening>();
+            for(var row:preparation.rows()){
+                BigDecimal units=new BigDecimal(row.quantity()).stripTrailingZeros();
+                if(units.signum()==0){skipped++;continue;}
+                UUID security=catalogue.resolveReviewedHolding(owner,row.reportedName(),row.isin());
+                BigDecimal cost=costMode.equals("REPORTED_ROW_COST")?LedgerRules.bounded(new BigDecimal(row.buyValue()).stripTrailingZeros()):null;
+                holdings.add(new Journal.Opening(security,units,cost,row.rowNumber()));
+            }
+            var result=journal.recordReviewedOpening(owner,portfolio,account,id,stage.metadata().asOfDate(),expectedRevision,costMode,holdings);
+            revision=result.revision();count=holdings.size();
+        }
+        jdbc.update("""
+                INSERT INTO finn.holdings_acceptance(owner_id,portfolio_id,account_id,import_id,as_of_date,outcome,cost_mode,acknowledged_differences,
+                 accepted_rows,skipped_rows,duplicate_rows,original_import_id,ledger_revision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """,owner,portfolio,account,id,stage.metadata().asOfDate(),duplicate?"DUPLICATE":"APPLIED",costMode,acknowledged,count,skipped,duplicate?plan.duplicateRows():0,preparation.original(),revision);
+        audit.record(AuditTrail.Action.IMPORT_COMMITTED,owner,id);
+        return accepted(owner,id).receipt();
+    }
+    private static Receipt replay(Prior existing,String costMode,boolean acknowledged){
+        Receipt receipt=existing.receipt();
+        if(!receipt.costMode().equals(costMode)||existing.acknowledged()!=acknowledged)throw new ApiFailure(409,"IMPORT_ALREADY_REVIEWED");
+        return new Receipt(receipt.importId(),receipt.outcome(),receipt.costMode(),receipt.acceptedRows(),receipt.skippedRows(),receipt.duplicateRows(),receipt.ledgerRevision(),receipt.originalImportId(),true,receipt.acceptedAt());
+    }
+    private Preparation prepare(UUID owner,UUID account,UUID id,Stage stage,boolean archived){
+        long revision=journal.currentRevision(owner,account);
+        boolean differences=stage.metadata().warnings().stream().anyMatch(warning->warning.startsWith("SUMMARY_")||warning.equals("ROW_RECONCILIATION_REQUIRED"));
+        Prior accepted=accepted(owner,id);
+        if(accepted!=null)return new Preparation(new ReviewPlan("ALREADY_ACCEPTED",revision,0,accepted.receipt().duplicateRows(),0,false,differences,accepted.receipt()),List.of(),null);
+        if(archived)return new Preparation(new ReviewPlan("ARCHIVED",revision,0,0,0,false,differences,null),List.of(),null);
+        if(stage.metadata().warnings().contains("BLOCKED_ROWS_PRESENT"))return new Preparation(new ReviewPlan("ROWS_BLOCKED",revision,0,0,0,false,differences,null),List.of(),null);
+        var rows=sourceRows(owner,id);
+        int eligible=(int)rows.stream().filter(row->new BigDecimal(row.quantity()).signum()>0).count();
+        if(eligible==0)return new Preparation(new ReviewPlan("ROWS_BLOCKED",revision,0,0,0,false,differences,null),List.of(),null);
+        boolean costs=rows.stream().filter(row->new BigDecimal(row.quantity()).signum()>0).allMatch(row->row.buyValue()!=null&&new BigDecimal(row.buyValue()).stripTrailingZeros().scale()<=8);
+        var opening=jdbc.query("SELECT * FROM finn.holdings_acceptance WHERE owner_id=? AND account_id=? AND outcome='APPLIED'",this::prior,owner,account).stream().findFirst().orElse(null);
+        if(opening!=null){
+            if(!opening.date().equals(stage.metadata().asOfDate()))return new Preparation(new ReviewPlan("RECONCILIATION_ONLY",revision,0,0,0,costs,differences,null),rows,null);
+            var priorRows=new HashMap<String,String>();for(var row:sourceRows(owner,opening.receipt().importId()))priorRows.put(row.isin(),fingerprint(row));
+            int duplicate=(int)rows.stream().filter(row->fingerprint(row).equals(priorRows.get(row.isin()))).count();
+            int conflicts=rows.size()-duplicate;
+            return new Preparation(new ReviewPlan(conflicts==0?"DUPLICATE":"SOURCE_CONFLICT",revision,0,duplicate,conflicts,costs,differences,null),rows,conflicts==0?opening.receipt().importId():null);
+        }
+        if(journal.hasEquityRecords(owner,account))return new Preparation(new ReviewPlan("RECONCILIATION_ONLY",revision,0,0,0,costs,differences,null),rows,null);
+        return new Preparation(new ReviewPlan("READY",revision,eligible,0,0,costs,differences,null),rows,null);
+    }
+    private List<GrowwHoldingsReader.Row> sourceRows(UUID owner,UUID id){
+        return jdbc.query("SELECT row_payload::text FROM finn.import_preview_row WHERE owner_id=? AND import_id=? ORDER BY row_number LIMIT 1000",(row,index)->json.readValue(row.getString(1),GrowwHoldingsReader.Row.class),owner,id);
+    }
+    private Prior accepted(UUID owner,UUID id){return jdbc.query("SELECT * FROM finn.holdings_acceptance WHERE owner_id=? AND import_id=?",this::prior,owner,id).stream().findFirst().orElse(null);}
+    private Prior prior(ResultSet row,int index)throws SQLException{
+        return new Prior(new Receipt(row.getObject("import_id",UUID.class),row.getString("outcome"),row.getString("cost_mode"),row.getInt("accepted_rows"),row.getInt("skipped_rows"),row.getInt("duplicate_rows"),row.getLong("ledger_revision"),row.getObject("original_import_id",UUID.class),false,row.getObject("accepted_at",OffsetDateTime.class).toInstant().toString()),row.getObject("as_of_date",LocalDate.class),row.getBoolean("acknowledged_differences"));
+    }
+    private static String fingerprint(GrowwHoldingsReader.Row row){
+        StringBuilder value=new StringBuilder(row.isin()).append('|');
+        for(String field:new String[]{row.quantity(),row.averageCost(),row.buyValue(),row.closingPrice(),row.closingValue(),row.unrealisedPnl()})value.append(field==null?"-":LedgerRules.text(new BigDecimal(field))).append('|');
+        return sha256(value.toString().getBytes(StandardCharsets.UTF_8));
     }
     private Stage stage(UUID owner,UUID id){
         return jdbc.query("SELECT job_id,ledger_revision,metadata::text FROM finn.import_preview WHERE owner_id=? AND import_id=?",(row,index)->new Stage(row.getObject(1,UUID.class),row.getLong(2),json.readValue(row.getString(3),Metadata.class)),owner,id).stream().findFirst().orElseThrow(()->new ApiFailure(409,"IMPORT_PREVIEW_NOT_READY"));

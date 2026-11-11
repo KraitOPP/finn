@@ -6,6 +6,8 @@ import dev.finn.jobs.JobQueue;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.*;
@@ -59,7 +61,7 @@ final class ImportDatabaseChecks {
         read(mvc,path+"/preview?limit=1",owner).andExpect(status().isOk()).andExpect(jsonPath("$.ledgerRevisionAtPreview").value(0))
                 .andExpect(jsonPath("$.metadata.reportedSummary.buyValue").value("50.00")).andExpect(jsonPath("$.metadata.detailTotals.buyValue").value("48.75"))
                 .andExpect(jsonPath("$.rows[0].source.rowNumber").value(12)).andExpect(jsonPath("$.rows[0].mappingStatus").value("UNRESOLVED_SECURITY"))
-                .andExpect(jsonPath("$.requiresInrConfirmation").value(true)).andExpect(jsonPath("$.commitAvailable").value(false)).andExpect(jsonPath("$.nextOffset").value(1))
+                .andExpect(jsonPath("$.requiresInrConfirmation").value(true)).andExpect(jsonPath("$.commitAvailable").value(true)).andExpect(jsonPath("$.nextOffset").value(1))
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("FICTIONAL_METADATA_MUST_NOT_LEAK"))));
         read(mvc,path+"/preview?offset=1",owner).andExpect(jsonPath("$.rows[0].source.rowNumber").value(14)).andExpect(jsonPath("$.nextOffset").isEmpty());
         read(mvc,path+"/original",owner).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
@@ -96,5 +98,62 @@ final class ImportDatabaseChecks {
         worker.runOne();
         read(mvc,path+"/preview",fixture.subject()).andExpect(status().isOk()).andExpect(jsonPath("$.jobId").value(retry.get("jobId").asText()));
         read(mvc,"/api/v1/jobs/"+old,fixture.subject()).andExpect(jsonPath("$.state").value("FAILED"));
+    }
+    private static String stage(MockMvc mvc,Fixture fixture,HoldingsImportWorker worker,byte[] bytes)throws Exception{
+        var ticket=ok(upload(mvc,fixture,bytes));worker.runOne();return fixture.path()+"/imports/"+ticket.get("importId").asText();
+    }
+    private static String approve(String mode,boolean acknowledge,long revision){return """
+            {"confirmInr":true,"retainUnresolvedListings":true,"acknowledgeDifferences":%s,"costMode":"%s","expectedLedgerRevision":%d}
+            """.formatted(acknowledge,mode,revision);}
+    static void atomicReviewedOpening(MockMvc mvc,HoldingsImportWorker worker,PlatformTransactionManager transactions)throws Exception{
+        var fixture=fixture(mvc,"fictional-reviewed-opening-owner");String owner=fixture.subject(),ledger=fixture.path()+"/ledger";
+        String path=stage(mvc,fixture,worker,SyntheticWorkbook.holdings());
+        read(mvc,path+"/preview",owner).andExpect(jsonPath("$.review.state").value("READY")).andExpect(jsonPath("$.review.eligibleRows").value(2));
+        submit(mvc,path+"/accept",owner,approve("UNITS_ONLY",false,0)).andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.code").value("IMPORT_DIFFERENCES_REQUIRE_REVIEW"));
+        submit(mvc,path+"/accept",owner,approve("UNITS_ONLY",true,0).replace("\"confirmInr\":true","\"confirmInr\":false")).andExpect(status().isUnprocessableContent());
+        submit(mvc,path+"/accept","fictional-import-other-user",approve("UNITS_ONLY",true,0)).andExpect(status().isNotFound());
+        ok(submit(mvc,fixture.path()+"/transactions",owner,"""
+                {"idempotencyKey":"%s","event":{"kind":"OPENING_CASH","effectiveDate":"2020-11-08","amount":"500"}}
+                """.formatted(UUID.randomUUID())));
+        submit(mvc,path+"/accept",owner,approve("UNITS_ONLY",true,0)).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IMPORT_LEDGER_CHANGED"));
+        read(mvc,path+"/preview",owner).andExpect(jsonPath("$.ledgerRevisionAtPreview").value(0)).andExpect(jsonPath("$.review.currentLedgerRevision").value(1));
+        var tx=new TransactionTemplate(transactions);
+        tx.executeWithoutResult(status->{
+            try{ok(submit(mvc,path+"/accept",owner,approve("UNITS_ONLY",true,1)));}
+            catch(Exception error){throw new AssertionError("Synthetic acceptance could not be staged",error);}
+            status.setRollbackOnly();
+        });
+        read(mvc,ledger,owner).andExpect(jsonPath("$.revision").value(1)).andExpect(jsonPath("$.positions.length()").value(0));
+        read(mvc,"/api/v1/catalog/securities",owner).andExpect(jsonPath("$.items.length()").value(0));
+        var receipt=ok(submit(mvc,path+"/accept",owner,approve("UNITS_ONLY",true,1)));
+        assertThat(receipt.get("acceptedRows").asInt()).isEqualTo(2);assertThat(receipt.get("ledgerRevision").asInt()).isEqualTo(3);
+        read(mvc,ledger,owner).andExpect(jsonPath("$.positions.length()").value(2)).andExpect(jsonPath("$.positions[0].recordedCost").isEmpty())
+                .andExpect(jsonPath("$.positions[1].recordedCost").isEmpty()).andExpect(jsonPath("$.historyStatus").value("HOLDINGS_ONLY"))
+                .andExpect(jsonPath("$.coverageStart").value("2020-11-09")).andExpect(jsonPath("$.cashBalance").value("500"));
+        read(mvc,fixture.path()+"/transactions",owner).andExpect(jsonPath("$.items[0].kind").value("OPENING_POSITION"))
+                .andExpect(jsonPath("$.items[0].source").value("GROWW_HOLDINGS")).andExpect(jsonPath("$.items[0].listingId").isEmpty());
+        assertThat(ok(submit(mvc,path+"/accept",owner,approve("UNITS_ONLY",true,1))).get("replayed").asBoolean()).isTrue();
+        submit(mvc,path+"/accept",owner,approve("REPORTED_ROW_COST",true,3)).andExpect(status().isConflict());
+        read(mvc,path+"/preview",owner).andExpect(jsonPath("$.review.state").value("ALREADY_ACCEPTED"));
+    }
+    static void overlappingReportsNeverPostAgain(MockMvc mvc,HoldingsImportWorker worker)throws Exception{
+        var fixture=fixture(mvc,"fictional-opening-overlap-owner");String owner=fixture.subject(),ledger=fixture.path()+"/ledger";
+        String opening=stage(mvc,fixture,worker,SyntheticWorkbook.holdings());
+        ok(submit(mvc,opening+"/accept",owner,approve("REPORTED_ROW_COST",true,0)));
+        var recorded=ok(read(mvc,ledger,owner));
+        assertThat(java.util.List.of(recorded.get("positions").get(0).get("recordedCost").asText(),recorded.get("positions").get(1).get("recordedCost").asText())).containsExactlyInAnyOrder("30.75","18");
+        var equivalent=SyntheticWorkbook.parts();equivalent.compute(SyntheticWorkbook.WORKSHEET,(key,sheet)->sheet.replace("30.75","30.7500").replaceAll("<row r=\"14\">.*?</row>",""));
+        String duplicate=stage(mvc,fixture,worker,SyntheticWorkbook.zip(equivalent));
+        read(mvc,duplicate+"/preview",owner).andExpect(jsonPath("$.review.state").value("DUPLICATE")).andExpect(jsonPath("$.review.duplicateRows").value(1));
+        submit(mvc,duplicate+"/accept",owner,approve("REPORTED_ROW_COST",true,2)).andExpect(status().isOk()).andExpect(jsonPath("$.outcome").value("DUPLICATE")).andExpect(jsonPath("$.acceptedRows").value(0));
+        var changed=SyntheticWorkbook.parts();changed.compute(SyntheticWorkbook.WORKSHEET,(key,sheet)->sheet.replace("30.75","31.00"));
+        String conflict=stage(mvc,fixture,worker,SyntheticWorkbook.zip(changed));
+        read(mvc,conflict+"/preview",owner).andExpect(jsonPath("$.review.state").value("SOURCE_CONFLICT")).andExpect(jsonPath("$.review.conflictRows").value(1));
+        submit(mvc,conflict+"/accept",owner,approve("REPORTED_ROW_COST",true,2)).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IMPORT_SOURCE_CONFLICT"));
+        var later=SyntheticWorkbook.parts();later.compute(SyntheticWorkbook.WORKSHEET,(key,sheet)->sheet.replace("09-11-2020","10-11-2020"));
+        String reconciliation=stage(mvc,fixture,worker,SyntheticWorkbook.zip(later));
+        read(mvc,reconciliation+"/preview",owner).andExpect(jsonPath("$.review.state").value("RECONCILIATION_ONLY")).andExpect(jsonPath("$.commitAvailable").value(false));
+        submit(mvc,reconciliation+"/accept",owner,approve("UNITS_ONLY",true,2)).andExpect(status().isConflict());
+        read(mvc,ledger,owner).andExpect(jsonPath("$.revision").value(2)).andExpect(jsonPath("$.positions.length()").value(2));
     }
 }

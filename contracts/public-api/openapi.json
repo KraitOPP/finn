@@ -3,8 +3,8 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.8.0",
-    "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger, private holdings previews and durable jobs are implemented. Market operations and reviewed import posting remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."
+    "version": "0.9.0",
+    "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger, private holdings previews, reviewed opening acceptance and durable jobs are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
     {
@@ -17,7 +17,7 @@
       "sessionCookie": []
     }
   ],
-  "x-finn-status": "PARTIALLY_IMPLEMENTED_HOLDINGS_PREVIEW",
+  "x-finn-status": "PARTIALLY_IMPLEMENTED_REVIEWED_HOLDINGS",
   "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
   "paths": {
     "/api/v1/demo/quote": {
@@ -1639,6 +1639,161 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{portfolio}/accounts/{account}/imports/{id}/accept": {
+      "post": {
+        "operationId": "acceptHoldingsOpening",
+        "summary": "Accept a reviewed opening snapshot atomically or deduplicate an overlap",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "portfolio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoldingsAcceptanceReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoldingsAcceptanceInput"
               }
             }
           }
@@ -3885,7 +4040,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.8.0"
+        "const": "0.9.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -5495,7 +5650,11 @@
             "maxLength": 120
           },
           "source": {
-            "const": "MANUAL_USER"
+            "type": "string",
+            "enum": [
+              "MANUAL_USER",
+              "GROWW_HOLDINGS"
+            ]
           }
         },
         "required": [
@@ -7170,6 +7329,176 @@
         ],
         "additionalProperties": false
       },
+      "HoldingsAcceptanceInput": {
+        "type": "object",
+        "properties": {
+          "confirmInr": {
+            "const": true
+          },
+          "retainUnresolvedListings": {
+            "const": true
+          },
+          "acknowledgeDifferences": {
+            "type": "boolean"
+          },
+          "costMode": {
+            "type": "string",
+            "enum": [
+              "UNITS_ONLY",
+              "REPORTED_ROW_COST"
+            ]
+          },
+          "expectedLedgerRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          }
+        },
+        "required": [
+          "confirmInr",
+          "retainUnresolvedListings",
+          "acknowledgeDifferences",
+          "costMode",
+          "expectedLedgerRevision"
+        ],
+        "additionalProperties": false,
+        "description": "Explicit review only. Requires current ledger revision and acknowledgement of discrepancies when present. Source IDs are the idempotency boundary; changing an accepted decision conflicts."
+      },
+      "HoldingsAcceptanceReceipt": {
+        "type": "object",
+        "properties": {
+          "importId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "DUPLICATE"
+            ]
+          },
+          "costMode": {
+            "type": "string",
+            "enum": [
+              "UNITS_ONLY",
+              "REPORTED_ROW_COST"
+            ]
+          },
+          "acceptedRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "skippedRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "duplicateRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "ledgerRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "originalImportId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "acceptedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "importId",
+          "outcome",
+          "costMode",
+          "acceptedRows",
+          "skippedRows",
+          "duplicateRows",
+          "ledgerRevision",
+          "originalImportId",
+          "replayed",
+          "acceptedAt"
+        ],
+        "additionalProperties": false
+      },
+      "HoldingsReviewPlan": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "READY",
+              "ALREADY_ACCEPTED",
+              "DUPLICATE",
+              "SOURCE_CONFLICT",
+              "RECONCILIATION_ONLY",
+              "ROWS_BLOCKED",
+              "ARCHIVED"
+            ]
+          },
+          "currentLedgerRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "eligibleRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "duplicateRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "conflictRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "reportedCostAvailable": {
+            "type": "boolean"
+          },
+          "differencesRequireAcknowledgement": {
+            "type": "boolean"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HoldingsAcceptanceReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "currentLedgerRevision",
+          "eligibleRows",
+          "duplicateRows",
+          "conflictRows",
+          "reportedCostAvailable",
+          "differencesRequireAcknowledgement",
+          "receipt"
+        ],
+        "additionalProperties": false
+      },
       "HoldingsPreviewPage": {
         "type": "object",
         "properties": {
@@ -7210,7 +7539,10 @@
             "const": true
           },
           "commitAvailable": {
-            "const": false
+            "type": "boolean"
+          },
+          "review": {
+            "$ref": "#/components/schemas/HoldingsReviewPlan"
           }
         },
         "required": [
@@ -7221,10 +7553,11 @@
           "rows",
           "nextOffset",
           "requiresInrConfirmation",
-          "commitAvailable"
+          "commitAvailable",
+          "review"
         ],
         "additionalProperties": false,
-        "description": "Private preview only. Source summaries and detail totals remain separate. Upload/staging never writes the journal. The supported report does not establish trade history, fees, cash or returns."
+        "description": "Source summaries and detail totals remain separate. Upload and preview never write the journal. Explicit acceptance is limited to a first closing opening snapshot; later reports remain reconciliation evidence."
       },
       "SessionResponse": {
         "oneOf": [

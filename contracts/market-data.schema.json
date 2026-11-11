@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.8.0",
+  "$id": "urn:finn:contracts:market-data:0.9.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.8.0"
+      "const": "0.9.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1617,7 +1617,11 @@
           "maxLength": 120
         },
         "source": {
-          "const": "MANUAL_USER"
+          "type": "string",
+          "enum": [
+            "MANUAL_USER",
+            "GROWW_HOLDINGS"
+          ]
         }
       },
       "required": [
@@ -3292,6 +3296,176 @@
       ],
       "additionalProperties": false
     },
+    "HoldingsAcceptanceInput": {
+      "type": "object",
+      "properties": {
+        "confirmInr": {
+          "const": true
+        },
+        "retainUnresolvedListings": {
+          "const": true
+        },
+        "acknowledgeDifferences": {
+          "type": "boolean"
+        },
+        "costMode": {
+          "type": "string",
+          "enum": [
+            "UNITS_ONLY",
+            "REPORTED_ROW_COST"
+          ]
+        },
+        "expectedLedgerRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      },
+      "required": [
+        "confirmInr",
+        "retainUnresolvedListings",
+        "acknowledgeDifferences",
+        "costMode",
+        "expectedLedgerRevision"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit review only. Requires current ledger revision and acknowledgement of discrepancies when present. Source IDs are the idempotency boundary; changing an accepted decision conflicts."
+    },
+    "HoldingsAcceptanceReceipt": {
+      "type": "object",
+      "properties": {
+        "importId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "APPLIED",
+            "DUPLICATE"
+          ]
+        },
+        "costMode": {
+          "type": "string",
+          "enum": [
+            "UNITS_ONLY",
+            "REPORTED_ROW_COST"
+          ]
+        },
+        "acceptedRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "skippedRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "duplicateRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "ledgerRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "originalImportId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replayed": {
+          "type": "boolean"
+        },
+        "acceptedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "importId",
+        "outcome",
+        "costMode",
+        "acceptedRows",
+        "skippedRows",
+        "duplicateRows",
+        "ledgerRevision",
+        "originalImportId",
+        "replayed",
+        "acceptedAt"
+      ],
+      "additionalProperties": false
+    },
+    "HoldingsReviewPlan": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "READY",
+            "ALREADY_ACCEPTED",
+            "DUPLICATE",
+            "SOURCE_CONFLICT",
+            "RECONCILIATION_ONLY",
+            "ROWS_BLOCKED",
+            "ARCHIVED"
+          ]
+        },
+        "currentLedgerRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "eligibleRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "duplicateRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "conflictRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "reportedCostAvailable": {
+          "type": "boolean"
+        },
+        "differencesRequireAcknowledgement": {
+          "type": "boolean"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HoldingsAcceptanceReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "currentLedgerRevision",
+        "eligibleRows",
+        "duplicateRows",
+        "conflictRows",
+        "reportedCostAvailable",
+        "differencesRequireAcknowledgement",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
     "HoldingsPreviewPage": {
       "type": "object",
       "properties": {
@@ -3332,7 +3506,10 @@
           "const": true
         },
         "commitAvailable": {
-          "const": false
+          "type": "boolean"
+        },
+        "review": {
+          "$ref": "#/$defs/HoldingsReviewPlan"
         }
       },
       "required": [
@@ -3343,10 +3520,11 @@
         "rows",
         "nextOffset",
         "requiresInrConfirmation",
-        "commitAvailable"
+        "commitAvailable",
+        "review"
       ],
       "additionalProperties": false,
-      "description": "Private preview only. Source summaries and detail totals remain separate. Upload/staging never writes the journal. The supported report does not establish trade history, fees, cash or returns."
+      "description": "Source summaries and detail totals remain separate. Upload and preview never write the journal. Explicit acceptance is limited to a first closing opening snapshot; later reports remain reconciliation evidence."
     },
     "SessionResponse": {
       "oneOf": [

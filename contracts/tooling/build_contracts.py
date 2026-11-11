@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.8.0"
+VERSION = "0.9.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -247,7 +247,7 @@ def definitions() -> dict:
                          "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}}
     d["PreferencesUpdate"] = obj(preference_fields, "Owner comes only from the authenticated session. Revision prevents silent lost updates. Only supported IANA zone IDs are accepted by Java.")
     d["Preferences"] = obj({**preference_fields, "deliveryAvailable": {"const": False}}, "Delivery choices are stored; no notification or email service is enabled yet.")
-    d["CatalogueCompany"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "source": {"const": "MANUAL_USER"}})
+    d["CatalogueCompany"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "source": enum(["MANUAL_USER","GROWW_HOLDINGS"])})
     d["CatalogueCompanies"] = array(ref("CatalogueCompany"), maxItems=100)
     d["CompanyInput"] = obj({"name": text(maxLength=120)})
     isin = nullable(text(pattern=r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$", maxLength=12))
@@ -297,7 +297,12 @@ def definitions() -> dict:
     d["HoldingsTotals"]=obj({"buyValue":evidence_amount,"closingValue":evidence_amount,"unrealisedPnl":evidence_amount})
     d["HoldingsComparison"]=obj({"field":enum(["BUY_VALUE","CLOSING_VALUE","UNREALISED_PNL"]),"reported":evidence_amount,"detailSum":evidence_amount,"difference":evidence_amount,"status":enum(["MATCH","MISMATCH","INCOMPLETE"])})
     d["HoldingsPreviewMetadata"]=obj({"profile":{"const":"groww-holdings-xlsx-v1"},"asOfDate":ref("SessionDate"),"reportedSummary":ref("HoldingsTotals"),"detailTotals":ref("HoldingsTotals"),"comparisons":array(ref("HoldingsComparison"),minItems=3,maxItems=3),"warnings":array(ref("OpaqueId"),maxItems=32),"rowCount":{"type":"integer","minimum":1,"maximum":1000}})
-    d["HoldingsPreviewPage"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"ledgerRevisionAtPreview":ledger_revision,"metadata":ref("HoldingsPreviewMetadata"),"rows":array(ref("HoldingsPreviewRow"),maxItems=100),"nextOffset":nullable({"type":"integer","minimum":1,"maximum":1000}),"requiresInrConfirmation":{"const":True},"commitAvailable":{"const":False}},"Private preview only. Source summaries and detail totals remain separate. Upload/staging never writes the journal. The supported report does not establish trade history, fees, cash or returns.")
+    cost_mode=enum(["UNITS_ONLY","REPORTED_ROW_COST"])
+    import_count={"type":"integer","minimum":0,"maximum":1000}
+    d["HoldingsAcceptanceInput"]=obj({"confirmInr":{"const":True},"retainUnresolvedListings":{"const":True},"acknowledgeDifferences":{"type":"boolean"},"costMode":cost_mode,"expectedLedgerRevision":ledger_revision},"Explicit review only. Requires current ledger revision and acknowledgement of discrepancies when present. Source IDs are the idempotency boundary; changing an accepted decision conflicts.")
+    d["HoldingsAcceptanceReceipt"]=obj({"importId":ref("OpaqueId"),"outcome":enum(["APPLIED","DUPLICATE"]),"costMode":cost_mode,"acceptedRows":import_count,"skippedRows":import_count,"duplicateRows":import_count,"ledgerRevision":ledger_revision,"originalImportId":ledger_id,"replayed":{"type":"boolean"},"acceptedAt":ref("UtcInstant")})
+    d["HoldingsReviewPlan"]=obj({"state":enum(["READY","ALREADY_ACCEPTED","DUPLICATE","SOURCE_CONFLICT","RECONCILIATION_ONLY","ROWS_BLOCKED","ARCHIVED"]),"currentLedgerRevision":ledger_revision,"eligibleRows":import_count,"duplicateRows":import_count,"conflictRows":import_count,"reportedCostAvailable":{"type":"boolean"},"differencesRequireAcknowledgement":{"type":"boolean"},"receipt":nullable(ref("HoldingsAcceptanceReceipt"))})
+    d["HoldingsPreviewPage"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"ledgerRevisionAtPreview":ledger_revision,"metadata":ref("HoldingsPreviewMetadata"),"rows":array(ref("HoldingsPreviewRow"),maxItems=100),"nextOffset":nullable({"type":"integer","minimum":1,"maximum":1000}),"requiresInrConfirmation":{"const":True},"commitAvailable":{"type":"boolean"},"review":ref("HoldingsReviewPlan")},"Source summaries and detail totals remain separate. Upload and preview never write the journal. Explicit acceptance is limited to a first closing opening snapshot; later reports remain reconciliation evidence.")
     d["SessionResponse"] = {"oneOf": [
         obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
         obj({**page_common, "authenticated": {"const": False}, "user": {"type": "null"}, "csrf": ref("CsrfInformation")}),
@@ -417,6 +422,7 @@ def public_api_document() -> dict:
         import_path+"/{id}/preview":{"get":maintained("getHoldingsPreview","Review a completed holdings snapshot preview","HoldingsPreviewPage",[*import_id,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("offset","query",{"type":"integer","minimum":0,"maximum":1000})])},
         import_path+"/{id}/original":{"get":original},
         import_path+"/{id}/retry":{"post":maintained("retryHoldingsPreview","Create a new job for a recoverable preview failure","ImportTicket",[*import_id,csrf_header])},
+        import_path+"/{id}/accept":{"post":maintained("acceptHoldingsOpening","Accept a reviewed opening snapshot atomically or deduplicate an overlap","HoldingsAcceptanceReceipt",import_id,"HoldingsAcceptanceInput")},
         journal_path+"/ledger": {"get":maintained("getAccountLedger","Replay the owned account ledger and coverage","LedgerView",ledger_account)},
         journal_path+"/transactions": {"get":maintained("getLedgerEvents","Page the immutable journal","LedgerPage",[*ledger_account,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("before","query",{"type":"integer","minimum":1,"maximum":10001})]),"post":maintained("recordLedgerEvent","Record an accepted investment entry with an idempotency key","LedgerReceipt",ledger_account,"LedgerRecordInput")},
         journal_path+"/transactions/{event}/reverse": {"post":maintained("reverseLedgerEvent","Append a linked reversal after validating chronological balances","LedgerReceipt",ledger_event,"LedgerReverseInput")},
@@ -435,10 +441,10 @@ def public_api_document() -> dict:
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger, private holdings previews and durable jobs are implemented. Market operations and reviewed import posting remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
+                 "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger, private holdings previews, reviewed opening acceptance and durable jobs are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
-        "x-finn-status": "PARTIALLY_IMPLEMENTED_HOLDINGS_PREVIEW",
+        "x-finn-status": "PARTIALLY_IMPLEMENTED_REVIEWED_HOLDINGS",
         "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
         "paths": paths,
         "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-FINN_SESSION",

@@ -69,10 +69,13 @@ class FoundationIntegrationTest {
     @Autowired dev.finn.jobs.JobQueue jobs;
     @Autowired dev.finn.imports.HoldingsImports imports;
     @Autowired dev.finn.imports.HoldingsImportWorker importWorker;
+    @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
 
     @Test void holdingsPreviewIsPrivateAndSurvivesAnExpiredLease() throws Exception {ImportDatabaseChecks.previewOwnershipAndRecovery(mvc,jdbc,jobs,imports,importWorker);}
     @Test void unsafeHoldingsPackagesNeverBecomeDownloadableOrPost() throws Exception {ImportDatabaseChecks.rejectsUnsafeUploads(mvc,importWorker);}
     @Test void exhaustedImportCanBeRetriedWithoutChangingTheOriginalJob() throws Exception {ImportDatabaseChecks.exhaustedLeaseCanBeRetriedAsANewJob(mvc,jdbc,jobs,importWorker);}
+    @Test void reviewedHoldingsAcceptanceIsAtomicAndIdempotent() throws Exception {ImportDatabaseChecks.atomicReviewedOpening(mvc,importWorker,transactions);}
+    @Test void overlappingExportsAreDeduplicatedOrFlaggedForReview() throws Exception {ImportDatabaseChecks.overlappingReportsNeverPostAgain(mvc,importWorker);}
 
     @Test void ledgerCommandsAreIdempotentAndCorrectionsAreAtomic() throws Exception {LedgerDatabaseChecks.recordCorrectAndReplay(mvc,jdbc);}
     @Test void competingLedgerWritesCannotOversell() throws Exception {LedgerDatabaseChecks.concurrentSales(mvc);}
@@ -97,7 +100,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.8.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.9.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

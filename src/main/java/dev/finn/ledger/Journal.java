@@ -23,6 +23,7 @@ import static dev.finn.ledger.LedgerRules.text;
 @Service
 public class Journal {
     public record Receipt(UUID commandId,long revision,List<UUID> eventIds,boolean replayed){}
+    public record Opening(UUID securityId,BigDecimal quantity,BigDecimal reportedCost,int sourceRow){}
     public record EventView(UUID eventId,long sequence,LocalDate effectiveDate,String kind,UUID securityId,String securityName,
                             UUID listingId,String exchange,String quantity,String price,String amount,String fees,
                             UUID reversalOf,UUID reversedBy,UUID replacesEventId,String reference,String source,
@@ -82,6 +83,27 @@ public class Journal {
     @Transactional public Receipt correct(UUID portfolio,UUID account,UUID original,LedgerCommands.Correct input){
         return correction(portfolio,account,original,input.idempotencyKey(),manual(input.replacement(),1),input.reference());
     }
+    @Transactional public Receipt recordReviewedOpening(UUID owner,UUID portfolio,UUID account,UUID importId,LocalDate asOf,
+                                                        long expectedRevision,String costMode,List<Opening> holdings){
+        portfolios.requireAccount(owner,portfolio,account,true);
+        String hash=hash("GROWW_OPENING",importId,null,costMode);
+        Receipt prior=existing(owner,account,importId,hash);if(prior!=null)return prior;
+        long base=revision(owner,account);
+        if(base!=expectedRevision)throw new ApiFailure(409,"IMPORT_LEDGER_CHANGED");
+        if(holdings.isEmpty()||holdings.size()>LedgerEngine.MAX_POSITIONS)throw ApiFailure.invalid();
+        if(hasEquityRecords(owner,account))throw new ApiFailure(409,"IMPORT_RECONCILIATION_REQUIRED");
+        var additions=new ArrayList<NewEvent>();
+        for(Opening row:holdings){
+            var event=new LedgerEvent(UUID.randomUUID(),base+additions.size()+1,asOf,LedgerEvent.Kind.OPENING_POSITION,row.securityId(),null,row.quantity(),null,row.reportedCost(),null,null,
+                    "Workbook row "+row.sourceRow(),LedgerEvent.Source.GROWW_HOLDINGS);
+            additions.add(new NewEvent(event,importId,null));
+        }
+        return append(owner,portfolio,account,importId,hash,base,additions);
+    }
+    public boolean hasEquityRecords(UUID owner,UUID account){
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM finn.ledger_event WHERE owner_id=? AND account_id=? AND security_id IS NOT NULL)",Boolean.class,owner,account));
+    }
+    public long currentRevision(UUID owner,UUID account){return revision(owner,account);}
     private Receipt correction(UUID portfolio,UUID account,UUID original,UUID key,LedgerEvent replacement,String note){
         UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);
         note=reference(note);String hash=hash(replacement==null?"REVERSE":"CORRECT",original,replacement,note);
@@ -99,14 +121,14 @@ public class Journal {
     private Receipt append(UUID owner,UUID portfolio,UUID account,UUID key,String hash,long base,List<NewEvent> additions){
         if(base+additions.size()>LedgerEngine.MAX_EVENTS)throw new LedgerViolation(LedgerViolation.Code.LEDGER_CAPACITY_REACHED);
         var previous=load(owner,account);var events=new ArrayList<>(previous.stream().map(Stored::event).toList());
-        for(var addition:additions){var event=addition.event();checkIdentity(owner,event);events.add(event);}
+        for(var addition:additions){var event=addition.event();if(event.source()!=LedgerEvent.Source.GROWW_HOLDINGS)checkIdentity(owner,event);events.add(event);}
         var result=LedgerEngine.replay(events);
         UUID command=UUID.randomUUID();long revision=base+additions.size();
         jdbc.update("INSERT INTO finn.ledger_command(command_id,owner_id,portfolio_id,account_id,idempotency_key,input_hash,revision) VALUES (?,?,?,?,?,?,?)",command,owner,portfolio,account,key,hash,revision);
-        for(var addition:additions){var e=addition.event();jdbc.update("""
+        jdbc.batchUpdate("""
                 INSERT INTO finn.ledger_event(event_id,owner_id,portfolio_id,account_id,command_id,sequence,effective_date,event_type,security_id,listing_id,quantity,price,amount,fees,reversal_of,replaces_event_id,reference,source,source_reference)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                """,e.eventId(),owner,portfolio,account,command,e.sequence(),e.effectiveDate(),e.kind().name(),e.securityId(),e.listingId(),e.quantity(),e.price(),e.amount(),e.fees(),e.reversalOf(),addition.replacesEventId(),e.reference(),e.source().name(),addition.sourceReference());}
+                """,additions.stream().map(addition->{var e=addition.event();return new Object[]{e.eventId(),owner,portfolio,account,command,e.sequence(),e.effectiveDate(),e.kind().name(),e.securityId(),e.listingId(),e.quantity(),e.price(),e.amount(),e.fees(),e.reversalOf(),addition.replacesEventId(),e.reference(),e.source().name(),addition.sourceReference()};}).toList());
         if(jdbc.update("UPDATE finn.investment_account SET lock_version=?,history_status=?,history_start_date=? WHERE owner_id=? AND account_id=? AND lock_version=?",revision,result.historyStatus(),result.coverageStart(),owner,account,base)!=1)throw ApiFailure.conflict();
         audit.record(AuditTrail.Action.LEDGER_RECORDED,owner,command);
         return new Receipt(command,revision,additions.stream().map(item->item.event().eventId()).toList(),false);
