@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.19.0"
+VERSION = "0.20.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -184,6 +184,32 @@ def definitions() -> dict:
     d["PriceEvaluationReport"] = obj({
         "status": enum(["PAUSED","EXPIRED","WAITING_FOR_PRICE","STALE","EVALUATED","INSUFFICIENT_HISTORY"]),
         "items": array(ref("PriceEvaluation"),maxItems=50),
+    })
+    activity_kind = enum(["PRICE_RULE","REVIEW_REMINDER","PORTFOLIO_BRIEF","VOLUME_RULE","ALLOCATION_RULE","COMPANY_EVENT"])
+    channel = enum(["IN_APP","EMAIL_PREVIEW"])
+    delivery_status = enum(["PENDING","DELIVERED","SUPPRESSED","PREVIEWED","FAILED"])
+    d["Notification"] = obj({
+        "activityId": ref("OpaqueId"), "kind": activity_kind, "subjectId": ref("OpaqueId"), "title": text(maxLength=160),
+        "createdAt": ref("UtcInstant"), "readAt": nullable(ref("UtcInstant")),
+    })
+    d["NotificationPage"] = obj({"items": array(ref("Notification"),maxItems=40), "nextBefore": nullable(ref("OpaqueId"))})
+    d["NotificationRead"] = obj({"read": {"type":"boolean"}})
+    d["NotificationDelivery"] = obj({
+        "channel": channel, "status": delivery_status, "attempts": {"type":"integer","minimum":0,"maximum":3},
+        "nextAttemptAt": ref("UtcInstant"), "completedAt": nullable(ref("UtcInstant")), "failureCode": nullable(ref("OpaqueId")),
+    })
+    d["NotificationAttempt"] = obj({
+        "channel": channel, "attempt": {"type":"integer","minimum":1,"maximum":3},
+        "outcome": enum(["DELIVERED","SUPPRESSED","PREVIEWED","RETRY","FAILED"]), "attemptedAt": ref("UtcInstant"),
+    })
+    d["NotificationDetail"] = obj({
+        "notification": ref("Notification"), "price": nullable(ref("PriceEvaluation")),
+        "deliveries": array(ref("NotificationDelivery"),maxItems=2), "attempts": array(ref("NotificationAttempt"),maxItems=6),
+    })
+    d["NotificationDeliveryPage"] = obj({
+        "emailPreviewEnabled": {"type":"boolean"},
+        "items": array(obj({"activityId": ref("OpaqueId"), "title": text(maxLength=160), "kind": activity_kind,
+                            "delivery": ref("NotificationDelivery")}),maxItems=50),
     })
     diagnostic_count = {"type":"integer","minimum":0}
     d["PriceCoverage"] = obj({field: diagnostic_count for field in ("trackedListings","withClose","recentClose")})
@@ -377,7 +403,7 @@ def definitions() -> dict:
                          "inAppNotifications": {"type": "boolean"}, "emailNotifications": {"type": "boolean"},
                          "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}}
     d["PreferencesUpdate"] = obj(preference_fields, "Owner comes only from the authenticated session. Revision prevents silent lost updates. Only supported IANA zone IDs are accepted by Java.")
-    d["Preferences"] = obj({**preference_fields, "deliveryAvailable": {"const": False}}, "Delivery choices are stored; no notification or email service is enabled yet.")
+    d["Preferences"] = obj({**preference_fields, "deliveryAvailable": {"const": True}}, "In-app delivery is enabled. An optional email preview is configured separately.")
     d["CatalogueCompany"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "source": enum(["MANUAL_USER","GROWW_HOLDINGS"])})
     d["CatalogueCompanies"] = array(ref("CatalogueCompany"), maxItems=100)
     d["CompanyInput"] = obj({"name": text(maxLength=120)})
@@ -577,6 +603,10 @@ def public_api_document() -> dict:
         "/api/v1/monitoring/rules/{id}":{"post": maintained("editPriceRule","Append a reviewed price rule version","PriceRule",identifier,"PriceRuleEdit")},
         "/api/v1/monitoring/rules/{id}/versions":{"get": maintained("getPriceRuleVersions","Inspect the owned rule and its previous definitions","PriceRuleList",identifier)},
         "/api/v1/monitoring/rules/{id}/evaluations":{"get": maintained("getPriceRuleEvaluations","Read observed decisions and retained evidence","PriceEvaluationReport",identifier)},
+        "/api/v1/monitoring/notifications":{"get": maintained("listNotifications","Read an owned page of delivered in-app notifications","NotificationPage",[parameter("before","query",text(format="uuid"))])},
+        "/api/v1/monitoring/notifications/{id}":{"get": maintained("getNotification","Inspect an owned in-app item and its delivery evidence","NotificationDetail",identifier)},
+        "/api/v1/monitoring/notifications/{id}/read":{"post": maintained("setNotificationRead","Change the read state of an owned notification","Notification",identifier,"NotificationRead")},
+        "/api/v1/monitoring/deliveries":{"get": maintained("listNotificationDeliveries","Inspect pending, completed, and failed attempts for the owner","NotificationDeliveryPage")},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},

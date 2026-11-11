@@ -13,7 +13,11 @@ public class ActivityWriter {
     public enum Kind { PRICE_RULE, REVIEW_REMINDER, PORTFOLIO_BRIEF, VOLUME_RULE, ALLOCATION_RULE, COMPANY_EVENT }
 
     private final JdbcTemplate jdbc;
-    ActivityWriter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    private final EmailPreviewSink preview;
+    ActivityWriter(JdbcTemplate jdbc, EmailPreviewSink preview) {
+        this.jdbc = jdbc;
+        this.preview = preview;
+    }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void add(UUID owner, Kind kind, UUID subject, String key, String title, UUID evidence, OffsetDateTime availableAt) {
@@ -27,5 +31,11 @@ public class ActivityWriter {
                 INSERT INTO finn.activity_delivery(owner_id,activity_id,channel,next_attempt_at)
                 VALUES (?,?,'IN_APP',?)
                 """, owner, id, availableAt);
+        if (preview.enabled()) {
+            jdbc.update("""
+                    INSERT INTO finn.activity_delivery(owner_id,activity_id,channel,next_attempt_at)
+                    SELECT owner_id,?,'EMAIL_PREVIEW',? FROM finn.user_preferences WHERE owner_id=? AND email_notifications
+                    """, id, availableAt, owner);
+        }
     }
 }

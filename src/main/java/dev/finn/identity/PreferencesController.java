@@ -27,7 +27,7 @@ public class PreferencesController {
     private Preferences read(UUID owner) {
         return jdbc.queryForObject("SELECT * FROM finn.user_preferences WHERE owner_id=?", (row, index) ->
                 new Preferences(row.getString("time_zone"), row.getString("currency"), row.getBoolean("in_app_notifications"),
-                        row.getBoolean("email_notifications"), row.getLong("revision"), false), owner);
+                        row.getBoolean("email_notifications"), row.getLong("revision"), true), owner);
     }
     private UUID initialize() {
         UUID owner=users.requireId();

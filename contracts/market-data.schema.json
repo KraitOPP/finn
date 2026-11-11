@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.19.0",
+  "$id": "urn:finn:contracts:market-data:0.20.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.19.0"
+      "const": "0.20.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1298,6 +1298,280 @@
       },
       "required": [
         "status",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "Notification": {
+      "type": "object",
+      "properties": {
+        "activityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "PRICE_RULE",
+            "REVIEW_REMINDER",
+            "PORTFOLIO_BRIEF",
+            "VOLUME_RULE",
+            "ALLOCATION_RULE",
+            "COMPANY_EVENT"
+          ]
+        },
+        "subjectId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "createdAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "readAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "activityId",
+        "kind",
+        "subjectId",
+        "title",
+        "createdAt",
+        "readAt"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Notification"
+          },
+          "maxItems": 40
+        },
+        "nextBefore": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "nextBefore"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationRead": {
+      "type": "object",
+      "properties": {
+        "read": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "read"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationDelivery": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "string",
+          "enum": [
+            "IN_APP",
+            "EMAIL_PREVIEW"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "DELIVERED",
+            "SUPPRESSED",
+            "PREVIEWED",
+            "FAILED"
+          ]
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "nextAttemptAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failureCode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "channel",
+        "status",
+        "attempts",
+        "nextAttemptAt",
+        "completedAt",
+        "failureCode"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationAttempt": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "string",
+          "enum": [
+            "IN_APP",
+            "EMAIL_PREVIEW"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "DELIVERED",
+            "SUPPRESSED",
+            "PREVIEWED",
+            "RETRY",
+            "FAILED"
+          ]
+        },
+        "attemptedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "channel",
+        "attempt",
+        "outcome",
+        "attemptedAt"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationDetail": {
+      "type": "object",
+      "properties": {
+        "notification": {
+          "$ref": "#/$defs/Notification"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PriceEvaluation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deliveries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NotificationDelivery"
+          },
+          "maxItems": 2
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NotificationAttempt"
+          },
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "notification",
+        "price",
+        "deliveries",
+        "attempts"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationDeliveryPage": {
+      "type": "object",
+      "properties": {
+        "emailPreviewEnabled": {
+          "type": "boolean"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "activityId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "PRICE_RULE",
+                  "REVIEW_REMINDER",
+                  "PORTFOLIO_BRIEF",
+                  "VOLUME_RULE",
+                  "ALLOCATION_RULE",
+                  "COMPANY_EVENT"
+                ]
+              },
+              "delivery": {
+                "$ref": "#/$defs/NotificationDelivery"
+              }
+            },
+            "required": [
+              "activityId",
+              "title",
+              "kind",
+              "delivery"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "emailPreviewEnabled",
         "items"
       ],
       "additionalProperties": false
@@ -3018,7 +3292,7 @@
           "maximum": 9007199254740991
         },
         "deliveryAvailable": {
-          "const": false
+          "const": true
         }
       },
       "required": [
@@ -3030,7 +3304,7 @@
         "deliveryAvailable"
       ],
       "additionalProperties": false,
-      "description": "Delivery choices are stored; no notification or email service is enabled yet."
+      "description": "In-app delivery is enabled. An optional email preview is configured separately."
     },
     "CatalogueCompany": {
       "type": "object",

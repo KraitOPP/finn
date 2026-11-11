@@ -69,6 +69,12 @@ class FoundationIntegrationTest {
     @org.springframework.test.context.bean.override.mockito.MockitoSpyBean dev.finn.market.YahooProcess yahoo;
     @Autowired dev.finn.market.MarketPrices prices;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean dev.finn.monitoring.EmailPreviewSink emailPreview;
+    @Autowired dev.finn.monitoring.ActivityWriter activityWriter;
+    @Autowired dev.finn.monitoring.DeliveryWorker deliveryWorker;
+    @Test void notificationDeliveryIsPrivateAndRetriesIndependently() throws Exception {
+        dev.finn.market.NotificationChecks.deliversInAppIndependentlyFromEmail(mvc,jdbc,transactions,activityWriter,deliveryWorker,emailPreview);
+    }
     @Autowired dev.finn.monitoring.PriceEvaluationWorker priceWorker;
     @Test void priceEvaluationIsDurableAndDoesNotReplayOldObservations() throws Exception {
         dev.finn.market.PriceEvaluationChecks.persistsOnlyNewSessionsAndSurvivesRollback(mvc,jdbc,transactions,priceWorker);
@@ -117,7 +123,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.19.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.20.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())
@@ -141,7 +147,7 @@ class FoundationIntegrationTest {
                 """;
         mvc.perform(put("/api/v1/preferences").with(first).contentType("application/json").content(changed)).andExpect(status().isForbidden());
         mvc.perform(put("/api/v1/preferences").with(first).with(csrf()).contentType("application/json").content(changed))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.revision").value(1)).andExpect(jsonPath("$.deliveryAvailable").value(false));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.revision").value(1)).andExpect(jsonPath("$.deliveryAvailable").value(true));
         mvc.perform(get("/api/v1/preferences").with(second).param("owner", "fictional-preference-one"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.timeZone").value("Asia/Kolkata"));
         mvc.perform(put("/api/v1/preferences").with(first).with(csrf()).contentType("application/json").content(changed))
