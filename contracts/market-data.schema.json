@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.17.0",
+  "$id": "urn:finn:contracts:market-data:0.18.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.17.0"
+      "const": "0.18.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1018,6 +1018,153 @@
       "required": [
         "watchlist",
         "items"
+      ],
+      "additionalProperties": false
+    },
+    "PriceRuleSettings": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "MANUAL_REVIEWED",
+            "YAHOO_YFINANCE"
+          ]
+        },
+        "comparison": {
+          "type": "string",
+          "enum": [
+            "ABOVE",
+            "BELOW",
+            "CROSS_ABOVE",
+            "CROSS_BELOW",
+            "MOVE_UP",
+            "MOVE_DOWN"
+          ]
+        },
+        "threshold": {
+          "$ref": "#/$defs/PositiveDecimalString"
+        },
+        "maxAgeDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "cooldownMinutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10080
+        },
+        "rearm": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "expiresOn": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "listingId",
+        "name",
+        "source",
+        "comparison",
+        "threshold",
+        "maxAgeDays",
+        "cooldownMinutes",
+        "rearm",
+        "enabled",
+        "expiresOn"
+      ],
+      "additionalProperties": false
+    },
+    "PriceRule": {
+      "type": "object",
+      "properties": {
+        "ruleId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "settings": {
+          "$ref": "#/$defs/PriceRuleSettings"
+        },
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "createdAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "ruleId",
+        "revision",
+        "settings",
+        "exchange",
+        "symbol",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "PriceRuleList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PriceRule"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "PriceRuleEdit": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "settings": {
+          "$ref": "#/$defs/PriceRuleSettings"
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "settings"
       ],
       "additionalProperties": false
     },

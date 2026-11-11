@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.17.0"
+VERSION = "0.18.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -154,6 +154,22 @@ def definitions() -> dict:
         "exchange": enum(["NSE","BSE"]), "symbol": text(maxLength=64), "latest": nullable(ref("PrivateClose")),
     })
     d["WatchlistDetail"] = obj({"watchlist": ref("WatchlistSummary"), "items": array(ref("WatchlistItem"),maxItems=100)})
+    d["PriceRuleSettings"] = obj({
+        "listingId": ref("OpaqueId"), "name": text(maxLength=80),
+        "source": enum(["MANUAL_REVIEWED","YAHOO_YFINANCE"]),
+        "comparison": enum(["ABOVE","BELOW","CROSS_ABOVE","CROSS_BELOW","MOVE_UP","MOVE_DOWN"]),
+        "threshold": ref("PositiveDecimalString"),
+        "maxAgeDays": {"type":"integer","minimum":1,"maximum":4},
+        "cooldownMinutes": {"type":"integer","minimum":0,"maximum":10080},
+        "rearm": {"type":"boolean"}, "enabled": {"type":"boolean"}, "expiresOn": nullable(ref("SessionDate")),
+    })
+    price_rule_revision = {"type":"integer","minimum":1,"maximum":100}
+    d["PriceRule"] = obj({
+        "ruleId": ref("OpaqueId"), "revision": price_rule_revision, "settings": ref("PriceRuleSettings"),
+        "exchange": enum(["NSE","BSE"]), "symbol": text(maxLength=64), "createdAt": ref("UtcInstant"),
+    })
+    d["PriceRuleList"] = obj({"items": array(ref("PriceRule"),maxItems=100)})
+    d["PriceRuleEdit"] = obj({"expectedRevision": price_rule_revision, "settings": ref("PriceRuleSettings")})
     diagnostic_count = {"type":"integer","minimum":0}
     d["PriceCoverage"] = obj({field: diagnostic_count for field in ("trackedListings","withClose","recentClose")})
     d["PriceQuota"] = obj({
@@ -539,6 +555,12 @@ def public_api_document() -> dict:
     market_refresh=maintained("queuePrivateYahooDaily","Queue a bounded completed-session window for the reviewed mapping","PriceFetchQueued",listing_parameter,"PriceFetchWindow")
     market_refresh["responses"]["202"]=market_refresh["responses"].pop("200")
     paths.update({
+        "/api/v1/monitoring/rules":{
+            "get": maintained("listPriceRules","List owned completed-session alert rules","PriceRuleList"),
+            "post": maintained("createPriceRule","Save an owner-scoped price rule","PriceRule",input_name="PriceRuleSettings"),
+        },
+        "/api/v1/monitoring/rules/{id}":{"post": maintained("editPriceRule","Append a reviewed price rule version","PriceRule",identifier,"PriceRuleEdit")},
+        "/api/v1/monitoring/rules/{id}/versions":{"get": maintained("getPriceRuleVersions","Inspect the owned rule and its previous definitions","PriceRuleList",identifier)},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
