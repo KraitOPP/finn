@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.16.0",
+  "contractVersion": "0.17.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "96c8b42b752e12b3868495a5599eeba6531d92718720f19d84255b1e8104ba2e",
+  "sourceSha256": "cb7868b26bb40e4034b5b3e4ee59f48d30c837d6343655a70e7001c500a86aae",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -64,6 +64,7 @@ export const contractMetadata = {
     "LedgerView",
     "ListingIdentity",
     "ListingInput",
+    "MarketDiagnostics",
     "MarketFeed",
     "NonNegativeDecimalString",
     "OpaqueId",
@@ -77,9 +78,12 @@ export const contractMetadata = {
     "Preferences",
     "PreferencesUpdate",
     "PriceBasis",
+    "PriceCoverage",
     "PriceFetchQueued",
     "PriceFetchWindow",
     "PriceObservation",
+    "PriceQuota",
+    "PriceRun",
     "PrivateClose",
     "PrivateCloseHistory",
     "Problem",
@@ -922,7 +926,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.16.0"
+    "const": "0.17.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3530,6 +3534,89 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "MarketDiagnostics": {
+    "type": "object",
+    "properties": {
+      "yahooCapability": {
+        "type": "string",
+        "enum": [
+          "DISABLED",
+          "CONFIGURATION_REQUIRED",
+          "PRIVATE_DAILY"
+        ]
+      },
+      "officialFiles": {
+        "type": "string",
+        "enum": [
+          "UNVERIFIED"
+        ]
+      },
+      "streaming": {
+        "type": "string",
+        "enum": [
+          "UNVERIFIED"
+        ]
+      },
+      "providerDelay": {
+        "type": "string",
+        "enum": [
+          "UNKNOWN"
+        ]
+      },
+      "providerQuota": {
+        "type": "string",
+        "enum": [
+          "UNKNOWN"
+        ]
+      },
+      "lastSuccessfulAcquisition": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sourceValidationFailuresLastDay": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "failedRunsLastDay": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "coverage": {
+        "$ref": "#/components/schemas/PriceCoverage"
+      },
+      "quota": {
+        "$ref": "#/components/schemas/PriceQuota"
+      },
+      "recentRuns": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PriceRun"
+        },
+        "maxItems": 15
+      }
+    },
+    "required": [
+      "yahooCapability",
+      "officialFiles",
+      "streaming",
+      "providerDelay",
+      "providerQuota",
+      "lastSuccessfulAcquisition",
+      "sourceValidationFailuresLastDay",
+      "failedRunsLastDay",
+      "coverage",
+      "quota",
+      "recentRuns"
+    ],
+    "additionalProperties": false,
+    "description": "Owner-scoped diagnostics. The quota is FINN's application limit and says nothing about the provider's quota."
+  },
   "MarketFeed": {
     "type": "object",
     "properties": {
@@ -3925,6 +4012,29 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "PriceCoverage": {
+    "type": "object",
+    "properties": {
+      "trackedListings": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "withClose": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "recentClose": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "required": [
+      "trackedListings",
+      "withClose",
+      "recentClose"
+    ],
+    "additionalProperties": false
+  },
   "PriceFetchQueued": {
     "type": "object",
     "properties": {
@@ -4073,6 +4183,118 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "One present EOD observation. A missing close is represented by unavailable result and no observation. Partial OHLC/volume stay null. As-traded and adjusted series are never interchangeable."
+  },
+  "PriceQuota": {
+    "type": "object",
+    "properties": {
+      "requestsLastHour": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "hourlyLimit": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "remaining": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "pending": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "pendingLimit": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "HOURLY_LIMIT_REACHED",
+          "PENDING_LIMIT_REACHED"
+        ]
+      }
+    },
+    "required": [
+      "requestsLastHour",
+      "hourlyLimit",
+      "remaining",
+      "pending",
+      "pendingLimit",
+      "status"
+    ],
+    "additionalProperties": false
+  },
+  "PriceRun": {
+    "type": "object",
+    "properties": {
+      "jobId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 72
+      },
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "QUEUED",
+          "RUNNING",
+          "SUCCEEDED",
+          "PARTIALLY_SUCCEEDED",
+          "FAILED",
+          "CANCELLED"
+        ]
+      },
+      "failureCode": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "updatedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "rowsReturned": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "jobId",
+      "listingId",
+      "symbol",
+      "exchange",
+      "state",
+      "failureCode",
+      "updatedAt",
+      "rowsReturned"
+    ],
+    "additionalProperties": false
   },
   "PrivateClose": {
     "type": "object",

@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.16.0",
+    "version": "0.17.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -2618,6 +2618,87 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WatchlistTrack"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/status": {
+      "get": {
+        "operationId": "getMarketDiagnostics",
+        "summary": "Read acquisition health and coverage for the signed-in owner",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketDiagnostics"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           }
@@ -6476,7 +6557,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.16.0"
+        "const": "0.17.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -7489,6 +7570,224 @@
           "items"
         ],
         "additionalProperties": false
+      },
+      "PriceCoverage": {
+        "type": "object",
+        "properties": {
+          "trackedListings": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "withClose": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recentClose": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "trackedListings",
+          "withClose",
+          "recentClose"
+        ],
+        "additionalProperties": false
+      },
+      "PriceQuota": {
+        "type": "object",
+        "properties": {
+          "requestsLastHour": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hourlyLimit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingLimit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "HOURLY_LIMIT_REACHED",
+              "PENDING_LIMIT_REACHED"
+            ]
+          }
+        },
+        "required": [
+          "requestsLastHour",
+          "hourlyLimit",
+          "remaining",
+          "pending",
+          "pendingLimit",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "PriceRun": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "listingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "symbol": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          "exchange": {
+            "type": "string",
+            "enum": [
+              "NSE",
+              "BSE"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCEEDED",
+              "PARTIALLY_SUCCEEDED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "failureCode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "rowsReturned": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 31
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "jobId",
+          "listingId",
+          "symbol",
+          "exchange",
+          "state",
+          "failureCode",
+          "updatedAt",
+          "rowsReturned"
+        ],
+        "additionalProperties": false
+      },
+      "MarketDiagnostics": {
+        "type": "object",
+        "properties": {
+          "yahooCapability": {
+            "type": "string",
+            "enum": [
+              "DISABLED",
+              "CONFIGURATION_REQUIRED",
+              "PRIVATE_DAILY"
+            ]
+          },
+          "officialFiles": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED"
+            ]
+          },
+          "streaming": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED"
+            ]
+          },
+          "providerDelay": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN"
+            ]
+          },
+          "providerQuota": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN"
+            ]
+          },
+          "lastSuccessfulAcquisition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtcInstant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceValidationFailuresLastDay": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failedRunsLastDay": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/PriceCoverage"
+          },
+          "quota": {
+            "$ref": "#/components/schemas/PriceQuota"
+          },
+          "recentRuns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceRun"
+            },
+            "maxItems": 15
+          }
+        },
+        "required": [
+          "yahooCapability",
+          "officialFiles",
+          "streaming",
+          "providerDelay",
+          "providerQuota",
+          "lastSuccessfulAcquisition",
+          "sourceValidationFailuresLastDay",
+          "failedRunsLastDay",
+          "coverage",
+          "quota",
+          "recentRuns"
+        ],
+        "additionalProperties": false,
+        "description": "Owner-scoped diagnostics. The quota is FINN's application limit and says nothing about the provider's quota."
       },
       "ListingIdentity": {
         "type": "object",

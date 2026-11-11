@@ -4,6 +4,7 @@ import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { RouteHeading } from "../Navigation.tsx";
+import { DataStatus } from "./DataStatus.tsx";
 import { ListingMarketDetail } from "./ListingHistory.tsx";
 import { PriceSource } from "./ListingPrices.tsx";
 
@@ -17,6 +18,7 @@ export function Watchlists() {
   return (
     <section className="workspace-section">
       <RouteHeading>Watchlists</RouteHeading>
+      <DataStatus />
       <p className="muted-copy">
         Follow reviewed exchange listings, even if you don’t own the stocks.
         Prices are saved daily closes with their source and date.

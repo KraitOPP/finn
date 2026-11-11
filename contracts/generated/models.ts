@@ -162,7 +162,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.16.0") & (string);
+export type ContractVersion = ("0.17.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -579,6 +579,20 @@ export type ListingInput = ({
   "confirmed": (true);
 });
 
+export type MarketDiagnostics = ({
+  "yahooCapability": ("DISABLED" | "CONFIGURATION_REQUIRED" | "PRIVATE_DAILY") & (string);
+  "officialFiles": ("UNVERIFIED") & (string);
+  "streaming": ("UNVERIFIED") & (string);
+  "providerDelay": ("UNKNOWN") & (string);
+  "providerQuota": ("UNKNOWN") & (string);
+  "lastSuccessfulAcquisition": (((UtcInstant)) | ((null)));
+  "sourceValidationFailuresLastDay": (number);
+  "failedRunsLastDay": (number);
+  "coverage": (PriceCoverage);
+  "quota": (PriceQuota);
+  "recentRuns": (Array<(PriceRun)>);
+});
+
 export type MarketFeed = ({
   "listingId": (OpaqueId);
   "yahoo": ("DISABLED" | "CONFIGURATION_REQUIRED" | "REVIEWED_MAPPING_REQUIRED" | "PRIVATE_DAILY") & (string);
@@ -658,6 +672,12 @@ export type PriceBasis = ({
   "adjustmentAsOf": (((SessionDate)) | ((null)));
 });
 
+export type PriceCoverage = ({
+  "trackedListings": (number);
+  "withClose": (number);
+  "recentClose": (number);
+});
+
 export type PriceFetchQueued = ({
   "jobId": (OpaqueId);
   "start": (SessionDate);
@@ -684,6 +704,26 @@ export type PriceObservation = ({
   "basis": (PriceBasis);
   "finality": ("FINAL" | "PROVISIONAL" | "UNKNOWN") & (string);
   "provenance": (Provenance);
+});
+
+export type PriceQuota = ({
+  "requestsLastHour": (number);
+  "hourlyLimit": (number);
+  "remaining": (number);
+  "pending": (number);
+  "pendingLimit": (number);
+  "status": ("AVAILABLE" | "HOURLY_LIMIT_REACHED" | "PENDING_LIMIT_REACHED") & (string);
+});
+
+export type PriceRun = ({
+  "jobId": (OpaqueId);
+  "listingId": (OpaqueId);
+  "symbol": (string);
+  "exchange": ("NSE" | "BSE") & (string);
+  "state": ("QUEUED" | "RUNNING" | "SUCCEEDED" | "PARTIALLY_SUCCEEDED" | "FAILED" | "CANCELLED") & (string);
+  "failureCode": (((OpaqueId)) | ((null)));
+  "updatedAt": (UtcInstant);
+  "rowsReturned": (((number)) | ((null)));
 });
 
 export type PrivateClose = ({
@@ -1036,6 +1076,7 @@ export interface ContractTypes {
   LedgerView: LedgerView;
   ListingIdentity: ListingIdentity;
   ListingInput: ListingInput;
+  MarketDiagnostics: MarketDiagnostics;
   MarketFeed: MarketFeed;
   NonNegativeDecimalString: NonNegativeDecimalString;
   OpaqueId: OpaqueId;
@@ -1049,9 +1090,12 @@ export interface ContractTypes {
   Preferences: Preferences;
   PreferencesUpdate: PreferencesUpdate;
   PriceBasis: PriceBasis;
+  PriceCoverage: PriceCoverage;
   PriceFetchQueued: PriceFetchQueued;
   PriceFetchWindow: PriceFetchWindow;
   PriceObservation: PriceObservation;
+  PriceQuota: PriceQuota;
+  PriceRun: PriceRun;
   PrivateClose: PrivateClose;
   PrivateCloseHistory: PrivateCloseHistory;
   Problem: Problem;

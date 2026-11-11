@@ -37,6 +37,13 @@ const failures: Record<string, string> = {
   YAHOO_NOT_CONFIGURED: "The Yahoo worker is disabled or not configured.",
 };
 
+export function capabilityText(capability: keyof typeof capabilities) {
+  return capabilities[capability];
+}
+
+export function failureText(code: string) {
+  return failures[code] ?? "The refresh did not complete.";
+}
 export function PriceSource({ price }: { price: PrivateClose }) {
   return (
     <span>

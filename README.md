@@ -4,7 +4,7 @@ React 19 and TypeScript frontend for an India-first portfolio intelligence and i
 
 ## Repository status
 
-The application provides OIDC sign-in/out, private portfolios, source accounts, transaction review and history, a manual securities catalogue, Groww holdings previews and settings. The public overview remains a fictional stock snapshot. Previewing does not post holdings. Market valuation is a later slice.
+The application provides OIDC sign-in, private portfolios, Groww holdings review, journal corrections and export, current and historical valuation, price charts, watchlists, and market data status. The public overview is fictional.
 
 ## Run locally
 
@@ -41,6 +41,8 @@ Corporate actions preview recorded units, cost, cash or symbol effects before co
 
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 
+
+In Securities, open a reviewed NSE or BSE listing to enter a source-backed exchange close or request Yahoo daily history when the private worker is configured. In Portfolio, choose the listing to value each holding. Current totals show which positions are priced and which prices are stale. Build historical snapshots from same-date reviewed closes; gaps stay visible in the chart and table. Watchlists show prices without requiring ownership, and Market data status shows your acquisition history, coverage, and application limits.
 ## Verification
 
 `npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors, sign-in/out controls, CSRF form fields, expired-session clearing and rejection of private/incompatible demo responses.
