@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.10.0",
+  "contractVersion": "0.11.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "a8ec2de2e246a87d10bf2fd5e4d92782efe72a310394b807e0a7d1a06c839351",
+  "sourceSha256": "c7fe804e8ddc893350b761fff0d5c6b88c94a287ae8d7d54793799bdd4a75eb1",
   "schemaNames": [
     "AccountInput",
     "AcquisitionEnvelope",
@@ -18,6 +18,11 @@ export const contractMetadata = {
     "CatalogueSecurityPage",
     "CompanyInput",
     "ContractVersion",
+    "CorporateActionApproval",
+    "CorporateActionEffect",
+    "CorporateActionInput",
+    "CorporateActionList",
+    "CorporateActionRecord",
     "CsrfInformation",
     "DecimalString",
     "Delay",
@@ -804,7 +809,374 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.10.0"
+    "const": "0.11.0"
+  },
+  "CorporateActionApproval": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "$ref": "#/components/schemas/CorporateActionInput"
+      },
+      "reviewed": {
+        "const": true
+      },
+      "expectedLedgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      }
+    },
+    "required": [
+      "action",
+      "reviewed",
+      "expectedLedgerRevision"
+    ],
+    "additionalProperties": false
+  },
+  "CorporateActionEffect": {
+    "type": "object",
+    "properties": {
+      "state": {
+        "type": "string",
+        "enum": [
+          "APPLICABLE",
+          "NEEDS_REVIEW"
+        ]
+      },
+      "reason": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ledgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "unitsBefore": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 31,
+            "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "unitsAfter": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 31,
+            "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "recordedCostBefore": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 31,
+            "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "recordedCostAfter": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 31,
+            "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "cashDelta": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 31,
+            "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "previousSymbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "newSymbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "state",
+      "reason",
+      "ledgerRevision",
+      "unitsBefore",
+      "unitsAfter",
+      "recordedCostBefore",
+      "recordedCostAfter",
+      "cashDelta",
+      "previousSymbol",
+      "newSymbol"
+    ],
+    "additionalProperties": false
+  },
+  "CorporateActionInput": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string",
+        "enum": [
+          "SPLIT",
+          "BONUS",
+          "DIVIDEND",
+          "SYMBOL_CHANGE",
+          "MERGER",
+          "DEMERGER",
+          "RIGHTS"
+        ]
+      },
+      "securityId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "listingId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "effectiveDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "ratioNumerator": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ratioDenominator": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "netCash": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 31,
+            "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sourceReference": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+      },
+      "sourceUrl": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "format": "uri"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "newSymbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "newProviderSymbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "correctsActionId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "type",
+      "securityId",
+      "listingId",
+      "effectiveDate",
+      "ratioNumerator",
+      "ratioDenominator",
+      "netCash",
+      "sourceReference",
+      "sourceUrl",
+      "newSymbol",
+      "newProviderSymbol",
+      "correctsActionId"
+    ],
+    "additionalProperties": false,
+    "description": "Explicit reviewed source evidence. Split ratio is new total units per old units; bonus ratio is additional units per old units. Dividend is net credited cash. Complex/fractional actions require manual review."
+  },
+  "CorporateActionList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CorporateActionRecord"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false,
+    "description": "Most recent reviewed records. Source references are owner/account scoped and immutable."
+  },
+  "CorporateActionRecord": {
+    "type": "object",
+    "properties": {
+      "actionId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "securityName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "action": {
+        "$ref": "#/components/schemas/CorporateActionInput"
+      },
+      "effect": {
+        "$ref": "#/components/schemas/CorporateActionEffect"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "APPLIED",
+          "NEEDS_REVIEW",
+          "REVERSED"
+        ]
+      },
+      "ledgerEventId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ledgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "recordedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "replayed": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "actionId",
+      "securityName",
+      "action",
+      "effect",
+      "state",
+      "ledgerEventId",
+      "ledgerRevision",
+      "recordedAt",
+      "replayed"
+    ],
+    "additionalProperties": false
   },
   "CsrfInformation": {
     "type": "object",
@@ -2392,6 +2764,9 @@ export const contractSchemas = {
           "WITHDRAWAL",
           "OPENING_POSITION",
           "OPENING_CASH",
+          "SPLIT",
+          "BONUS",
+          "DIVIDEND",
           "REVERSAL"
         ]
       },
@@ -2566,6 +2941,30 @@ export const contractSchemas = {
       },
       "recordedAt": {
         "$ref": "#/components/schemas/UtcInstant"
+      },
+      "ratioNumerator": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ratioDenominator": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          {
+            "type": "null"
+          }
+        ]
       }
     },
     "required": [
@@ -2587,7 +2986,9 @@ export const contractSchemas = {
       "replacesEventId",
       "source",
       "sourceReference",
-      "recordedAt"
+      "recordedAt",
+      "ratioNumerator",
+      "ratioDenominator"
     ],
     "additionalProperties": false
   },
@@ -2857,6 +3258,9 @@ export const contractSchemas = {
           "$ref": "#/components/schemas/OpaqueId"
         },
         "maxItems": 32
+      },
+      "recordedDividends": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
       }
     },
     "required": [
@@ -2876,7 +3280,8 @@ export const contractSchemas = {
       "cashBaselineDate",
       "coverageStart",
       "historyStatus",
-      "warnings"
+      "warnings",
+      "recordedDividends"
     ],
     "additionalProperties": false,
     "description": "Tracked positions and accounting effects, not a full broker balance or tax calculation. Cash requires an explicit baseline and known movements. Coverage is partial; never fabricate past returns. Quantity/cost are by security; valuation needs a separate reviewed listing."

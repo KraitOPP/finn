@@ -143,7 +143,57 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.10.0") & (string);
+export type ContractVersion = ("0.11.0") & (string);
+
+export type CorporateActionApproval = ({
+  "action": (CorporateActionInput);
+  "reviewed": (true);
+  "expectedLedgerRevision": (number);
+});
+
+export type CorporateActionEffect = ({
+  "state": ("APPLICABLE" | "NEEDS_REVIEW") & (string);
+  "reason": (((OpaqueId)) | ((null)));
+  "ledgerRevision": (number);
+  "unitsBefore": (((string)) | ((null)));
+  "unitsAfter": (((string)) | ((null)));
+  "recordedCostBefore": (((string)) | ((null)));
+  "recordedCostAfter": (((string)) | ((null)));
+  "cashDelta": (((string)) | ((null)));
+  "previousSymbol": (((string)) | ((null)));
+  "newSymbol": (((string)) | ((null)));
+});
+
+export type CorporateActionInput = ({
+  "type": ("SPLIT" | "BONUS" | "DIVIDEND" | "SYMBOL_CHANGE" | "MERGER" | "DEMERGER" | "RIGHTS") & (string);
+  "securityId": (OpaqueId);
+  "listingId": (((OpaqueId)) | ((null)));
+  "effectiveDate": (SessionDate);
+  "ratioNumerator": (((number)) | ((null)));
+  "ratioDenominator": (((number)) | ((null)));
+  "netCash": (((string)) | ((null)));
+  "sourceReference": (string);
+  "sourceUrl": (((string)) | ((null)));
+  "newSymbol": (((string)) | ((null)));
+  "newProviderSymbol": (((string)) | ((null)));
+  "correctsActionId": (((OpaqueId)) | ((null)));
+});
+
+export type CorporateActionList = ({
+  "items": (Array<(CorporateActionRecord)>);
+});
+
+export type CorporateActionRecord = ({
+  "actionId": (OpaqueId);
+  "securityName": (string);
+  "action": (CorporateActionInput);
+  "effect": (CorporateActionEffect);
+  "state": ("APPLIED" | "NEEDS_REVIEW" | "REVERSED") & (string);
+  "ledgerEventId": (((OpaqueId)) | ((null)));
+  "ledgerRevision": (number);
+  "recordedAt": (UtcInstant);
+  "replayed": (boolean);
+});
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -410,7 +460,7 @@ export type LedgerEntryInput = ({
 });
 
 export type LedgerEventView = ({
-  "kind": ("BUY" | "SELL" | "FEE" | "DEPOSIT" | "WITHDRAWAL" | "OPENING_POSITION" | "OPENING_CASH" | "REVERSAL") & (string);
+  "kind": ("BUY" | "SELL" | "FEE" | "DEPOSIT" | "WITHDRAWAL" | "OPENING_POSITION" | "OPENING_CASH" | "SPLIT" | "BONUS" | "DIVIDEND" | "REVERSAL") & (string);
   "effectiveDate": (SessionDate);
   "securityId": (((OpaqueId)) | ((null)));
   "listingId": (((OpaqueId)) | ((null)));
@@ -429,6 +479,8 @@ export type LedgerEventView = ({
   "source": ("MANUAL" | "GROWW_HOLDINGS" | "REVIEWED_CORPORATE_ACTION") & (string);
   "sourceReference": (((OpaqueId)) | ((null)));
   "recordedAt": (UtcInstant);
+  "ratioNumerator": (((number)) | ((null)));
+  "ratioDenominator": (((number)) | ((null)));
 });
 
 export type LedgerPage = ({
@@ -480,6 +532,7 @@ export type LedgerView = ({
   "coverageStart": (((SessionDate)) | ((null)));
   "historyStatus": ("UNKNOWN" | "HOLDINGS_ONLY" | "PARTIAL_TRADES") & (string);
   "warnings": (Array<(OpaqueId)>);
+  "recordedDividends": (NonNegativeDecimalString);
 });
 
 export type ListingIdentity = ({
@@ -760,6 +813,11 @@ export interface ContractTypes {
   CatalogueSecurityPage: CatalogueSecurityPage;
   CompanyInput: CompanyInput;
   ContractVersion: ContractVersion;
+  CorporateActionApproval: CorporateActionApproval;
+  CorporateActionEffect: CorporateActionEffect;
+  CorporateActionInput: CorporateActionInput;
+  CorporateActionList: CorporateActionList;
+  CorporateActionRecord: CorporateActionRecord;
   CsrfInformation: CsrfInformation;
   DecimalString: DecimalString;
   Delay: Delay;

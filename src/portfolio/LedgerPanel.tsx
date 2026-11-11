@@ -19,11 +19,23 @@ const labels: Record<LedgerEventView["kind"], string> = {
   WITHDRAWAL: "Withdrawal",
   OPENING_POSITION: "Opening holding",
   OPENING_CASH: "Opening cash",
+  SPLIT: "Split",
+  BONUS: "Bonus shares",
+  DIVIDEND: "Dividend credit",
   REVERSAL: "Reversal",
 };
-const kinds = Object.keys(labels).filter(
-  (kind) => kind !== "REVERSAL",
-) as LedgerEntryInput["kind"][];
+const kinds: LedgerEntryInput["kind"][] = [
+  "BUY",
+  "SELL",
+  "FEE",
+  "DEPOSIT",
+  "WITHDRAWAL",
+  "OPENING_POSITION",
+  "OPENING_CASH",
+];
+const manualKind = (
+  kind: LedgerEventView["kind"],
+): kind is LedgerEntryInput["kind"] => kinds.some((value) => value === kind);
 const money = (value: string | null) =>
   value === null ? "Unavailable" : `INR ${value}`;
 const today = () => {
@@ -208,6 +220,10 @@ export function LedgerPanel({
             <div>
               <dt>Net deposits and withdrawals</dt>
               <dd>{money(ledger.value.netContributions)}</dd>
+            </div>
+            <div>
+              <dt>Recorded dividends</dt>
+              <dd>{money(ledger.value.recordedDividends)}</dd>
             </div>
           </dl>
           {ledger.value.positions.length === 0 ? (
@@ -406,6 +422,11 @@ export function LedgerPanel({
                     </td>
                     <td>
                       {event.quantity && <span>{event.quantity} units</span>}
+                      {event.ratioNumerator !== null && (
+                        <small>
+                          Ratio: {event.ratioNumerator}:{event.ratioDenominator}
+                        </small>
+                      )}
                       {event.price && (
                         <small>{money(event.price)} per unit</small>
                       )}
@@ -436,13 +457,15 @@ export function LedgerPanel({
                         !event.reversedBy &&
                         event.kind !== "REVERSAL" && (
                           <div className="journal-actions">
-                            <button
-                              className="text-button"
-                              type="button"
-                              onClick={() => setEditor(event)}
-                            >
-                              Review correction
-                            </button>
+                            {manualKind(event.kind) && (
+                              <button
+                                className="text-button"
+                                type="button"
+                                onClick={() => setEditor(event)}
+                              >
+                                Review correction
+                              </button>
+                            )}
                             <button
                               className="text-button"
                               type="button"
@@ -532,8 +555,7 @@ function EntryForm({
   onCancel: () => void;
 }) {
   const [entry, setEntry] = useState<Draft>({
-    kind:
-      original?.kind && original.kind !== "REVERSAL" ? original.kind : "BUY",
+    kind: original?.kind && manualKind(original.kind) ? original.kind : "BUY",
     effectiveDate: original?.effectiveDate ?? today(),
     securityId: original?.securityId ?? null,
     listingId: original?.listingId ?? null,

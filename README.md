@@ -37,6 +37,8 @@ An eligible first opening requires explicit INR and mapping confirmations and re
 
 Compare a later report with recorded holdings on its report date. Missing coverage, unknown cost, unmatched rows and differences remain visible. Acknowledging a comparison saves only a review for the current ledger revision, so later corrections cannot silently inherit an earlier review.
 
+Corporate actions preview recorded units, cost, cash or symbol effects before confirmation. Source references and corrections stay attached. Splits/bonuses preserve total recorded cost, dividends use actual net credits, and fractional or complex actions are saved for manual review without changing holdings.
+
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 
 ## Verification

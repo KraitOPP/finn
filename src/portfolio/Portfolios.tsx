@@ -4,6 +4,7 @@ import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { RouteHeading } from "../Navigation.tsx";
+import { CorporateActionsPanel } from "./CorporateActionsPanel.tsx";
 import { HoldingsImportPanel } from "./HoldingsImportPanel.tsx";
 import { LedgerPanel } from "./LedgerPanel.tsx";
 import { receiptMessage } from "./ReviewOpening.tsx";
@@ -270,6 +271,19 @@ function PortfolioDetail({
             onSaved={(message) => {
               setAccountNotice(message);
               detail.reload();
+            }}
+          />
+          <CorporateActionsPanel
+            key={`actions-${selected.accountId}`}
+            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+            archived={portfolio.archived}
+            onRecorded={(record) => {
+              if (record.ledgerEventId && !record.replayed) {
+                setAccountNotice(
+                  "Reviewed corporate action saved. The ledger was recalculated.",
+                );
+                detail.reload();
+              }
             }}
           />
           {selected.source === "GROWW" && (

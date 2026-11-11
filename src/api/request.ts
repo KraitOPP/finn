@@ -45,6 +45,14 @@ const safeMessages: Record<string, string> = {
     "Reported row costs are incomplete or exceed the supported precision. You can keep costs unknown.",
   SECURITY_LABEL_REVIEW_REQUIRED:
     "Create or review this ISIN in Securities with a shorter display label, then reload the preview.",
+  CORPORATE_LEDGER_CHANGED:
+    "The ledger changed. Preview the action again before saving.",
+  CORPORATE_SOURCE_CONFLICT:
+    "This source reference already has different recorded details. Review the existing action before correcting it.",
+  CORPORATE_ACTION_ALREADY_APPLIED:
+    "A matching action is already recorded for this security and date.",
+  CORPORATE_CORRECTION_REQUIRES_REVIEW:
+    "Review the original action and its journal reversal before recording a linked correction.",
 };
 
 export class ApiError extends Error {
