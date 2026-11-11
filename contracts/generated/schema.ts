@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.22.0",
+  "contractVersion": "0.23.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "cb797fb76545c346c2e364dfd4d6ad06c6227f4b29b706fde4f0addbe02930cf",
+  "sourceSha256": "24fcc3467113f6e8183f9d19a6ba6232a3e6b7a3d418f82001461c39924bc930",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -12,6 +12,10 @@ export const contractMetadata = {
     "AdjustmentBasis",
     "AlertCloseEvidence",
     "AsyncJobStatus",
+    "BriefIndex",
+    "BriefSchedule",
+    "BriefScheduleInput",
+    "BriefSettings",
     "Capability",
     "CatalogueCompanies",
     "CatalogueCompany",
@@ -83,6 +87,7 @@ export const contractMetadata = {
     "NotificationRead",
     "OpaqueId",
     "PortfolioArchiveInput",
+    "PortfolioBrief",
     "PortfolioDetail",
     "PortfolioInput",
     "PortfolioList",
@@ -712,6 +717,156 @@ export const contractSchemas = {
       }
     ]
   },
+  "BriefIndex": {
+    "type": "object",
+    "properties": {
+      "schedule": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/BriefSchedule"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "runs": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "scheduleRevision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "windowStart": {
+              "$ref": "#/components/schemas/UtcInstant"
+            },
+            "windowEnd": {
+              "$ref": "#/components/schemas/UtcInstant"
+            },
+            "createdAt": {
+              "$ref": "#/components/schemas/UtcInstant"
+            }
+          },
+          "required": [
+            "runId",
+            "scheduleRevision",
+            "windowStart",
+            "windowEnd",
+            "createdAt"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 30
+      }
+    },
+    "required": [
+      "schedule",
+      "runs"
+    ],
+    "additionalProperties": false
+  },
+  "BriefSchedule": {
+    "type": "object",
+    "properties": {
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "settings": {
+        "$ref": "#/components/schemas/BriefSettings"
+      },
+      "nextAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "revision",
+      "settings",
+      "nextAt"
+    ],
+    "additionalProperties": false
+  },
+  "BriefScheduleInput": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "settings": {
+        "$ref": "#/components/schemas/BriefSettings"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "settings"
+    ],
+    "additionalProperties": false
+  },
+  "BriefSettings": {
+    "type": "object",
+    "properties": {
+      "scheduledLocal": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 16,
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"
+      },
+      "timeZone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "cadence": {
+        "type": "string",
+        "enum": [
+          "DAILY",
+          "WEEKLY"
+        ]
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "includeAlerts": {
+        "type": "boolean"
+      },
+      "includeReminders": {
+        "type": "boolean"
+      },
+      "includeCompany": {
+        "type": "boolean"
+      },
+      "includeValuations": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "scheduledLocal",
+      "timeZone",
+      "cadence",
+      "enabled",
+      "includeAlerts",
+      "includeReminders",
+      "includeCompany",
+      "includeValuations"
+    ],
+    "additionalProperties": false
+  },
   "Capability": {
     "type": "object",
     "properties": {
@@ -998,7 +1153,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.22.0"
+    "const": "0.23.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -4309,6 +4464,16 @@ export const contractSchemas = {
           }
         ]
       },
+      "briefId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "deliveries": {
         "type": "array",
         "items": {
@@ -4329,6 +4494,7 @@ export const contractSchemas = {
       "price",
       "reminder",
       "indicator",
+      "briefId",
       "deliveries",
       "attempts"
     ],
@@ -4394,6 +4560,138 @@ export const contractSchemas = {
     "required": [
       "archived",
       "revision"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioBrief": {
+    "type": "object",
+    "properties": {
+      "windowStart": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "windowEnd": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "timeZone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "activityId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "PRICE_RULE",
+                "REVIEW_REMINDER",
+                "PORTFOLIO_BRIEF",
+                "VOLUME_RULE",
+                "ALLOCATION_RULE",
+                "COMPANY_EVENT"
+              ]
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "createdAt": {
+              "$ref": "#/components/schemas/UtcInstant"
+            }
+          },
+          "required": [
+            "activityId",
+            "kind",
+            "title",
+            "createdAt"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 50
+      },
+      "snapshots": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "snapshotId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "portfolioId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "accountId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "accountName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "sessionDate": {
+              "$ref": "#/components/schemas/SessionDate"
+            },
+            "holdingsValue": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DecimalString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "recordedValue": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DecimalString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "BEFORE_COVERAGE",
+                "PRICES_MISSING",
+                "CASH_UNKNOWN",
+                "RECORDED_VALUE"
+              ]
+            }
+          },
+          "required": [
+            "snapshotId",
+            "portfolioId",
+            "accountId",
+            "accountName",
+            "sessionDate",
+            "holdingsValue",
+            "recordedValue",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 50
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "windowStart",
+      "windowEnd",
+      "timeZone",
+      "items",
+      "snapshots",
+      "truncated"
     ],
     "additionalProperties": false
   },

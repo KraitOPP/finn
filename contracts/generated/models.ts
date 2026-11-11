@@ -116,6 +116,39 @@ export type AsyncJobStatus = ((({
   "failureCode": (null);
 })));
 
+export type BriefIndex = ({
+  "schedule": (((BriefSchedule)) | ((null)));
+  "runs": (Array<({
+  "runId": (OpaqueId);
+  "scheduleRevision": (number);
+  "windowStart": (UtcInstant);
+  "windowEnd": (UtcInstant);
+  "createdAt": (UtcInstant);
+})>);
+});
+
+export type BriefSchedule = ({
+  "revision": (number);
+  "settings": (BriefSettings);
+  "nextAt": (((UtcInstant)) | ((null)));
+});
+
+export type BriefScheduleInput = ({
+  "expectedRevision": (number);
+  "settings": (BriefSettings);
+});
+
+export type BriefSettings = ({
+  "scheduledLocal": (string);
+  "timeZone": (string);
+  "cadence": ("DAILY" | "WEEKLY") & (string);
+  "enabled": (boolean);
+  "includeAlerts": (boolean);
+  "includeReminders": (boolean);
+  "includeCompany": (boolean);
+  "includeValuations": (boolean);
+});
+
 export type Capability = ({
   "capability": ("QUOTE" | "DAILY_HISTORY" | "INTRADAY_HISTORY" | "STREAMING" | "CORPORATE_ACTIONS" | "FILINGS" | "NEWS" | "FUNDAMENTALS") & (string);
   "status": ("VALIDATED" | "DOCUMENTED_UNVERIFIED" | "UNSUPPORTED" | "TEMPORARILY_UNAVAILABLE") & (string);
@@ -172,7 +205,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.22.0") & (string);
+export type ContractVersion = ("0.23.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -710,6 +743,7 @@ export type NotificationDetail = ({
   "price": (((PriceEvaluation)) | ((null)));
   "reminder": (((ReminderEvidence)) | ((null)));
   "indicator": (((IndicatorEvaluation)) | ((null)));
+  "briefId": (((OpaqueId)) | ((null)));
   "deliveries": (Array<(NotificationDelivery)>);
   "attempts": (Array<(NotificationAttempt)>);
 });
@@ -728,6 +762,29 @@ export type OpaqueId = (string);
 export type PortfolioArchiveInput = ({
   "archived": (boolean);
   "revision": (number);
+});
+
+export type PortfolioBrief = ({
+  "windowStart": (UtcInstant);
+  "windowEnd": (UtcInstant);
+  "timeZone": (string);
+  "items": (Array<({
+  "activityId": (OpaqueId);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT") & (string);
+  "title": (string);
+  "createdAt": (UtcInstant);
+})>);
+  "snapshots": (Array<({
+  "snapshotId": (OpaqueId);
+  "portfolioId": (OpaqueId);
+  "accountId": (OpaqueId);
+  "accountName": (string);
+  "sessionDate": (SessionDate);
+  "holdingsValue": (((DecimalString)) | ((null)));
+  "recordedValue": (((DecimalString)) | ((null)));
+  "status": ("BEFORE_COVERAGE" | "PRICES_MISSING" | "CASH_UNKNOWN" | "RECORDED_VALUE") & (string);
+})>);
+  "truncated": (boolean);
 });
 
 export type PortfolioDetail = ({
@@ -1220,6 +1277,10 @@ export interface ContractTypes {
   AdjustmentBasis: AdjustmentBasis;
   AlertCloseEvidence: AlertCloseEvidence;
   AsyncJobStatus: AsyncJobStatus;
+  BriefIndex: BriefIndex;
+  BriefSchedule: BriefSchedule;
+  BriefScheduleInput: BriefScheduleInput;
+  BriefSettings: BriefSettings;
   Capability: Capability;
   CatalogueCompanies: CatalogueCompanies;
   CatalogueCompany: CatalogueCompany;
@@ -1291,6 +1352,7 @@ export interface ContractTypes {
   NotificationRead: NotificationRead;
   OpaqueId: OpaqueId;
   PortfolioArchiveInput: PortfolioArchiveInput;
+  PortfolioBrief: PortfolioBrief;
   PortfolioDetail: PortfolioDetail;
   PortfolioInput: PortfolioInput;
   PortfolioList: PortfolioList;
