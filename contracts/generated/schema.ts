@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.32.0",
+  "contractVersion": "0.33.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "561c2192dc2031c1c36edc7ef21ed253096c1f40d43a108f6c39871eb3962d01",
+  "sourceSha256": "de2e8d54e3ca3a3e31b9117ea0068cac8a0655d113b5c5bb0876314a8a706ea9",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -166,6 +166,11 @@ export const contractMetadata = {
     "ResearchLocation",
     "ResearchLocations",
     "ResearchPdfUpload",
+    "ResearchReport",
+    "ResearchReportCapabilities",
+    "ResearchReportFeedback",
+    "ResearchReportFeedbackInput",
+    "ResearchReportInput",
     "ResearchTextPage",
     "ReviewCloseInput",
     "ReviewReminder",
@@ -2246,7 +2251,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.32.0"
+    "const": "0.33.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -8105,6 +8110,174 @@ export const contractSchemas = {
     "required": [
       "fileId",
       "checksum"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchReport": {
+    "type": "object",
+    "properties": {
+      "reportId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "question": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 320
+      },
+      "asOf": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "EVIDENCE",
+          "INSUFFICIENT",
+          "CONFLICTING_CONTEXT",
+          "LOCAL_RANKED",
+          "MODEL_FALLBACK"
+        ]
+      },
+      "modelName": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "policyVersion": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 30
+      },
+      "citations": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ResearchLocation"
+        },
+        "maxItems": 3
+      },
+      "facts": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FinancialFact"
+        },
+        "maxItems": 12
+      },
+      "feedback": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ResearchReportFeedback"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "reportId",
+      "companyId",
+      "question",
+      "asOf",
+      "state",
+      "modelName",
+      "policyVersion",
+      "citations",
+      "facts",
+      "feedback"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchReportCapabilities": {
+    "type": "object",
+    "properties": {
+      "localRanking": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "localRanking"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchReportFeedback": {
+    "type": "object",
+    "properties": {
+      "note": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      },
+      "anchorId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "recordedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "note",
+      "anchorId",
+      "recordedAt"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchReportFeedbackInput": {
+    "type": "object",
+    "properties": {
+      "note": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      },
+      "anchorId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "note",
+      "anchorId"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchReportInput": {
+    "type": "object",
+    "properties": {
+      "question": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 320
+      },
+      "rankLocally": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "question",
+      "rankLocally"
     ],
     "additionalProperties": false
   },

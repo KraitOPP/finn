@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.32.0") & (string);
+export type ContractVersion = ("0.33.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1430,6 +1430,39 @@ export type ResearchPdfUpload = ({
   "checksum": (string);
 });
 
+export type ResearchReport = ({
+  "reportId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "question": (string);
+  "asOf": (UtcInstant);
+  "state": ("PENDING" | "EVIDENCE" | "INSUFFICIENT" | "CONFLICTING_CONTEXT" | "LOCAL_RANKED" | "MODEL_FALLBACK") & (string);
+  "modelName": (((string)) | ((null)));
+  "policyVersion": (string);
+  "citations": (Array<(ResearchLocation)>);
+  "facts": (Array<(FinancialFact)>);
+  "feedback": (((ResearchReportFeedback)) | ((null)));
+});
+
+export type ResearchReportCapabilities = ({
+  "localRanking": (boolean);
+});
+
+export type ResearchReportFeedback = ({
+  "note": (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+  "recordedAt": (UtcInstant);
+});
+
+export type ResearchReportFeedbackInput = ({
+  "note": (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+});
+
+export type ResearchReportInput = ({
+  "question": (string);
+  "rankLocally": (boolean);
+});
+
 export type ResearchTextPage = ({
   "page": (number);
   "state": ("TEXT" | "TRUNCATED" | "NO_TEXT" | "UNREADABLE") & (string);
@@ -1796,6 +1829,11 @@ export interface ContractTypes {
   ResearchLocation: ResearchLocation;
   ResearchLocations: ResearchLocations;
   ResearchPdfUpload: ResearchPdfUpload;
+  ResearchReport: ResearchReport;
+  ResearchReportCapabilities: ResearchReportCapabilities;
+  ResearchReportFeedback: ResearchReportFeedback;
+  ResearchReportFeedbackInput: ResearchReportFeedbackInput;
+  ResearchReportInput: ResearchReportInput;
   ResearchTextPage: ResearchTextPage;
   ReviewCloseInput: ReviewCloseInput;
   ReviewReminder: ReviewReminder;

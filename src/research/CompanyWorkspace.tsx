@@ -9,6 +9,7 @@ import { useResource } from "../api/useResource.ts";
 import { EventHistory } from "./Events.tsx";
 import { AnchorEvidence, EvidencePanel } from "./Evidence.tsx";
 import { CompanyFacts, EvidencePicker } from "./FinancialFacts.tsx";
+import { ResearchReports } from "./ResearchReports.tsx";
 
 const labels = {
   BUSINESS: "Business highlights",
@@ -107,6 +108,7 @@ function Overview({
         </details>
       ))}
       <AddNote company={company} path={path} onSaved={data.reload} />
+      <ResearchReports company={company} />
       <details>
         <summary>Recent primary documents</summary>
         {sources.length === 0 && <p>No primary documents registered.</p>}
