@@ -246,6 +246,15 @@ export function LedgerPanel({
                     <tr key={position.securityId}>
                       <th scope="row">
                         {position.securityName ?? "Unresolved security"}
+                        {position.securityName && (
+                          <small>
+                            <a
+                              href={`#/research?security=${encodeURIComponent(position.securityId)}`}
+                            >
+                              Research thesis
+                            </a>
+                          </small>
+                        )}
                       </th>
                       <td>{position.quantity}</td>
                       <td>

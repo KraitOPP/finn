@@ -11,6 +11,7 @@ import { AnchorEvidence, EvidencePanel } from "./Evidence.tsx";
 import { CompanyFacts, EvidencePicker } from "./FinancialFacts.tsx";
 import { ResearchReports } from "./ResearchReports.tsx";
 import { SearchEvidence } from "./SearchEvidence.tsx";
+import { ThesisNotebook } from "./ThesisNotebook.tsx";
 
 const labels = {
   BUSINESS: "Business highlights",
@@ -23,7 +24,17 @@ export function CompanyWorkspace({ generation }: { generation: number }) {
     "CatalogueCompanies",
     "/api/v1/catalog/companies",
   );
-  const [company, setCompany] = useState("");
+  const [selected, setCompany] = useState<string | null>(null);
+  const security = new URLSearchParams(window.location.hash.split("?")[1]).get(
+    "security",
+  );
+  const holding = useResource(
+    "CatalogueSecurityDetail",
+    selected === null && security && /^[a-f0-9-]{36}$/i.test(security)
+      ? `/api/v1/catalog/securities/${security}`
+      : null,
+  );
+  const company = selected ?? holding.value?.security.companyId ?? "";
   return (
     <section className="detail-card">
       <h2>Company workspace</h2>
@@ -42,6 +53,7 @@ export function CompanyWorkspace({ generation }: { generation: number }) {
         </select>
       </label>
       {companies.error && <p role="alert">{companies.error}</p>}
+      {holding.error && <p role="alert">{holding.error}</p>}
       {company && (
         <Overview key={company} company={company} generation={generation} />
       )}
@@ -74,6 +86,7 @@ function Overview({
   return (
     <div>
       <h3>{companyName}</h3>
+      <ThesisNotebook company={company} />
       <p>
         {indexedSources} of {primarySources} current primary sources have
         extracted evidence.

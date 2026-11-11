@@ -13,7 +13,8 @@ export const destinations = [
 export type Route = (typeof destinations)[number][0];
 
 function readRoute() {
-  const value = window.location.hash.replace(/^#\/?/, "") || "overview";
+  const value =
+    window.location.hash.replace(/^#\/?/, "").split("?", 1)[0] || "overview";
   return destinations.some(([route]) => route === value)
     ? (value as Route)
     : null;

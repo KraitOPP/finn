@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.34.0",
+  "contractVersion": "0.35.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "fb3b7464a3c816c39de0b5f69201bfe864fbde802292edeb1c8c0fbd67636a30",
+  "sourceSha256": "4c117ee2f3be534b24f94af44794888b8784aaa4d8f0806249c66af24470cfd3",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -100,6 +100,10 @@ export const contractMetadata = {
     "InstrumentResult",
     "IntegerString",
     "InvestmentAccount",
+    "InvestmentTheses",
+    "InvestmentThesis",
+    "InvestmentThesisEdit",
+    "InvestmentThesisInput",
     "LedgerCorrectInput",
     "LedgerEntryInput",
     "LedgerEventView",
@@ -185,6 +189,7 @@ export const contractMetadata = {
     "SymbolHistory",
     "SymbolHistoryList",
     "SymbolInput",
+    "ThesisReviewSchedule",
     "UserProfile",
     "UtcInstant",
     "ValuationListing",
@@ -2254,7 +2259,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.34.0"
+    "const": "0.35.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -4943,6 +4948,205 @@ export const contractSchemas = {
         "additionalProperties": false
       }
     ]
+  },
+  "InvestmentTheses": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/InvestmentThesis"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "InvestmentThesis": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "rationale": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2400
+      },
+      "risks": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1600
+      },
+      "milestones": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1600
+      },
+      "decision": {
+        "type": "string",
+        "enum": [
+          "MONITOR",
+          "REAFFIRM",
+          "REVISE",
+          "PAUSE",
+          "CLOSE"
+        ]
+      },
+      "decisionNote": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1200
+      },
+      "review": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ThesisReviewSchedule"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "anchorIds": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OpaqueId"
+        },
+        "maxItems": 5
+      },
+      "thesisId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "reminderId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "savedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "title",
+      "rationale",
+      "risks",
+      "milestones",
+      "decision",
+      "decisionNote",
+      "review",
+      "anchorIds",
+      "thesisId",
+      "companyId",
+      "revision",
+      "reminderId",
+      "savedAt"
+    ],
+    "additionalProperties": false
+  },
+  "InvestmentThesisEdit": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "thesis": {
+        "$ref": "#/components/schemas/InvestmentThesisInput"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "thesis"
+    ],
+    "additionalProperties": false
+  },
+  "InvestmentThesisInput": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "rationale": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2400
+      },
+      "risks": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1600
+      },
+      "milestones": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1600
+      },
+      "decision": {
+        "type": "string",
+        "enum": [
+          "MONITOR",
+          "REAFFIRM",
+          "REVISE",
+          "PAUSE",
+          "CLOSE"
+        ]
+      },
+      "decisionNote": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1200
+      },
+      "review": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ThesisReviewSchedule"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "anchorIds": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OpaqueId"
+        },
+        "maxItems": 5
+      }
+    },
+    "required": [
+      "title",
+      "rationale",
+      "risks",
+      "milestones",
+      "decision",
+      "decisionNote",
+      "review",
+      "anchorIds"
+    ],
+    "additionalProperties": false
   },
   "LedgerCorrectInput": {
     "type": "object",
@@ -8949,6 +9153,27 @@ export const contractSchemas = {
       "providerSymbol",
       "effectiveDate",
       "confirmed"
+    ],
+    "additionalProperties": false
+  },
+  "ThesisReviewSchedule": {
+    "type": "object",
+    "properties": {
+      "scheduledLocal": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"
+      },
+      "timeZone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      }
+    },
+    "required": [
+      "scheduledLocal",
+      "timeZone"
     ],
     "additionalProperties": false
   },

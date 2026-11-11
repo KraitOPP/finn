@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.34.0") & (string);
+export type ContractVersion = ("0.35.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -863,6 +863,42 @@ export type InvestmentAccount = ((({
   "historyStatus": ("HOLDINGS_ONLY" | "PARTIAL_TRADES") & (string);
   "historyStartDate": (SessionDate);
 })));
+
+export type InvestmentTheses = ({
+  "items": (Array<(InvestmentThesis)>);
+});
+
+export type InvestmentThesis = ({
+  "title": (string);
+  "rationale": (string);
+  "risks": (string);
+  "milestones": (string);
+  "decision": ("MONITOR" | "REAFFIRM" | "REVISE" | "PAUSE" | "CLOSE") & (string);
+  "decisionNote": (string);
+  "review": (((ThesisReviewSchedule)) | ((null)));
+  "anchorIds": (Array<(OpaqueId)>);
+  "thesisId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "revision": (number);
+  "reminderId": (((OpaqueId)) | ((null)));
+  "savedAt": (UtcInstant);
+});
+
+export type InvestmentThesisEdit = ({
+  "expectedRevision": (number);
+  "thesis": (InvestmentThesisInput);
+});
+
+export type InvestmentThesisInput = ({
+  "title": (string);
+  "rationale": (string);
+  "risks": (string);
+  "milestones": (string);
+  "decision": ("MONITOR" | "REAFFIRM" | "REVISE" | "PAUSE" | "CLOSE") & (string);
+  "decisionNote": (string);
+  "review": (((ThesisReviewSchedule)) | ((null)));
+  "anchorIds": (Array<(OpaqueId)>);
+});
 
 export type LedgerCorrectInput = ({
   "idempotencyKey": (string);
@@ -1584,6 +1620,11 @@ export type SymbolInput = ({
   "confirmed": (true);
 });
 
+export type ThesisReviewSchedule = ({
+  "scheduledLocal": (string);
+  "timeZone": (string);
+});
+
 export type UserProfile = ({
   "userId": (OpaqueId);
   "displayName": (string);
@@ -1785,6 +1826,10 @@ export interface ContractTypes {
   InstrumentResult: InstrumentResult;
   IntegerString: IntegerString;
   InvestmentAccount: InvestmentAccount;
+  InvestmentTheses: InvestmentTheses;
+  InvestmentThesis: InvestmentThesis;
+  InvestmentThesisEdit: InvestmentThesisEdit;
+  InvestmentThesisInput: InvestmentThesisInput;
   LedgerCorrectInput: LedgerCorrectInput;
   LedgerEntryInput: LedgerEntryInput;
   LedgerEventView: LedgerEventView;
@@ -1870,6 +1915,7 @@ export interface ContractTypes {
   SymbolHistory: SymbolHistory;
   SymbolHistoryList: SymbolHistoryList;
   SymbolInput: SymbolInput;
+  ThesisReviewSchedule: ThesisReviewSchedule;
   UserProfile: UserProfile;
   UtcInstant: UtcInstant;
   ValuationListing: ValuationListing;
