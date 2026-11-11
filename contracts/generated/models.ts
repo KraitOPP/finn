@@ -371,7 +371,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.28.0") & (string);
+export type ContractVersion = ("0.29.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -444,6 +444,21 @@ export type Delay = ((({
   "seconds": (number);
   "basis": ("SOURCE_DECLARED") & (string);
 })));
+
+export type EventReplay = ({
+  "mode": ("SYNTHETIC_REPLAY");
+  "runId": (((OpaqueId)) | ((null)));
+  "savedAt": (((UtcInstant)) | ((null)));
+  "events": (Array<({
+  "attention": (AttentionItem);
+  "evidence": (CompanySourceDetail);
+})>);
+  "notifications": (Array<({
+  "title": (string);
+  "status": ("PENDING" | "DELIVERED" | "SUPPRESSED" | "PREVIEWED" | "FAILED") & (string);
+})>);
+  "brief": (((PortfolioBrief)) | ((null)));
+});
 
 export type EventSuggestion = ({
   "category": ("EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "OTHER") & (string);
@@ -986,6 +1001,7 @@ export type PortfolioBrief = ({
   "recordedValue": (((DecimalString)) | ((null)));
   "status": ("BEFORE_COVERAGE" | "PRICES_MISSING" | "CASH_UNKNOWN" | "RECORDED_VALUE") & (string);
 })>);
+  "companyEvents": (Array<(CompanyEvent)>);
   "truncated": (boolean);
 });
 
@@ -1519,6 +1535,7 @@ export interface ContractTypes {
   CsrfInformation: CsrfInformation;
   DecimalString: DecimalString;
   Delay: Delay;
+  EventReplay: EventReplay;
   EventSuggestion: EventSuggestion;
   FilingRule: FilingRule;
   FilingRuleChange: FilingRuleChange;

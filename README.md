@@ -43,6 +43,9 @@ The working-directory guard rejects missing, relative and Git-internal locations
 
 
 In Securities, open a reviewed NSE or BSE listing to enter a source-backed exchange close or request Yahoo daily history when the private worker is configured. In Portfolio, choose the listing to value each holding. Current totals show which positions are priced and which prices are stale. Build historical snapshots from same-date reviewed closes; gaps stay visible in the chart and table. Watchlists show prices without requiring ownership, and Market data status shows your acquisition history, coverage, and application limits.
+Use Inbox for saved-close price rules, in-app notifications and delivery attempts, reminders, volume and concentration rules, and scheduled portfolio briefs. The company attention list shows the reviewed materiality and recorded holdings behind each event's rank.
+
+Use Research to save and version primary sources, review and group company events, monitor announced dates, and record secondary news links. Run the fictional replay to see a separate scenario move through ranking, delivery, and a brief.
 ## Verification
 
 `npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors, sign-in/out controls, CSRF form fields, expired-session clearing and rejection of private/incompatible demo responses.

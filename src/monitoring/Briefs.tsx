@@ -8,6 +8,7 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { usePreferences } from "../preferences/PreferencesProvider.tsx";
+import { CompanyNotificationEvidence } from "../research/CompanyNotificationEvidence.tsx";
 import { LocalTime } from "./LocalTime.tsx";
 
 const path = "/api/v1/monitoring/briefs";
@@ -238,9 +239,11 @@ function BriefContents({ brief }: { brief: PortfolioBrief }) {
         <LocalTime value={brief.windowEnd} /> (excluded) · Window in{" "}
         {brief.timeZone}.
       </p>
-      {brief.items.length === 0 && brief.snapshots.length === 0 && (
-        <p>No changes recorded for the selected categories in this period.</p>
-      )}
+      {brief.items.length === 0 &&
+        brief.snapshots.length === 0 &&
+        brief.companyEvents.length === 0 && (
+          <p>No changes recorded for the selected categories in this period.</p>
+        )}
       {brief.items.length > 0 && (
         <ul className="security-list">
           {brief.items.map((item) => (
@@ -302,9 +305,36 @@ function BriefContents({ brief }: { brief: PortfolioBrief }) {
           ))}
         </ul>
       )}
+      {brief.companyEvents.length > 0 && (
+        <ul className="security-list">
+          {brief.companyEvents.map((item) => (
+            <li key={item.versionId}>
+              <div>
+                <strong>{item.title}</strong>
+                <p>
+                  {item.companyName} · Event version {item.revision} · Reviewed{" "}
+                  <LocalTime value={item.reviewedAt} />
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSource(source === item.versionId ? null : item.versionId)
+                  }
+                >
+                  Inspect filing evidence
+                </button>
+                {source === item.versionId && (
+                  <CompanyNotificationEvidence event={item} />
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       {brief.truncated && (
         <p>
-          The brief shows up to 50 saved activities and 50 account snapshots.
+          The brief shows up to 50 saved activities, 50 company events and 50
+          account snapshots.
         </p>
       )}
     </section>

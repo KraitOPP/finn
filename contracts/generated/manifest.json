@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.28.0",
+  "contractVersion": "0.29.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "5342c4fbe2bdaab013243407185c3afae3f8f25ef0971e3bcdb852f9489e9204",
+  "sourceSha256": "e693493dc540e97627b570b2fde4de0d3ce59d9fd3f3c0b20d99aade088b16ee",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -51,6 +51,7 @@
     "CsrfInformation",
     "DecimalString",
     "Delay",
+    "EventReplay",
     "EventSuggestion",
     "FilingRule",
     "FilingRuleChange",

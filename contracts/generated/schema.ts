@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.28.0",
+  "contractVersion": "0.29.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "5342c4fbe2bdaab013243407185c3afae3f8f25ef0971e3bcdb852f9489e9204",
+  "sourceSha256": "e693493dc540e97627b570b2fde4de0d3ce59d9fd3f3c0b20d99aade088b16ee",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -52,6 +52,7 @@ export const contractMetadata = {
     "CsrfInformation",
     "DecimalString",
     "Delay",
+    "EventReplay",
     "EventSuggestion",
     "FilingRule",
     "FilingRuleChange",
@@ -2070,7 +2071,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.28.0"
+    "const": "0.29.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -2542,6 +2543,102 @@ export const contractSchemas = {
         "additionalProperties": false
       }
     ]
+  },
+  "EventReplay": {
+    "type": "object",
+    "properties": {
+      "mode": {
+        "const": "SYNTHETIC_REPLAY"
+      },
+      "runId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "savedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "events": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "attention": {
+              "$ref": "#/components/schemas/AttentionItem"
+            },
+            "evidence": {
+              "$ref": "#/components/schemas/CompanySourceDetail"
+            }
+          },
+          "required": [
+            "attention",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 25
+      },
+      "notifications": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "DELIVERED",
+                "SUPPRESSED",
+                "PREVIEWED",
+                "FAILED"
+              ]
+            }
+          },
+          "required": [
+            "title",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 20
+      },
+      "brief": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PortfolioBrief"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "mode",
+      "runId",
+      "savedAt",
+      "events",
+      "notifications",
+      "brief"
+    ],
+    "additionalProperties": false
   },
   "EventSuggestion": {
     "type": "object",
@@ -5802,6 +5899,13 @@ export const contractSchemas = {
         },
         "maxItems": 50
       },
+      "companyEvents": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanyEvent"
+        },
+        "maxItems": 50
+      },
       "truncated": {
         "type": "boolean"
       }
@@ -5812,6 +5916,7 @@ export const contractSchemas = {
       "timeZone",
       "items",
       "snapshots",
+      "companyEvents",
       "truncated"
     ],
     "additionalProperties": false

@@ -8,6 +8,7 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
+import { EventReplay } from "./EventReplay.tsx";
 import { CompanyEvents, EventReview } from "./Events.tsx";
 import { FilingCalendar } from "./FilingCalendar.tsx";
 import { News } from "./News.tsx";
@@ -23,6 +24,7 @@ export function Research() {
       <CompanyEvents generation={generation} />
       <FilingCalendar generation={generation} />
       <News />
+      <EventReplay />
     </section>
   );
 }
