@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.*;
 class SourceDocumentController {
     record Input(@NotNull UUID companyId,@NotBlank @Size(max=120) String title,@NotBlank @Size(max=120) String sourceName,
                  @Size(max=1000) String url,@Size(max=49152) String attachment,@Size(max=32) String publishedAt,
-                 @NotNull @AssertTrue Boolean rightsConfirmed) {
-        SourceDocuments.Input value() { return new SourceDocuments.Input(companyId,title,sourceName,url,attachment,publishedAt); }
+                 @NotNull @AssertTrue Boolean rightsConfirmed,UUID pdfFileId,Boolean removePdf) {
+        SourceDocuments.Input value() {
+            return new SourceDocuments.Input(companyId,title,sourceName,url,attachment,publishedAt,pdfFileId,Boolean.TRUE.equals(removePdf));
+        }
     }
     record Edit(@NotNull @Min(1) @Max(50) Integer expectedRevision,@NotNull @Valid Input source) {}
 

@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.29.0"
+VERSION = "0.30.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -275,17 +275,36 @@ def definitions() -> dict:
         "companyId": ref("OpaqueId"), "title": text(maxLength=120), "sourceName": text(maxLength=120),
         "url": nullable(text(maxLength=1000)), "attachment": nullable(text(maxLength=49152)),
         "publishedAt": nullable(ref("UtcInstant")), "rightsConfirmed": {"const":True},
-    })
+        "pdfFileId": nullable(ref("OpaqueId")), "removePdf": {"type":"boolean"},
+    }, optional=("pdfFileId","removePdf"))
     d["CompanySource"] = obj({
         "documentId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120),
         "sourceType": enum(["PRIMARY","NEWS"]), "revision": source_revision, "title": text(maxLength=120),
-        "sourceName": text(maxLength=120), "url": nullable(text(maxLength=1000)), "hasAttachment": {"type":"boolean"},
+        "sourceName": text(maxLength=120), "url": nullable(text(maxLength=1000)), "hasAttachment": {"type":"boolean"}, "hasPdf": {"type":"boolean"},
         "checksum": text(pattern=r"^[0-9a-f]{64}$",maxLength=64), "publishedAt": nullable(ref("UtcInstant")), "ingestedAt": ref("UtcInstant"),
     })
     d["CompanySourcePage"] = obj({"items": array(ref("CompanySource"),maxItems=40), "hasMore": {"type":"boolean"}})
     d["CompanySourceVersions"] = obj({"items": array(ref("CompanySource"),maxItems=50)})
     d["CompanySourceDetail"] = obj({"source": ref("CompanySource"), "attachment": nullable(text(maxLength=49152))})
     d["CompanySourceEdit"] = obj({"expectedRevision": source_revision, "source": ref("CompanySourceInput")})
+    d["ResearchPdfUpload"] = obj({"fileId":ref("OpaqueId"),"checksum":text(pattern=r"^[0-9a-f]{64}$",maxLength=64)})
+    evidence_page = {"type":"integer","minimum":1,"maximum":20}
+    evidence_line = {"type":"integer","minimum":1,"maximum":600}
+    evidence_page_state = enum(["TEXT","TRUNCATED","NO_TEXT","UNREADABLE"])
+    d["ResearchExtraction"] = obj({
+        "state":enum(["LINK_ONLY","NOT_STARTED","QUEUED","RUNNING","READY","PARTIAL","NO_TEXT","UNSUPPORTED","FAILED","CANCELLED"]),
+        "reason":nullable(ref("OpaqueId")), "jobId":nullable(ref("OpaqueId")), "canRequest":{"type":"boolean"},
+        "totalPages":{"type":"integer","minimum":0,"maximum":10000},
+        "pages":array(obj({"page":evidence_page,"state":evidence_page_state}),maxItems=20),
+    })
+    d["ResearchLocation"] = obj({
+        "anchorId":ref("OpaqueId"),"companyId":ref("OpaqueId"),"documentId":ref("OpaqueId"),"documentRevision":source_revision,
+        "sourceTitle":text(maxLength=120),"sourceName":text(maxLength=120),"publishedAt":nullable(ref("UtcInstant")),
+        "page":evidence_page,"lineStart":evidence_line,"lineEnd":evidence_line,"kind":enum(["PASSAGE","TABLE_ROW"]),
+        "quote":text(maxLength=4000),"cells":array(text(maxLength=400),maxItems=12),
+    })
+    d["ResearchLocations"] = obj({"items":array(ref("ResearchLocation"),maxItems=40),"hasMore":{"type":"boolean"}})
+    d["ResearchTextPage"] = obj({"page":evidence_page,"state":evidence_page_state,"content":text(minLength=0,maxLength=60000)})
     event_category = enum(["EARNINGS","CAPITAL","GOVERNANCE","CORPORATE_ACTION","OTHER"])
     event_subtype = enum(["RESULTS","RESULTS_MEETING","BUYBACK","CAPITAL_RAISE","AUDITOR","GOVERNANCE","DIVIDEND","SPLIT_BONUS","MERGER","OTHER"])
     event_revision = {"type":"integer","minimum":1,"maximum":100}
@@ -754,6 +773,12 @@ def public_api_document() -> dict:
     dates=[parameter(name,"query",ref("SessionDate"),True) for name in ("start","endExclusive")]
     market_refresh=maintained("queuePrivateYahooDaily","Queue a bounded completed-session window for the reviewed mapping","PriceFetchQueued",listing_parameter,"PriceFetchWindow")
     market_refresh["responses"]["202"]=market_refresh["responses"].pop("200")
+    source_version_path = "/api/v1/research/sources/{id}/versions/{revision}"
+    source_version_params = [*identifier,parameter("revision","path",{"type":"integer","minimum":1,"maximum":50},True)]
+    pdf_upload = maintained("stageResearchPdf","Stage an owned PDF of at most 3 MiB","ResearchPdfUpload",[csrf_header])
+    pdf_upload["requestBody"] = {"required": True, "content": {"application/pdf":{"schema":{"type":"string","format":"binary"}}}}
+    pdf_download = maintained("downloadResearchPdf","Download the PDF for a private source version","ResearchPdfUpload",source_version_params)
+    pdf_download["responses"]["200"] = {"description":"Private source PDF attachment.", "content":{"application/octet-stream":{"schema":{"type":"string","format":"binary"}}}}
     paths.update({
         "/api/v1/monitoring/rules":{
             "get": maintained("listPriceRules","List owned completed-session alert rules","PriceRuleList"),
@@ -789,6 +814,18 @@ def public_api_document() -> dict:
         "/api/v1/research/sources/{id}":{"post": maintained("reviseCompanySource","Append a private source revision","CompanySource",identifier,"CompanySourceEdit")},
         "/api/v1/research/sources/{id}/versions":{"get": maintained("listSourceVersions","Read all retained versions for an owned source","CompanySourceVersions",identifier)},
         "/api/v1/research/sources/{id}/versions/{revision}":{"get": maintained("getSourceVersion","Read a private source version and its text","CompanySourceDetail",[*identifier,parameter("revision","path",{"type":"integer","minimum":1,"maximum":50},True)])},
+        "/api/v1/research/pdf":{"post":pdf_upload},
+        source_version_path+"/pdf":{"get":pdf_download},
+        source_version_path+"/extraction":{
+            "get":maintained("getResearchExtraction","Inspect text and page coverage for this source version","ResearchExtraction",source_version_params),
+            "post":maintained("queueResearchExtraction","Queue bounded private extraction for this source version","ResearchExtraction",[*source_version_params,csrf_header]),
+        },
+        source_version_path+"/anchors":{"get":maintained("listEvidenceLocations","Read indexed passages and table rows","ResearchLocations",[
+            *source_version_params,parameter("offset","query",{"type":"integer","minimum":0,"maximum":12000})])},
+        source_version_path+"/pages/{number}":{"get":maintained("readEvidencePage","Read an extracted page from a specific source version","ResearchTextPage",[
+            *source_version_params,parameter("number","path",{"type":"integer","minimum":1,"maximum":20},True)])},
+        "/api/v1/research/evidence/{anchor}":{"get":maintained("getEvidenceLocation","Resolve an owned passage to its exact source version and line range","ResearchLocation",[
+            parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/events":{
             "get": maintained("listCompanyEvents","List owned reviewed company event threads","CompanyEventPage",[
                 parameter("companyId","query",text(format="uuid")),parameter("offset","query",{"type":"integer","minimum":0,"maximum":300})]),

@@ -34,8 +34,9 @@ final class RequestGuardrails extends OncePerRequestFilter {
         if (request.getRequestURI().length() > 1024 || (request.getQueryString() != null && request.getQueryString().length() > 2048)) {
             Problems.write(request, response, 414, "REQUEST_TOO_LARGE"); return;
         }
-        boolean upload="POST".equals(request.getMethod())&&request.getRequestURI().endsWith("/imports");
-        long limit = upload ? 5 * 1024 * 1024 : 64 * 1024;
+        boolean pdfUpload="POST".equals(request.getMethod())&&request.getRequestURI().equals("/api/v1/research/pdf");
+        boolean upload=pdfUpload||"POST".equals(request.getMethod())&&request.getRequestURI().endsWith("/imports");
+        long limit = pdfUpload ? 3 * 1024 * 1024 : upload ? 5 * 1024 * 1024 : 64 * 1024;
         if (request.getContentLengthLong() > limit) { Problems.write(request, response, 413, "REQUEST_TOO_LARGE"); return; }
         if (!requests.tryAcquire()) {
             response.setHeader("Retry-After", "2");

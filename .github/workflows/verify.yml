@@ -50,3 +50,9 @@ jobs:
           PYTHON="$FINN_WORKSPACE_ROOT/cache/yahoo-tools/bin/python"
           "$PYTHON" -m pip install -r integrations/yfinance/requirements.lock.txt
           PYTHONPATH=integrations/yfinance/src "$PYTHON" -B -m unittest discover -s integrations/yfinance/tests
+      - name: Verify offline research PDF extraction
+        run: |
+          python -m venv "$FINN_WORKSPACE_ROOT/cache/research-pdf"
+          PYTHON="$FINN_WORKSPACE_ROOT/cache/research-pdf/bin/python"
+          "$PYTHON" -m pip install --no-deps --require-hashes --only-binary ':all:' -r integrations/research-pdf/requirements.lock.txt
+          "$PYTHON" -B -m unittest discover -s integrations/research-pdf/tests
