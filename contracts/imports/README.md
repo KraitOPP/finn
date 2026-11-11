@@ -1,8 +1,8 @@
 # Portfolio import preview contract
 
-Version: 0.2.0. This is an internal normalized preview contract, not a Groww spreadsheet parser or a public HTTP route. It is versioned separately from the market-data public API, which remains 0.1.0.
+Version: 0.2.0. This is a separately versioned internal interchange contract. The public application API and Java parser use their own explicitly documented boundaries.
 
-`portfolio-import-preview.schema.json` defines the values an eventual parser must produce before the user reviews a batch. No ledger writes or broker access are implemented here. One user-supplied Groww stock-holdings `.xlsx` layout has been inspected read-only. The [holdings profile](profiles/groww-holdings-xlsx-v1.json) records its headers, date caption, summary locations and mapping requirements without any source filename, account identity, securities or financial values. It is observed layout evidence, not an enabled parser or proof of other Groww variants. Trade/order/cash layouts and execution/charge semantics remain unverified.
+`portfolio-import-preview.schema.json` defines a generalized normalized interchange shape. The Java `GrowwHoldingsReader` now supports the narrow [holdings profile](profiles/groww-holdings-xlsx-v1.json) and returns a typed in-memory preview, including separate report/detail totals and row issues. The profile records observed layout evidence without account identity, filenames or financial values. The reader cannot write the ledger. Trade/order/cash layouts and execution/charge semantics remain unverified.
 
 The entirely invented `fixtures/groww-holdings.synthetic.json` illustrates the normalized shape. It is not a copied/redacted real portfolio or a workbook fixture.
 
@@ -40,12 +40,12 @@ Prefer stable source execution/fill IDs for trade identity. Order ID alone canno
 
 `sourceRowNumber` and optional `sourceSheet` preserve an original workbook locator where available; they are not transaction identifiers. Row numbers must not be renumbered after skipping title/header/blank rows. Each normalized row carries issues and a source fingerprint, with no copied raw financial text. A future importer must validate fees, quantities, cash effects, source period, and identity semantics in Java in addition to this structural schema.
 
-## Planned XLSX acceptance policy
+## XLSX acceptance policy
 
-No workbook reader is implemented in this phase. The later reader will treat XLSX as an untrusted OOXML ZIP package and apply the following policy before producing preview rows:
+The Java reader treats XLSX as an untrusted OOXML ZIP package and applies the following policy before producing preview rows:
 
 - Check file bytes, declared content types, workbook relationships, and the presence of expected workbook/worksheet parts. A `.xlsx` suffix is insufficient. Legacy `.xls`, macro-enabled `.xlsm`/`.xlsb`, renamed files, encrypted/password-protected packages, and unknown report layouts remain unsupported until separately reviewed.
-- Enforce bounded upload size, compressed and expanded member sizes, aggregate expanded bytes, member count, compression ratio, worksheet count, row/column counts, cell/shared-string length, XML depth, and parse time. Initial proposed ceilings are 20 MiB upload, 100 MiB total expanded content, 512 package members, 100,000 data rows, and 256 columns per imported worksheet; these are design proposals to validate against the real export, not active limits in an existing parser.
+- Enforce 5 MiB input, 8 MiB per expanded part, 25 MiB total expansion, at most 64 ZIP members from a static part allowlist, 200:1 per-part compression ratio, one worksheet, 1,000 detail rows, 1,024 row coordinates, 64 columns, 12,000 cells, 512-character cell/shared strings, 32 XML levels and an eight-second parse budget. Only data columns A–H are supported. ZIP64, data-bearing extra columns and unexpected footer layouts are unsupported.
 - Reject ZIP traversal/absolute paths, symlinks, duplicate package member names, corrupt CRCs, nested archive payloads, and unexpected executable/embedded content. Read package members through bounded streams without extracting arbitrary paths. The workspace's single-CSV archive experiment is not an XLSX validator.
 - Disable DTDs, entity expansion, XInclude, external resource resolution, and network access in XML processing. Resolve only allowed internal OOXML part relationships, enforcing package boundaries and expansion limits before parsing shared strings or sheets.
 - Reject macros/VBA, ActiveX/OLE objects, embedded packages, external workbook links, external hyperlinks/relationships, data connections/query tables, DDE-style references, and formula cells including shared/array formulas. Never run Excel/LibreOffice, evaluate formulas, trust cached formula results, refresh connections, or follow supplied links. A real export containing formulas will require a separately reviewed static-values import workflow rather than weakening this policy implicitly.
@@ -54,6 +54,6 @@ No workbook reader is implemented in this phase. The later reader will treat XLS
 
 ## Verification
 
-Run `python -B -m unittest discover -s contracts/imports/tests` from the backend root in an environment with `jsonschema==4.26.0`. Tests validate the schema and deliberately synthetic examples, including exact-money values, dates, quantities, source format, worksheet locators, and unverified mappings that try to mark a row acceptable. No test downloads data, opens or validates an XLSX package, implements the planned reader restrictions, or creates an application.
+Run `python -B -m unittest discover -s contracts/imports/tests` for the general interchange contract. The backend's normal Java verification additionally tests the production reader against wholly synthetic OOXML packets for exact totals, original row positions, missing costs, zero closes, bad layout, macros, external links, formulas, XML/ZIP bounds and corruption. Neither suite needs any private workbook or live provider.
 
 The dependency is a contract-development tool, not an application runtime. Configure environment/dependency caches and generated output outside the checkout. Phase 2 will consolidate contract checks into the normal backend build.

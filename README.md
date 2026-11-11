@@ -4,7 +4,7 @@ Java 25 and Spring Boot 4.1.2 backend for an India-first portfolio intelligence 
 
 ## Repository status
 
-The application includes OIDC sign-in, owner-scoped portfolios and accounts, a manual instrument catalogue and an immutable investment journal, plus a fixed synthetic public demo. The existing Yahoo client returns unaccepted acquisition candidates. Groww XLSX and official EOD parsing remain pending.
+The application includes OIDC sign-in, owner-scoped portfolios and accounts, a manual instrument catalogue and an immutable investment journal, plus a fixed synthetic public demo. The bounded Groww holdings workbook reader is implemented internally; authenticated upload/staging is a separate slice. The existing Yahoo client returns unaccepted acquisition candidates. Official EOD parsing remains pending.
 
 ## Run locally
 
@@ -51,7 +51,7 @@ The GitHub workflow runs the application and existing Python contract/adapter ch
 
 - [Market-data and API contracts](contracts/README.md): exact decimals, listing identity, provenance, missing/stale states, planned routes and background-job states.
 - [Yahoo history client](integrations/yfinance/README.md): bounded daily acquisition for explicitly mapped NSE/BSE listings in private mode. Streaming and universal coverage are unverified.
-- [Portfolio import contract](contracts/imports/README.md): distinguishes executed trades, orders, holdings and cash movements. A Groww holdings `.xlsx` layout has been inspected and recorded as a review-gated profile; the secure reader and other report layouts remain pending.
+- [Portfolio import contract and reader](contracts/imports/README.md): supported static Groww holdings `.xlsx` profile, strict OOXML checks, exact decimal evidence, original row positions, summary reconciliation and missing-data states. No formulas or links run. Upload/staging and reviewed acceptance are separate; other report layouts are unsupported.
 - [Official EOD boundary](integrations/eod/README.md): acquisition references and parser acceptance requirements. Actual exchange-file schema validation remains pending; no EOD parser is shipped.
 
 Each component documents its checks. Install dependencies and retain caches/output outside the checkout using `FINN_WORKSPACE_ROOT`.
