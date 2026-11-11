@@ -59,6 +59,13 @@ class FinancialFacts {
                 """,FinancialFacts::row,owner,company,limit);
     }
 
+    List<Fact> reviewedAt(UUID owner,UUID company,UUID anchor){
+        return jdbc.query(SELECT+"""
+                WHERE f.owner_id=? AND f.company_id=? AND v.revision=f.revision AND v.anchor_id=?
+                ORDER BY f.period_end DESC,f.metric,f.fact_id LIMIT 12
+                """,FinancialFacts::row,owner,company,anchor);
+    }
+
     @Transactional public History versions(UUID id){
         UUID owner=users.requireId();
         require(owner,id,null);

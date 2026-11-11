@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.32.0",
+  "$id": "urn:finn:contracts:market-data:0.33.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.32.0"
+      "const": "0.33.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3208,6 +3208,174 @@
       },
       "required": [
         "resolved"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchReportCapabilities": {
+      "type": "object",
+      "properties": {
+        "localRanking": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "localRanking"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchReportInput": {
+      "type": "object",
+      "properties": {
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "rankLocally": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "question",
+        "rankLocally"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchReportFeedbackInput": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "note",
+        "anchorId"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchReportFeedback": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recordedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "note",
+        "anchorId",
+        "recordedAt"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchReport": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "asOf": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "EVIDENCE",
+            "INSUFFICIENT",
+            "CONFLICTING_CONTEXT",
+            "LOCAL_RANKED",
+            "MODEL_FALLBACK"
+          ]
+        },
+        "modelName": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "policyVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResearchLocation"
+          },
+          "maxItems": 3
+        },
+        "facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FinancialFact"
+          },
+          "maxItems": 12
+        },
+        "feedback": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResearchReportFeedback"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "reportId",
+        "companyId",
+        "question",
+        "asOf",
+        "state",
+        "modelName",
+        "policyVersion",
+        "citations",
+        "facts",
+        "feedback"
       ],
       "additionalProperties": false
     },

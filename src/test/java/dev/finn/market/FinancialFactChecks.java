@@ -48,6 +48,19 @@ public final class FinancialFactChecks {
                  "capitalExpenditure":{"factId":"%s","revision":1},"reviewed":true}
                 """.formatted(cash,capex)).andExpect(status().isOk()).andExpect(jsonPath("$.normalizedAmount").value("1970000000"))
                 .andExpect(jsonPath("$.origin").value("DERIVED")).andExpect(jsonPath("$.operands.length()").value(2));
+        String reports=research+"/reports";
+        var report=ok(submit(mvc,reports,owner,"{\"question\":\"Revenue Previous\",\"rankLocally\":false}"));
+        org.junit.jupiter.api.Assertions.assertEquals("CONFLICTING_CONTEXT",report.get("state").asText());
+        String reportPath=root+"/reports/"+report.get("reportId").asText();
+        read(mvc,reportPath,other).andExpect(status().isNotFound());
+        read(mvc,reportPath,owner).andExpect(status().isOk()).andExpect(jsonPath("$.facts.length()").value(3));
+        submit(mvc,reportPath+"/feedback",owner,"{\"note\":\"Confirm the statement basis\"}").andExpect(status().isOk());
+        submit(mvc,reports,owner,"{\"question\":\"Unattesteddividend\",\"rankLocally\":false}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.state").value("INSUFFICIENT"))
+                .andExpect(jsonPath("$.citations.length()").value(0));
+        submit(mvc,reports,owner,"{\"question\":\"Capex\",\"rankLocally\":true}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.state").value("MODEL_FALLBACK"))
+                .andExpect(jsonPath("$.citations[0].quote").value("Capex\t30"));
     }
 
     static tools.jackson.databind.JsonNode anchors(MockMvc mvc,ResearchExtractionWorker worker,String owner,String company)throws Exception{

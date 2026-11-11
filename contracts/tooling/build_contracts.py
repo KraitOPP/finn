@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.32.0"
+VERSION = "0.33.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -336,6 +336,16 @@ def definitions() -> dict:
     d["CompanyResearchNoteInput"] = obj(research_note)
     d["CompanyResearchNote"] = obj({**research_note,"noteId":ref("OpaqueId"),"resolved":{"type":"boolean"}})
     d["CompanyResearchResolution"] = obj({"resolved":{"type":"boolean"}})
+    d["ResearchReportCapabilities"] = obj({"localRanking":{"type":"boolean"}})
+    d["ResearchReportInput"] = obj({"question":text(minLength=1,maxLength=320),"rankLocally":{"type":"boolean"}})
+    report_feedback = {"note":text(minLength=1,maxLength=500),"anchorId":nullable(ref("OpaqueId"))}
+    d["ResearchReportFeedbackInput"] = obj(report_feedback)
+    d["ResearchReportFeedback"] = obj({**report_feedback,"recordedAt":ref("UtcInstant")})
+    d["ResearchReport"] = obj({"reportId":ref("OpaqueId"),"companyId":ref("OpaqueId"),"question":text(minLength=1,maxLength=320),
+        "asOf":ref("UtcInstant"),"state":enum(["PENDING","EVIDENCE","INSUFFICIENT","CONFLICTING_CONTEXT","LOCAL_RANKED","MODEL_FALLBACK"]),
+        "modelName":nullable(text(minLength=1,maxLength=100)),"policyVersion":text(minLength=1,maxLength=30),
+        "citations":array(ref("ResearchLocation"),maxItems=3),"facts":array(ref("FinancialFact"),maxItems=12),
+        "feedback":nullable(ref("ResearchReportFeedback"))})
     d["CompanyResearchOverview"] = obj({
         "companyId":ref("OpaqueId"),"companyName":text(minLength=1,maxLength=120),
         "primarySources":{"type":"integer","minimum":0},"indexedSources":{"type":"integer","minimum":0},
@@ -872,6 +882,15 @@ def public_api_document() -> dict:
             parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/companies/{company}/overview":{"get":maintained(
             "getCompanyResearchOverview","Read company evidence coverage and reviewed highlights","CompanyResearchOverview",company_parameter)},
+        "/api/v1/research/report-capabilities":{"get":maintained(
+            "getResearchReportCapabilities","Read the configured research modes","ResearchReportCapabilities")},
+        "/api/v1/research/companies/{company}/reports":{"post":maintained(
+            "createResearchReport","Save a cited company research report","ResearchReport",company_parameter,"ResearchReportInput")},
+        "/api/v1/research/reports/{id}":{"get":maintained(
+            "getResearchReport","Read owned research evidence and generation status","ResearchReport",identifier)},
+        "/api/v1/research/reports/{id}/feedback":{"post":maintained(
+            "recordResearchReportFeedback","Save an owned report correction with optional evidence","ResearchReportFeedback",
+            identifier,"ResearchReportFeedbackInput")},
         "/api/v1/research/companies/{company}/notes":{"post":maintained(
             "addCompanyResearchNote","Save a research highlight or open question","CompanyResearchNote",company_parameter,"CompanyResearchNoteInput")},
         "/api/v1/research/companies/{company}/notes/{id}":{"post":maintained(
