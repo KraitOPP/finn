@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.31.0"
+VERSION = "0.32.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -331,6 +331,16 @@ def definitions() -> dict:
     })
     d["FinancialFactPage"] = obj({"items":array(ref("FinancialFact"),maxItems=50),"hasMore":{"type":"boolean"}})
     d["FinancialFactHistory"] = obj({"items":array(ref("FinancialFact"),maxItems=50)})
+    research_note = {"kind":enum(["BUSINESS","GOVERNANCE","QUESTION"]),"title":text(minLength=1,maxLength=240),
+                     "anchorId":nullable(ref("OpaqueId"))}
+    d["CompanyResearchNoteInput"] = obj(research_note)
+    d["CompanyResearchNote"] = obj({**research_note,"noteId":ref("OpaqueId"),"resolved":{"type":"boolean"}})
+    d["CompanyResearchResolution"] = obj({"resolved":{"type":"boolean"}})
+    d["CompanyResearchOverview"] = obj({
+        "companyId":ref("OpaqueId"),"companyName":text(minLength=1,maxLength=120),
+        "primarySources":{"type":"integer","minimum":0},"indexedSources":{"type":"integer","minimum":0},
+        "sources":array(ref("CompanySource"),maxItems=6),"events":array(ref("CompanyEvent"),maxItems=6),
+        "notes":array(ref("CompanyResearchNote"),maxItems=50)})
     d["FinancialComparison"] = obj({
         "state":enum(["COMPARABLE","INCOMPARABLE"]),
         "reason":nullable(enum(["DIFFERENT_REPORTING_BASIS","DIFFERENT_OR_OVERLAPPING_PERIODS","NON_POSITIVE_BASE","PERCENTAGE_POINTS"])),
@@ -860,6 +870,13 @@ def public_api_document() -> dict:
             *source_version_params,parameter("number","path",{"type":"integer","minimum":1,"maximum":20},True)])},
         "/api/v1/research/evidence/{anchor}":{"get":maintained("getEvidenceLocation","Resolve an owned passage to its exact source version and line range","ResearchLocation",[
             parameter("anchor","path",text(format="uuid"),True)])},
+        "/api/v1/research/companies/{company}/overview":{"get":maintained(
+            "getCompanyResearchOverview","Read company evidence coverage and reviewed highlights","CompanyResearchOverview",company_parameter)},
+        "/api/v1/research/companies/{company}/notes":{"post":maintained(
+            "addCompanyResearchNote","Save a research highlight or open question","CompanyResearchNote",company_parameter,"CompanyResearchNoteInput")},
+        "/api/v1/research/companies/{company}/notes/{id}":{"post":maintained(
+            "resolveCompanyResearchQuestion","Resolve or reopen a research question","CompanyResearchNote",
+            [*company_parameter,*identifier],"CompanyResearchResolution")},
         "/api/v1/research/companies/{company}/facts":{
             "get":maintained("listCompanyFinancialFacts","Read reviewed facts with explicit dimensions","FinancialFactPage",[
                 *company_parameter,parameter("offset","query",{"type":"integer","minimum":0,"maximum":1500})]),

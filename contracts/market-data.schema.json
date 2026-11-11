@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.31.0",
+  "$id": "urn:finn:contracts:market-data:0.32.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.31.0"
+      "const": "0.32.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3120,6 +3120,146 @@
       },
       "required": [
         "items"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyResearchNoteInput": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "BUSINESS",
+            "GOVERNANCE",
+            "QUESTION"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "anchorId"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyResearchNote": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "BUSINESS",
+            "GOVERNANCE",
+            "QUESTION"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "noteId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "resolved": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "anchorId",
+        "noteId",
+        "resolved"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyResearchResolution": {
+      "type": "object",
+      "properties": {
+        "resolved": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "resolved"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyResearchOverview": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "primarySources": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "indexedSources": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanySource"
+          },
+          "maxItems": 6
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanyEvent"
+          },
+          "maxItems": 6
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanyResearchNote"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "companyId",
+        "companyName",
+        "primarySources",
+        "indexedSources",
+        "sources",
+        "events",
+        "notes"
       ],
       "additionalProperties": false
     },

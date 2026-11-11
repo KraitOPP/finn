@@ -14,6 +14,15 @@ public final class FinancialFactChecks {
         String owner="fictional-fact-owner",other="fictional-fact-other";
         String company=company(mvc,owner),root="/api/v1/research",facts=root+"/companies/"+company+"/facts";
         var anchors=anchors(mvc,worker,owner,company);
+        String research=root+"/companies/"+company;
+        read(mvc,research+"/overview",owner).andExpect(status().isOk()).andExpect(jsonPath("$.indexedSources").value(1));
+        read(mvc,research+"/overview",other).andExpect(status().isNotFound());
+        submit(mvc,research+"/notes",owner,"{\"kind\":\"GOVERNANCE\",\"title\":\"Needs evidence\"}")
+                .andExpect(status().isUnprocessableContent());
+        String question=ok(submit(mvc,research+"/notes",owner,"{\"kind\":\"QUESTION\",\"title\":\"What changed?\"}"))
+                .get("noteId").asText();
+        submit(mvc,research+"/notes/"+question,owner,"{\"resolved\":true}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.resolved").value(true));
         String current=body("REVENUE","CONSOLIDATED","2025-04-01","2025-06-30",anchors.get(1).get("anchorId").asText(),"125","LAKH");
         String earlier=body("REVENUE","CONSOLIDATED","2025-01-01","2025-03-31",anchors.get(2).get("anchorId").asText(),"-50","LAKH");
         submit(mvc,facts,owner,current.replace("\"125\"","\"126\"")).andExpect(status().isUnprocessableContent());
