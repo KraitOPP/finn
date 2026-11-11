@@ -74,6 +74,34 @@ export class ApiError extends Error {
   }
 }
 
+export async function readBoundedResponse(response: Response, maximum: number) {
+  const reader = response.body?.getReader();
+  if (!reader) throw new ApiError(response.status);
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  try {
+    while (true) {
+      const next = await reader.read();
+      if (next.done) break;
+      length += next.value.byteLength;
+      if (length > maximum) {
+        await reader.cancel();
+        throw new ApiError(502);
+      }
+      chunks.push(next.value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
 export async function requestContract<K extends keyof ContractTypes>(
   name: K,
   path: string,
@@ -106,30 +134,7 @@ export async function requestContract<K extends keyof ContractTypes>(
         ? {}
         : { body: JSON.stringify(options.body) }),
   });
-  const reader = response.body?.getReader();
-  if (!reader) throw new ApiError(response.status);
-  const chunks: Uint8Array[] = [];
-  let length = 0;
-  try {
-    while (true) {
-      const next = await reader.read();
-      if (next.done) break;
-      length += next.value.byteLength;
-      if (length > 2 * 1024 * 1024) {
-        await reader.cancel();
-        throw new ApiError(502);
-      }
-      chunks.push(next.value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  const bytes = new Uint8Array(length);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
+  const bytes = await readBoundedResponse(response, 2 * 1024 * 1024);
   let body: unknown;
   try {
     body = JSON.parse(new TextDecoder().decode(bytes));

@@ -10,6 +10,7 @@ import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { useDisplayInstant } from "../preferences/PreferencesProvider.tsx";
+import { LedgerExport } from "./LedgerExport.tsx";
 
 const labels: Record<LedgerEventView["kind"], string> = {
   BUY: "Buy",
@@ -279,6 +280,7 @@ export function LedgerPanel({
               ))}
             </ul>
           </details>
+          <LedgerExport base={base} revision={ledger.value.revision} />
         </>
       )}
       {!archived && !editor && !pending && (

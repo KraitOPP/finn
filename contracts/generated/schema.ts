@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.11.0",
+  "contractVersion": "0.12.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "c7fe804e8ddc893350b761fff0d5c6b88c94a287ae8d7d54793799bdd4a75eb1",
+  "sourceSha256": "619a4afe72034f6e8007826528baaec8678f075c79201a169b2640f43fa1cef4",
   "schemaNames": [
     "AccountInput",
     "AcquisitionEnvelope",
@@ -53,6 +53,7 @@ export const contractMetadata = {
     "LedgerCorrectInput",
     "LedgerEntryInput",
     "LedgerEventView",
+    "LedgerExportInput",
     "LedgerPage",
     "LedgerPosition",
     "LedgerReceipt",
@@ -809,7 +810,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.11.0"
+    "const": "0.12.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -2991,6 +2992,21 @@ export const contractSchemas = {
       "ratioDenominator"
     ],
     "additionalProperties": false
+  },
+  "LedgerExportInput": {
+    "type": "object",
+    "properties": {
+      "expectedLedgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      }
+    },
+    "required": [
+      "expectedLedgerRevision"
+    ],
+    "additionalProperties": false,
+    "description": "Export the reviewed current journal revision only. Readable after archive. No credentials, account identity or source workbook bytes are exported."
   },
   "LedgerPage": {
     "type": "object",

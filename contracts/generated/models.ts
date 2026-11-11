@@ -143,7 +143,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.11.0") & (string);
+export type ContractVersion = ("0.12.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -481,6 +481,10 @@ export type LedgerEventView = ({
   "recordedAt": (UtcInstant);
   "ratioNumerator": (((number)) | ((null)));
   "ratioDenominator": (((number)) | ((null)));
+});
+
+export type LedgerExportInput = ({
+  "expectedLedgerRevision": (number);
 });
 
 export type LedgerPage = ({
@@ -848,6 +852,7 @@ export interface ContractTypes {
   LedgerCorrectInput: LedgerCorrectInput;
   LedgerEntryInput: LedgerEntryInput;
   LedgerEventView: LedgerEventView;
+  LedgerExportInput: LedgerExportInput;
   LedgerPage: LedgerPage;
   LedgerPosition: LedgerPosition;
   LedgerReceipt: LedgerReceipt;
