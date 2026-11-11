@@ -4,7 +4,7 @@ React 19 and TypeScript frontend for an India-first portfolio intelligence and i
 
 ## Repository status
 
-The application provides OIDC sign-in/out, private portfolios, source accounts, transaction review and history, a manual securities catalogue and settings. The public overview remains a fictional stock snapshot. No real report is imported by this demo; report review and market valuation are later slices.
+The application provides OIDC sign-in/out, private portfolios, source accounts, transaction review and history, a manual securities catalogue, Groww holdings previews and settings. The public overview remains a fictional stock snapshot. Previewing does not post holdings. Market valuation is a later slice.
 
 ## Run locally
 
@@ -30,6 +30,8 @@ Securities searches the signed-in user's saved manual catalogue. Record companie
 Portfolio creates and selects INR tracking portfolios and friendly source accounts. History begins as unknown and becomes dated only when accepted records establish coverage. Archive/restore preserves accounts and readable history; archived portfolios cannot receive new financial writes. No broker login or account number is requested.
 
 Open a source account to enter and review a prior transaction or closing opening balance. Financial values remain exact decimal text. A retry from the review screen resends the same command and reference. Corrections preserve the original journal record and append a reversal or replacement. Cash, cost, realised gains and fees visibly retain coverage gaps. Exchange selection is optional and explicit; holdings aggregate by security. No buy/sell record places an order.
+
+On a Groww source account, choose the supported holdings `.xlsx` for a private preview. The upload sends bytes only, up to 5 MiB, and displays durable job status. Completed previews show reported versus calculated detail totals, source rows, missing mapping/currency information and row-level issues. A validated original is downloadable only by its owner. Preview/retry does not change holdings or post transactions.
 
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 

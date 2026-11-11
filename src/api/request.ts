@@ -22,6 +22,15 @@ const safeMessages: Record<string, string> = {
   PORTFOLIO_ARCHIVED: "Restore this portfolio before adding records.",
   DUPLICATE_RESOURCE:
     "A matching record already exists. Check your saved records before trying again.",
+  INVALID_XLSX: "This file is not a supported XLSX workbook.",
+  GROWW_SOURCE_ACCOUNT_REQUIRED:
+    "Select a Groww source account to preview a holdings workbook.",
+  IMPORT_QUEUE_FULL:
+    "Two previews are already queued or running. Wait for one to finish.",
+  IMPORT_STORAGE_LIMIT_REACHED:
+    "This workspace has reached its stored workbook limit.",
+  IMPORT_RETRY_LIMIT_REACHED: "This workbook has reached its retry limit.",
+  UPLOAD_CAPACITY_REACHED: "Other uploads are in progress. Try again shortly.",
 };
 
 export class ApiError extends Error {
@@ -49,15 +58,18 @@ export async function requestContract<K extends keyof ContractTypes>(
   options: {
     method?: "GET" | "PUT" | "POST";
     body?: unknown;
+    raw?: { data: BodyInit; contentType: string };
     csrf?: CsrfInformation;
     signal?: AbortSignal;
   } = {},
 ): Promise<ContractTypes[K]> {
+  const deadline = AbortSignal.timeout(options.raw ? 24000 : 12000);
   const signal = options.signal
-    ? AbortSignal.any([options.signal, AbortSignal.timeout(12000)])
-    : AbortSignal.timeout(12000);
+    ? AbortSignal.any([options.signal, deadline])
+    : deadline;
   const headers: Record<string, string> = { Accept: "application/json" };
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.raw) headers["Content-Type"] = options.raw.contentType;
   if (options.csrf) headers[options.csrf.headerName] = options.csrf.token;
   const response = await fetch(path, {
     method: options.method ?? "GET",
@@ -66,9 +78,11 @@ export async function requestContract<K extends keyof ContractTypes>(
     redirect: "error",
     headers,
     signal,
-    ...(options.body === undefined
-      ? {}
-      : { body: JSON.stringify(options.body) }),
+    ...(options.raw
+      ? { body: options.raw.data }
+      : options.body === undefined
+        ? {}
+        : { body: JSON.stringify(options.body) }),
   });
   const reader = response.body?.getReader();
   if (!reader) throw new ApiError(response.status);

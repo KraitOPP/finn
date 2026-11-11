@@ -143,7 +143,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.7.0") & (string);
+export type ContractVersion = ("0.8.0") & (string);
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -197,6 +197,85 @@ export type HistoryResponse = ({
   "coverage": (HistoryCoverage);
   "freshness": (Freshness);
   "warnings": (Array<(Warning)>);
+});
+
+export type HoldingsComparison = ({
+  "field": ("BUY_VALUE" | "CLOSING_VALUE" | "UNREALISED_PNL") & (string);
+  "reported": (((DecimalString)) | ((null)));
+  "detailSum": (((DecimalString)) | ((null)));
+  "difference": (((DecimalString)) | ((null)));
+  "status": ("MATCH" | "MISMATCH" | "INCOMPLETE") & (string);
+});
+
+export type HoldingsImportList = ({
+  "items": (Array<(HoldingsImportSummary)>);
+});
+
+export type HoldingsImportSummary = ({
+  "importId": (OpaqueId);
+  "jobId": (OpaqueId);
+  "state": ("QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "PARTIALLY_SUCCEEDED" | "CANCELLED") & (string);
+  "createdAt": (UtcInstant);
+  "sizeBytes": (number);
+  "failureCode": (((string)) | ((null)));
+});
+
+export type HoldingsPreviewMetadata = ({
+  "profile": ("groww-holdings-xlsx-v1");
+  "asOfDate": (SessionDate);
+  "reportedSummary": (HoldingsTotals);
+  "detailTotals": (HoldingsTotals);
+  "comparisons": (Array<(HoldingsComparison)>);
+  "warnings": (Array<(OpaqueId)>);
+  "rowCount": (number);
+});
+
+export type HoldingsPreviewPage = ({
+  "importId": (OpaqueId);
+  "jobId": (OpaqueId);
+  "ledgerRevisionAtPreview": (number);
+  "metadata": (HoldingsPreviewMetadata);
+  "rows": (Array<(HoldingsPreviewRow)>);
+  "nextOffset": (((number)) | ((null)));
+  "requiresInrConfirmation": (true);
+  "commitAvailable": (false);
+});
+
+export type HoldingsPreviewRow = ({
+  "source": (HoldingsSourceRow);
+  "matchedSecurityId": (((OpaqueId)) | ((null)));
+  "mappingStatus": ("UNRESOLVED_SECURITY" | "EXISTING_SECURITY") & (string);
+});
+
+export type HoldingsRowIssue = ({
+  "code": (OpaqueId);
+  "column": ("A" | "B" | "C" | "D" | "E" | "F" | "G" | "H") & (string);
+  "blocksCommit": (boolean);
+});
+
+export type HoldingsSourceRow = ({
+  "rowNumber": (number);
+  "reportedName": (((string)) | ((null)));
+  "isin": (((string)) | ((null)));
+  "quantity": (((DecimalString)) | ((null)));
+  "averageCost": (((DecimalString)) | ((null)));
+  "buyValue": (((DecimalString)) | ((null)));
+  "closingPrice": (((DecimalString)) | ((null)));
+  "closingValue": (((DecimalString)) | ((null)));
+  "unrealisedPnl": (((DecimalString)) | ((null)));
+  "issues": (Array<(HoldingsRowIssue)>);
+});
+
+export type HoldingsTotals = ({
+  "buyValue": (((DecimalString)) | ((null)));
+  "closingValue": (((DecimalString)) | ((null)));
+  "unrealisedPnl": (((DecimalString)) | ((null)));
+});
+
+export type ImportTicket = ({
+  "importId": (OpaqueId);
+  "jobId": (OpaqueId);
+  "duplicate": (boolean);
 });
 
 export type InstrumentPage = ({
@@ -615,6 +694,16 @@ export interface ContractTypes {
   Freshness: Freshness;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;
+  HoldingsComparison: HoldingsComparison;
+  HoldingsImportList: HoldingsImportList;
+  HoldingsImportSummary: HoldingsImportSummary;
+  HoldingsPreviewMetadata: HoldingsPreviewMetadata;
+  HoldingsPreviewPage: HoldingsPreviewPage;
+  HoldingsPreviewRow: HoldingsPreviewRow;
+  HoldingsRowIssue: HoldingsRowIssue;
+  HoldingsSourceRow: HoldingsSourceRow;
+  HoldingsTotals: HoldingsTotals;
+  ImportTicket: ImportTicket;
   InstrumentPage: InstrumentPage;
   InstrumentResult: InstrumentResult;
   IntegerString: IntegerString;

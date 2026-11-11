@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ContractTypes } from "../../contracts/generated/models.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { ApiError, requestContract } from "./request.ts";
@@ -12,6 +12,7 @@ export function useResource<K extends keyof ContractTypes>(
   path: string | null,
 ) {
   const [revision, setRevision] = useState(0);
+  const reload = useCallback(() => setRevision((value) => value + 1), []);
   const [result, setResult] = useState<Result<ContractTypes[K]> | null>(null);
   const { refresh } = useAuthentication();
   useEffect(() => {
@@ -47,6 +48,6 @@ export function useResource<K extends keyof ContractTypes>(
     value: current?.status === "ready" ? current.value : null,
     error: current?.status === "error" ? current.error : null,
     loading: path !== null && current === null,
-    reload: () => setRevision((value) => value + 1),
+    reload,
   };
 }

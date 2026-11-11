@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.7.0",
+  "contractVersion": "0.8.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "8ebf764eb0f137a28125a3c42680da39180a6acce07b6261fddaa7d6349e0e84",
+  "sourceSha256": "86a5b523d9b8e7ff5db343e16d020b3e114a5a8bd08b9ecdbf9b672877073981",
   "schemaNames": [
     "AccountInput",
     "AcquisitionEnvelope",
@@ -24,6 +24,16 @@ export const contractMetadata = {
     "Freshness",
     "HistoryCoverage",
     "HistoryResponse",
+    "HoldingsComparison",
+    "HoldingsImportList",
+    "HoldingsImportSummary",
+    "HoldingsPreviewMetadata",
+    "HoldingsPreviewPage",
+    "HoldingsPreviewRow",
+    "HoldingsRowIssue",
+    "HoldingsSourceRow",
+    "HoldingsTotals",
+    "ImportTicket",
     "InstrumentPage",
     "InstrumentResult",
     "IntegerString",
@@ -173,7 +183,7 @@ export const contractSchemas = {
     ]
   },
   "AsyncJobStatus": {
-    "description": "Owner-scoped status snapshot, not a queue implementation. Revision is server-assigned and increases on committed changes. Terminal states are immutable; retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
+    "description": "Owner-scoped durable job status. Revision increases on committed changes. Terminal states are immutable; explicit retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
     "oneOf": [
       {
         "type": "object",
@@ -783,7 +793,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.7.0"
+    "const": "0.8.0"
   },
   "CsrfInformation": {
     "type": "object",
@@ -1072,6 +1082,476 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Ascending sessionDate/observationId order. ONE_DAY only. Never fill gaps with zero or a silent previous close. Cursors bind listing, range, basis and source-selection snapshot."
+  },
+  "HoldingsComparison": {
+    "type": "object",
+    "properties": {
+      "field": {
+        "type": "string",
+        "enum": [
+          "BUY_VALUE",
+          "CLOSING_VALUE",
+          "UNREALISED_PNL"
+        ]
+      },
+      "reported": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "detailSum": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "difference": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "MATCH",
+          "MISMATCH",
+          "INCOMPLETE"
+        ]
+      }
+    },
+    "required": [
+      "field",
+      "reported",
+      "detailSum",
+      "difference",
+      "status"
+    ],
+    "additionalProperties": false
+  },
+  "HoldingsImportList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HoldingsImportSummary"
+        },
+        "maxItems": 30
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "HoldingsImportSummary": {
+    "type": "object",
+    "properties": {
+      "importId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "jobId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "QUEUED",
+          "RUNNING",
+          "SUCCEEDED",
+          "FAILED",
+          "PARTIALLY_SUCCEEDED",
+          "CANCELLED"
+        ]
+      },
+      "createdAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "sizeBytes": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5242880
+      },
+      "failureCode": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "importId",
+      "jobId",
+      "state",
+      "createdAt",
+      "sizeBytes",
+      "failureCode"
+    ],
+    "additionalProperties": false
+  },
+  "HoldingsPreviewMetadata": {
+    "type": "object",
+    "properties": {
+      "profile": {
+        "const": "groww-holdings-xlsx-v1"
+      },
+      "asOfDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "reportedSummary": {
+        "$ref": "#/components/schemas/HoldingsTotals"
+      },
+      "detailTotals": {
+        "$ref": "#/components/schemas/HoldingsTotals"
+      },
+      "comparisons": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HoldingsComparison"
+        },
+        "maxItems": 3,
+        "minItems": 3
+      },
+      "warnings": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OpaqueId"
+        },
+        "maxItems": 32
+      },
+      "rowCount": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000
+      }
+    },
+    "required": [
+      "profile",
+      "asOfDate",
+      "reportedSummary",
+      "detailTotals",
+      "comparisons",
+      "warnings",
+      "rowCount"
+    ],
+    "additionalProperties": false
+  },
+  "HoldingsPreviewPage": {
+    "type": "object",
+    "properties": {
+      "importId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "jobId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "ledgerRevisionAtPreview": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "metadata": {
+        "$ref": "#/components/schemas/HoldingsPreviewMetadata"
+      },
+      "rows": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HoldingsPreviewRow"
+        },
+        "maxItems": 100
+      },
+      "nextOffset": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "requiresInrConfirmation": {
+        "const": true
+      },
+      "commitAvailable": {
+        "const": false
+      }
+    },
+    "required": [
+      "importId",
+      "jobId",
+      "ledgerRevisionAtPreview",
+      "metadata",
+      "rows",
+      "nextOffset",
+      "requiresInrConfirmation",
+      "commitAvailable"
+    ],
+    "additionalProperties": false,
+    "description": "Private preview only. Source summaries and detail totals remain separate. Upload/staging never writes the journal. The supported report does not establish trade history, fees, cash or returns."
+  },
+  "HoldingsPreviewRow": {
+    "type": "object",
+    "properties": {
+      "source": {
+        "$ref": "#/components/schemas/HoldingsSourceRow"
+      },
+      "matchedSecurityId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "mappingStatus": {
+        "type": "string",
+        "enum": [
+          "UNRESOLVED_SECURITY",
+          "EXISTING_SECURITY"
+        ]
+      }
+    },
+    "required": [
+      "source",
+      "matchedSecurityId",
+      "mappingStatus"
+    ],
+    "additionalProperties": false,
+    "description": "An exact owned ISIN can identify a security; exchange listing is never inferred."
+  },
+  "HoldingsRowIssue": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "column": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ]
+      },
+      "blocksCommit": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "code",
+      "column",
+      "blocksCommit"
+    ],
+    "additionalProperties": false
+  },
+  "HoldingsSourceRow": {
+    "type": "object",
+    "properties": {
+      "rowNumber": {
+        "type": "integer",
+        "minimum": 12,
+        "maximum": 1024
+      },
+      "reportedName": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "isin": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12,
+            "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "averageCost": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "buyValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "closingPrice": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "closingValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "unrealisedPnl": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "issues": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HoldingsRowIssue"
+        },
+        "maxItems": 24
+      }
+    },
+    "required": [
+      "rowNumber",
+      "reportedName",
+      "isin",
+      "quantity",
+      "averageCost",
+      "buyValue",
+      "closingPrice",
+      "closingValue",
+      "unrealisedPnl",
+      "issues"
+    ],
+    "additionalProperties": false,
+    "description": "Source evidence only. Zero or missing closing price cannot become a market observation. No source account identity is staged."
+  },
+  "HoldingsTotals": {
+    "type": "object",
+    "properties": {
+      "buyValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "closingValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "unrealisedPnl": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "buyValue",
+      "closingValue",
+      "unrealisedPnl"
+    ],
+    "additionalProperties": false
+  },
+  "ImportTicket": {
+    "type": "object",
+    "properties": {
+      "importId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "jobId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "duplicate": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "importId",
+      "jobId",
+      "duplicate"
+    ],
+    "additionalProperties": false,
+    "description": "Byte-identical uploads reuse the original and its current job within the same owned account."
   },
   "InstrumentPage": {
     "type": "object",

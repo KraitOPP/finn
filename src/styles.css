@@ -221,6 +221,11 @@ a {
 .ledger-workspace {
   margin-top: 28px;
 }
+.import-workspace {
+  margin-top: 34px;
+  border-top: 1px solid #dfe4dc;
+  padding-top: 14px;
+}
 .ledger-workspace > h4 {
   margin-top: 32px;
 }

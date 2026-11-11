@@ -71,6 +71,7 @@ it("creates an INR source account and restores an archived portfolio without los
       return reply(portfolio);
     }
     if (url.endsWith("/ledger")) return reply(ledger);
+    if (url.endsWith("/imports")) return reply({ items: [] });
     if (url.endsWith("/transactions"))
       return reply({ items: [], nextBefore: null });
     if (url.endsWith("/preferences"))

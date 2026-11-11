@@ -4,6 +4,7 @@ import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { RouteHeading } from "../Navigation.tsx";
+import { HoldingsImportPanel } from "./HoldingsImportPanel.tsx";
 import { LedgerPanel } from "./LedgerPanel.tsx";
 
 export function Portfolios() {
@@ -270,6 +271,13 @@ function PortfolioDetail({
               detail.reload();
             }}
           />
+          {selected.source === "GROWW" && (
+            <HoldingsImportPanel
+              key={`import-${selected.accountId}`}
+              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+              archived={portfolio.archived}
+            />
+          )}
         </section>
       )}
     </section>
