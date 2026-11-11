@@ -13,11 +13,14 @@ class MonitoringSchedule {
     private final DeliveryWorker deliveries;
     private final ReviewReminders reminders;
     private final Indicators indicators;
-    MonitoringSchedule(PriceEvaluationWorker prices, DeliveryWorker deliveries, ReviewReminders reminders, Indicators indicators) {
+    private final PortfolioBriefs briefs;
+    MonitoringSchedule(PriceEvaluationWorker prices, DeliveryWorker deliveries, ReviewReminders reminders, Indicators indicators,
+                       PortfolioBriefs briefs) {
         this.prices = prices;
         this.deliveries = deliveries;
         this.reminders = reminders;
         this.indicators = indicators;
+        this.briefs = briefs;
     }
 
     @Scheduled(fixedDelay=15000)
@@ -61,6 +64,17 @@ class MonitoringSchedule {
             }
         } catch (RuntimeException failure) {
             LoggerFactory.getLogger(MonitoringSchedule.class).warn("Indicator monitoring temporarily unavailable");
+        }
+    }
+
+    @Scheduled(fixedDelay=20000)
+    void briefs() {
+        try {
+            for (int i=0; i<8 && briefs.processNext(); i++) {
+                // Each closed reporting window has its own transaction.
+            }
+        } catch (RuntimeException failure) {
+            LoggerFactory.getLogger(MonitoringSchedule.class).warn("Portfolio brief scheduling temporarily unavailable");
         }
     }
 }

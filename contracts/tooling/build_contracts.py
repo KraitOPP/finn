@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.22.0"
+VERSION = "0.23.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -229,6 +229,7 @@ def definitions() -> dict:
         "notification": ref("Notification"), "price": nullable(ref("PriceEvaluation")),
         "reminder": nullable(ref("ReminderEvidence")),
         "indicator": nullable(ref("IndicatorEvaluation")),
+        "briefId": nullable(ref("OpaqueId")),
         "deliveries": array(ref("NotificationDelivery"),maxItems=2), "attempts": array(ref("NotificationAttempt"),maxItems=6),
     })
     local_minute = text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$",maxLength=16)
@@ -245,6 +246,28 @@ def definitions() -> dict:
     d["ReminderList"] = obj({"items": array(ref("ReviewReminder"),maxItems=50)})
     d["ReminderEdit"] = obj({"expectedRevision": reminder_revision, "settings": ref("ReminderSettings")})
     d["ReminderScheduleChange"] = obj({"expectedRevision": reminder_revision, "snoozeUntil": nullable(local_minute)})
+    d["BriefSettings"] = obj({
+        "scheduledLocal": local_minute, "timeZone": text(maxLength=64), "cadence": enum(["DAILY","WEEKLY"]),
+        **{key: {"type":"boolean"} for key in ("enabled","includeAlerts","includeReminders","includeCompany","includeValuations")},
+    })
+    d["BriefSchedule"] = obj({"revision": reminder_revision, "settings": ref("BriefSettings"), "nextAt": nullable(ref("UtcInstant"))})
+    d["BriefScheduleInput"] = obj({"expectedRevision": {"type":"integer","minimum":0,"maximum":1000000}, "settings": ref("BriefSettings")})
+    d["BriefIndex"] = obj({
+        "schedule": nullable(ref("BriefSchedule")),
+        "runs": array(obj({"runId": ref("OpaqueId"), "scheduleRevision": reminder_revision, "windowStart": ref("UtcInstant"),
+                           "windowEnd": ref("UtcInstant"), "createdAt": ref("UtcInstant")}),maxItems=30),
+    })
+    d["PortfolioBrief"] = obj({
+        "windowStart": ref("UtcInstant"), "windowEnd": ref("UtcInstant"), "timeZone": text(maxLength=64),
+        "items": array(obj({"activityId": ref("OpaqueId"), "kind": activity_kind, "title": text(maxLength=160),
+                            "createdAt": ref("UtcInstant")}),maxItems=50),
+        "snapshots": array(obj({
+            "snapshotId": ref("OpaqueId"), "portfolioId": ref("OpaqueId"), "accountId": ref("OpaqueId"), "accountName": text(maxLength=120),
+            "sessionDate": ref("SessionDate"), "holdingsValue": nullable(ref("DecimalString")), "recordedValue": nullable(ref("DecimalString")),
+            "status": enum(["BEFORE_COVERAGE","PRICES_MISSING","CASH_UNKNOWN","RECORDED_VALUE"]),
+        }),maxItems=50),
+        "truncated": {"type":"boolean"},
+    })
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
         "items": array(obj({"activityId": ref("OpaqueId"), "title": text(maxLength=160), "kind": activity_kind,
@@ -658,6 +681,10 @@ def public_api_document() -> dict:
         },
         "/api/v1/monitoring/indicators/{id}":{"post": maintained("editIndicatorRule","Update an owned indicator threshold or enablement","IndicatorRule",identifier,"IndicatorEdit")},
         "/api/v1/monitoring/indicators/{id}/evaluations":{"get": maintained("listIndicatorEvaluations","Inspect eligible volume and allocation evidence","IndicatorEvaluations",identifier)},
+        "/api/v1/monitoring/briefs":{"get": maintained("getBriefScheduleAndRuns","List the owned schedule and brief history","BriefIndex")},
+        "/api/v1/monitoring/briefs/schedule":{"post": maintained("saveBriefSchedule","Configure the owner's local brief schedule","BriefSchedule",input_name="BriefScheduleInput")},
+        "/api/v1/monitoring/briefs/preview":{"get": maintained("previewPortfolioBrief","Preview a closed reporting window","PortfolioBrief",[parameter("windowEnd","query",ref("SessionDate"))])},
+        "/api/v1/monitoring/briefs/{id}":{"get": maintained("getPortfolioBrief","Inspect an owned immutable brief run","PortfolioBrief",identifier)},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},

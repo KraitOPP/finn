@@ -74,6 +74,10 @@ class FoundationIntegrationTest {
     @Autowired dev.finn.monitoring.DeliveryWorker deliveryWorker;
     @Autowired dev.finn.monitoring.ReviewReminders reminders;
     @Autowired dev.finn.monitoring.Indicators indicators;
+    @Autowired dev.finn.monitoring.PortfolioBriefs briefs;
+    @Test void briefRunsDeduplicateClosedWindows() throws Exception {
+        dev.finn.market.BriefChecks.schedulesAClosedWindowWithoutDuplicateRuns(mvc,jdbc,briefs);
+    }
     @Test void indicatorsRequireCoverageAndUsePriorVolumeOnly() throws Exception {
         dev.finn.market.IndicatorChecks.requiresCompleteCoverageAndExcludesCurrentVolume(mvc,jdbc,indicators,prices,jobs,yahoo);
     }
@@ -131,7 +135,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.22.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.23.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())
