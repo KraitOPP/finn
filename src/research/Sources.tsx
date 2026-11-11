@@ -10,6 +10,7 @@ import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
 import { EventReplay } from "./EventReplay.tsx";
 import { CompanyEvents, EventReview } from "./Events.tsx";
+import { EvidencePanel } from "./Evidence.tsx";
 import { FilingCalendar } from "./FilingCalendar.tsx";
 import { News } from "./News.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
@@ -169,6 +170,7 @@ function SourceVersions({
       ) : (
         <>
           <SourceEvidence detail={detail.value} />
+          <EvidencePanel key={revision} source={detail.value.source} />
           <EventReview
             key={revision}
             source={detail.value.source}
@@ -210,8 +212,14 @@ function SourceForm({
   const [attachment, setAttachment] = useState<string | null>(
     existing?.attachment ?? null,
   );
+  const [pdf, setPdf] = useState<File | null>(null);
+  const [removePdf, setRemovePdf] = useState(false);
   const [fileLabel, setFileLabel] = useState(
-    existing?.attachment ? "Existing text attachment" : "",
+    existing?.attachment
+      ? "Existing text attachment"
+      : existing?.source.hasPdf
+        ? "Existing PDF"
+        : "",
   );
   const [confirmed, setConfirmed] = useState(false);
   const [validation, setValidation] = useState("");
@@ -219,6 +227,17 @@ function SourceForm({
     const file = event.target.files?.[0];
     if (!file) return;
     setValidation("");
+    if (/\.pdf$/i.test(file.name)) {
+      if (file.size > 3 * 1024 * 1024) {
+        setValidation("Choose a PDF of up to 3 MiB.");
+        return;
+      }
+      setAttachment(null);
+      setPdf(file);
+      setRemovePdf(false);
+      setFileLabel(file.name);
+      return;
+    }
     if (!/\.txt$/i.test(file.name) || file.size > 49152) {
       setValidation("Choose a UTF-8 .txt file of up to 48 KiB.");
       return;
@@ -228,6 +247,8 @@ function SourceForm({
         await file.arrayBuffer(),
       );
       setAttachment(text);
+      setPdf(null);
+      setRemovePdf(false);
       setFileLabel(file.name);
     } catch {
       setValidation("This file could not be read as UTF-8 text.");
@@ -253,9 +274,15 @@ function SourceForm({
           }
           publishedAt = date.toISOString();
         }
-        if (!confirmed || (!url.trim() && !attachment)) {
+        if (
+          !confirmed ||
+          (!url.trim() &&
+            !attachment &&
+            !pdf &&
+            !(existing?.source.hasPdf && !removePdf))
+        ) {
           setValidation(
-            "Add a source link or text attachment and confirm permission.",
+            "Add a source link or attachment and confirm permission.",
           );
           return;
         }
@@ -267,20 +294,33 @@ function SourceForm({
           attachment,
           publishedAt,
           rightsConfirmed: true,
+          removePdf,
         };
         const endpoint = existing
           ? `${path}/${existing.source.documentId}`
           : path;
-        const body = existing
-          ? { expectedRevision: existing.source.revision, source: input }
-          : input;
-        const saved = await command.run((csrf) =>
-          requestContract("CompanySource", endpoint, {
+        const saved = await command.run(async (csrf) => {
+          if (pdf) {
+            const uploaded = await requestContract(
+              "ResearchPdfUpload",
+              "/api/v1/research/pdf",
+              {
+                method: "POST",
+                csrf,
+                raw: { data: pdf, contentType: "application/pdf" },
+              },
+            );
+            input.pdfFileId = uploaded.fileId;
+          }
+          const body = existing
+            ? { expectedRevision: existing.source.revision, source: input }
+            : input;
+          return requestContract("CompanySource", endpoint, {
             method: "POST",
             csrf,
             body,
-          }),
-        );
+          });
+        });
         if (saved) {
           if (!existing) {
             setTitle("");
@@ -288,6 +328,7 @@ function SourceForm({
             setUrl("");
             setPublished("");
             setAttachment(null);
+            setPdf(null);
             setFileLabel("");
             setConfirmed(false);
           }
@@ -360,20 +401,22 @@ function SourceForm({
         />
       </label>
       <label>
-        Text attachment (optional, up to 48 KiB){" "}
+        Attachment (PDF up to 3 MiB or UTF-8 text up to 48 KiB){" "}
         <input
           type="file"
-          accept=".txt,text/plain"
+          accept=".pdf,application/pdf,.txt,text/plain"
           onChange={(event) => void loadFile(event)}
         />
       </label>
-      {attachment && (
+      {fileLabel && (
         <p>
           {fileLabel}{" "}
           <button
             type="button"
             onClick={() => {
               setAttachment(null);
+              setPdf(null);
+              setRemovePdf(true);
               setFileLabel("");
             }}
           >
@@ -388,8 +431,8 @@ function SourceForm({
           onChange={(event) => setConfirmed(event.target.checked)}
           required
         />
-        I reviewed this source and may retain the link or text in my private
-        workspace.
+        I reviewed this source and may retain the link or attachment in my
+        private workspace.
       </label>
       {(validation || command.error) && (
         <p role="alert">{validation || command.error}</p>

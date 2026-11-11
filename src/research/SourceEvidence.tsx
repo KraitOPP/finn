@@ -24,6 +24,13 @@ export function SourceEvidence({ detail }: { detail: CompanySourceDetail }) {
           Open original source
         </a>
       )}
+      {source.hasPdf && (
+        <p>
+          <a href={`${versionPath(source.documentId, source.revision)}/pdf`}>
+            Download saved PDF
+          </a>
+        </p>
+      )}
       {detail.attachment && (
         <details>
           <summary>Read saved text</summary>

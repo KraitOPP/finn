@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.29.0",
+  "contractVersion": "0.30.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "e693493dc540e97627b570b2fde4de0d3ce59d9fd3f3c0b20d99aade088b16ee",
+  "sourceSha256": "3ce07a29a9df1dd02820c308e9b80ad5b1a2ea51240381a79d0f9bd7a025a647",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -149,6 +149,11 @@ export const contractMetadata = {
     "ReminderList",
     "ReminderScheduleChange",
     "ReminderSettings",
+    "ResearchExtraction",
+    "ResearchLocation",
+    "ResearchLocations",
+    "ResearchPdfUpload",
+    "ResearchTextPage",
     "ReviewCloseInput",
     "ReviewReminder",
     "Rights",
@@ -1889,6 +1894,9 @@ export const contractSchemas = {
       "hasAttachment": {
         "type": "boolean"
       },
+      "hasPdf": {
+        "type": "boolean"
+      },
       "checksum": {
         "type": "string",
         "minLength": 1,
@@ -1919,6 +1927,7 @@ export const contractSchemas = {
       "sourceName",
       "url",
       "hasAttachment",
+      "hasPdf",
       "checksum",
       "publishedAt",
       "ingestedAt"
@@ -2020,6 +2029,19 @@ export const contractSchemas = {
       },
       "rightsConfirmed": {
         "const": true
+      },
+      "pdfFileId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "removePdf": {
+        "type": "boolean"
       }
     },
     "required": [
@@ -2071,7 +2093,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.29.0"
+    "const": "0.30.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -7326,6 +7348,251 @@ export const contractSchemas = {
       "recurrence",
       "quietStart",
       "quietEnd"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchExtraction": {
+    "type": "object",
+    "properties": {
+      "state": {
+        "type": "string",
+        "enum": [
+          "LINK_ONLY",
+          "NOT_STARTED",
+          "QUEUED",
+          "RUNNING",
+          "READY",
+          "PARTIAL",
+          "NO_TEXT",
+          "UNSUPPORTED",
+          "FAILED",
+          "CANCELLED"
+        ]
+      },
+      "reason": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "jobId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "canRequest": {
+        "type": "boolean"
+      },
+      "totalPages": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "pages": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "TEXT",
+                "TRUNCATED",
+                "NO_TEXT",
+                "UNREADABLE"
+              ]
+            }
+          },
+          "required": [
+            "page",
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 20
+      }
+    },
+    "required": [
+      "state",
+      "reason",
+      "jobId",
+      "canRequest",
+      "totalPages",
+      "pages"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchLocation": {
+    "type": "object",
+    "properties": {
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "documentId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "documentRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "sourceTitle": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "sourceName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20
+      },
+      "lineStart": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 600
+      },
+      "lineEnd": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 600
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "PASSAGE",
+          "TABLE_ROW"
+        ]
+      },
+      "quote": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "cells": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "maxItems": 12
+      }
+    },
+    "required": [
+      "anchorId",
+      "companyId",
+      "documentId",
+      "documentRevision",
+      "sourceTitle",
+      "sourceName",
+      "publishedAt",
+      "page",
+      "lineStart",
+      "lineEnd",
+      "kind",
+      "quote",
+      "cells"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchLocations": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ResearchLocation"
+        },
+        "maxItems": 40
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchPdfUpload": {
+    "type": "object",
+    "properties": {
+      "fileId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "checksum": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "required": [
+      "fileId",
+      "checksum"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchTextPage": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "TEXT",
+          "TRUNCATED",
+          "NO_TEXT",
+          "UNREADABLE"
+        ]
+      },
+      "content": {
+        "type": "string",
+        "minLength": 0,
+        "maxLength": 60000
+      }
+    },
+    "required": [
+      "page",
+      "state",
+      "content"
     ],
     "additionalProperties": false
   },

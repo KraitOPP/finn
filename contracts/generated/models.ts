@@ -337,6 +337,7 @@ export type CompanySource = ({
   "sourceName": (string);
   "url": (((string)) | ((null)));
   "hasAttachment": (boolean);
+  "hasPdf": (boolean);
   "checksum": (string);
   "publishedAt": (((UtcInstant)) | ((null)));
   "ingestedAt": (UtcInstant);
@@ -360,6 +361,8 @@ export type CompanySourceInput = ({
   "attachment": (((string)) | ((null)));
   "publishedAt": (((UtcInstant)) | ((null)));
   "rightsConfirmed": (true);
+  "pdfFileId"?: (((OpaqueId)) | ((null)));
+  "removePdf"?: (boolean);
 });
 
 export type CompanySourcePage = ({
@@ -371,7 +374,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.29.0") & (string);
+export type ContractVersion = ("0.30.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1289,6 +1292,50 @@ export type ReminderSettings = ({
   "quietEnd": (((string)) | ((null)));
 });
 
+export type ResearchExtraction = ({
+  "state": ("LINK_ONLY" | "NOT_STARTED" | "QUEUED" | "RUNNING" | "READY" | "PARTIAL" | "NO_TEXT" | "UNSUPPORTED" | "FAILED" | "CANCELLED") & (string);
+  "reason": (((OpaqueId)) | ((null)));
+  "jobId": (((OpaqueId)) | ((null)));
+  "canRequest": (boolean);
+  "totalPages": (number);
+  "pages": (Array<({
+  "page": (number);
+  "state": ("TEXT" | "TRUNCATED" | "NO_TEXT" | "UNREADABLE") & (string);
+})>);
+});
+
+export type ResearchLocation = ({
+  "anchorId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "documentId": (OpaqueId);
+  "documentRevision": (number);
+  "sourceTitle": (string);
+  "sourceName": (string);
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "page": (number);
+  "lineStart": (number);
+  "lineEnd": (number);
+  "kind": ("PASSAGE" | "TABLE_ROW") & (string);
+  "quote": (string);
+  "cells": (Array<(string)>);
+});
+
+export type ResearchLocations = ({
+  "items": (Array<(ResearchLocation)>);
+  "hasMore": (boolean);
+});
+
+export type ResearchPdfUpload = ({
+  "fileId": (OpaqueId);
+  "checksum": (string);
+});
+
+export type ResearchTextPage = ({
+  "page": (number);
+  "state": ("TEXT" | "TRUNCATED" | "NO_TEXT" | "UNREADABLE") & (string);
+  "content": (string);
+});
+
 export type ReviewCloseInput = ({
   "sessionDate": (SessionDate);
   "close": (PositiveDecimalString);
@@ -1632,6 +1679,11 @@ export interface ContractTypes {
   ReminderList: ReminderList;
   ReminderScheduleChange: ReminderScheduleChange;
   ReminderSettings: ReminderSettings;
+  ResearchExtraction: ResearchExtraction;
+  ResearchLocation: ResearchLocation;
+  ResearchLocations: ResearchLocations;
+  ResearchPdfUpload: ResearchPdfUpload;
+  ResearchTextPage: ResearchTextPage;
   ReviewCloseInput: ReviewCloseInput;
   ReviewReminder: ReviewReminder;
   Rights: Rights;

@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.29.0",
+  "contractVersion": "0.30.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "e693493dc540e97627b570b2fde4de0d3ce59d9fd3f3c0b20d99aade088b16ee",
+  "sourceSha256": "3ce07a29a9df1dd02820c308e9b80ad5b1a2ea51240381a79d0f9bd7a025a647",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -148,6 +148,11 @@
     "ReminderList",
     "ReminderScheduleChange",
     "ReminderSettings",
+    "ResearchExtraction",
+    "ResearchLocation",
+    "ResearchLocations",
+    "ResearchPdfUpload",
+    "ResearchTextPage",
     "ReviewCloseInput",
     "ReviewReminder",
     "Rights",
