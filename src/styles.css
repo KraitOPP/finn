@@ -842,3 +842,42 @@ h1 {
     max-width: 80px;
   }
 }
+
+.market-filters,
+.ledger-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-block: 0.85rem;
+}
+.market-filters label {
+  display: grid;
+  gap: 0.25rem;
+}
+.ledger-metrics > div {
+  min-width: 10rem;
+}
+.ledger-metrics dd {
+  margin: 0.25rem 0 0;
+  font-weight: 650;
+}
+.market-chart {
+  display: block;
+  width: 100%;
+  max-height: 14rem;
+  color: #375bd2;
+}
+.market-table {
+  overflow-x: auto;
+}
+.market-table table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.market-table th,
+.market-table td {
+  text-align: left;
+  overflow-wrap: anywhere;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid currentColor;
+}

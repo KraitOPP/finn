@@ -162,7 +162,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.14.0") & (string);
+export type ContractVersion = ("0.15.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -884,6 +884,30 @@ export type ValuationListing = ({
   "allowProviderEstimate": (boolean);
 });
 
+export type ValuationPoint = ({
+  "snapshotId": (OpaqueId);
+  "sessionDate": (SessionDate);
+  "ledgerRevision": (number);
+  "calculationVersion": (OpaqueId);
+  "priceBasis": ("AS_REPORTED_EXCHANGE") & (string);
+  "status": ("BEFORE_COVERAGE" | "PRICES_MISSING" | "CASH_UNKNOWN" | "RECORDED_VALUE") & (string);
+  "holdingsValue": (((DecimalString)) | ((null)));
+  "cashBalance": (((DecimalString)) | ((null)));
+  "recordedValue": (((DecimalString)) | ((null)));
+  "recordedAt": (UtcInstant);
+});
+
+export type ValuationSeries = ({
+  "start": (SessionDate);
+  "endExclusive": (SessionDate);
+  "points": (Array<(ValuationPoint)>);
+});
+
+export type ValuationSnapshotDetail = ({
+  "snapshot": (ValuationPoint);
+  "valuation": (((AccountValuation)) | ((null)));
+});
+
 export type ValuationTotals = ({
   "positions": (number);
   "priced": (number);
@@ -1018,6 +1042,9 @@ export interface ContractTypes {
   UserProfile: UserProfile;
   UtcInstant: UtcInstant;
   ValuationListing: ValuationListing;
+  ValuationPoint: ValuationPoint;
+  ValuationSeries: ValuationSeries;
+  ValuationSnapshotDetail: ValuationSnapshotDetail;
   ValuationTotals: ValuationTotals;
   ValuedHolding: ValuedHolding;
   Warning: Warning;

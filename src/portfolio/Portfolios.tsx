@@ -3,6 +3,7 @@ import type { InvestmentAccount } from "../../contracts/generated/models.ts";
 import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
+import { ValuationHistory } from "../market/ValuationHistory.tsx";
 import {
   AccountValuationPanel,
   PortfolioValuationPanel,
@@ -271,6 +272,11 @@ function PortfolioDetail({
           {accountNotice && <p role="status">{accountNotice}</p>}
           <AccountValuationPanel
             key={`valuation-${selected.accountId}`}
+            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+            archived={portfolio.archived}
+          />
+          <ValuationHistory
+            key={`history-${selected.accountId}`}
             base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
             archived={portfolio.archived}
           />

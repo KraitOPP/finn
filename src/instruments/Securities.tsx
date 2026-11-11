@@ -6,7 +6,7 @@ import type {
 } from "../../contracts/generated/models.ts";
 import { ApiError, requestContract } from "../api/request.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
-import { ListingPrices } from "../market/ListingPrices.tsx";
+import { ListingPriceDisclosure } from "../market/ListingHistory.tsx";
 import { RouteHeading } from "../Navigation.tsx";
 
 const today = () =>
@@ -359,12 +359,7 @@ function SecurityDetail({ id }: { id: string }) {
                   Yahoo: {listing.providerSymbol ?? "Not mapped"} · manually
                   confirmed
                 </p>
-                <details>
-                  <summary>
-                    Prices for {listing.symbol} on {listing.exchange}
-                  </summary>
-                  <ListingPrices listing={listing} />
-                </details>
+                <ListingPriceDisclosure listing={listing} />
               </div>
             </li>
           ))}

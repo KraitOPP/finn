@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.14.0",
+  "contractVersion": "0.15.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "c8fab01e535b741f839b9e765d68b173b133fee4af3139279ef1103f9df735bb",
+  "sourceSha256": "6043f5ba76e7a120ca7ff246e81c9396cb0a613423fb90ad614caa45cf8165f8",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -102,6 +102,9 @@ export const contractMetadata = {
     "UserProfile",
     "UtcInstant",
     "ValuationListing",
+    "ValuationPoint",
+    "ValuationSeries",
+    "ValuationSnapshotDetail",
     "ValuationTotals",
     "ValuedHolding",
     "Warning"
@@ -913,7 +916,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.14.0"
+    "const": "0.15.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -5114,6 +5117,132 @@ export const contractSchemas = {
       "securityId",
       "listingId",
       "allowProviderEstimate"
+    ],
+    "additionalProperties": false
+  },
+  "ValuationPoint": {
+    "type": "object",
+    "properties": {
+      "snapshotId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "sessionDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "ledgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "calculationVersion": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "priceBasis": {
+        "type": "string",
+        "const": "AS_REPORTED_EXCHANGE"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "BEFORE_COVERAGE",
+          "PRICES_MISSING",
+          "CASH_UNKNOWN",
+          "RECORDED_VALUE"
+        ]
+      },
+      "holdingsValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "cashBalance": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "recordedValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "recordedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "snapshotId",
+      "sessionDate",
+      "ledgerRevision",
+      "calculationVersion",
+      "priceBasis",
+      "status",
+      "holdingsValue",
+      "cashBalance",
+      "recordedValue",
+      "recordedAt"
+    ],
+    "additionalProperties": false,
+    "description": "Immutable dated valuation. Missing compatible prices or cash remain null."
+  },
+  "ValuationSeries": {
+    "type": "object",
+    "properties": {
+      "start": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "endExclusive": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "points": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ValuationPoint"
+        },
+        "maxItems": 90
+      }
+    },
+    "required": [
+      "start",
+      "endExclusive",
+      "points"
+    ],
+    "additionalProperties": false
+  },
+  "ValuationSnapshotDetail": {
+    "type": "object",
+    "properties": {
+      "snapshot": {
+        "$ref": "#/components/schemas/ValuationPoint"
+      },
+      "valuation": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AccountValuation"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "snapshot",
+      "valuation"
     ],
     "additionalProperties": false
   },

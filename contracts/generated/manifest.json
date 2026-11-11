@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.14.0",
+  "contractVersion": "0.15.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "c8fab01e535b741f839b9e765d68b173b133fee4af3139279ef1103f9df735bb",
+  "sourceSha256": "6043f5ba76e7a120ca7ff246e81c9396cb0a613423fb90ad614caa45cf8165f8",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -101,6 +101,9 @@
     "UserProfile",
     "UtcInstant",
     "ValuationListing",
+    "ValuationPoint",
+    "ValuationSeries",
+    "ValuationSnapshotDetail",
     "ValuationTotals",
     "ValuedHolding",
     "Warning"
