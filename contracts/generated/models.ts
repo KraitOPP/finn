@@ -201,6 +201,47 @@ export type CatalogueSecurityPage = ({
   "hasMore": (boolean);
 });
 
+export type CompanyEvent = ({
+  "eventId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "revision": (number);
+  "documentId": (OpaqueId);
+  "documentRevision": (number);
+  "sourceTitle": (string);
+  "title": (string);
+  "category": ("EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "OTHER") & (string);
+  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "OTHER") & (string);
+  "stage": ("ANNOUNCED" | "DECIDED" | "COMPLETED" | "CANCELLED" | "UNKNOWN") & (string);
+  "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
+  "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
+  "confidence": ("REVIEWED");
+  "reviewedAt": (UtcInstant);
+});
+
+export type CompanyEventHistory = ({
+  "items": (Array<(CompanyEvent)>);
+});
+
+export type CompanyEventInput = ({
+  "documentId": (OpaqueId);
+  "documentRevision": (number);
+  "eventId": (((OpaqueId)) | ((null)));
+  "expectedRevision": (((number)) | ((null)));
+  "title": (string);
+  "groupingKey": (((string)) | ((null)));
+  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "OTHER") & (string);
+  "stage": ("ANNOUNCED" | "DECIDED" | "COMPLETED" | "CANCELLED" | "UNKNOWN") & (string);
+  "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
+  "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
+  "reviewed": (true);
+});
+
+export type CompanyEventPage = ({
+  "items": (Array<(CompanyEvent)>);
+  "hasMore": (boolean);
+});
+
 export type CompanyInput = ({
   "name": (string);
 });
@@ -249,7 +290,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.24.0") & (string);
+export type ContractVersion = ("0.25.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -322,6 +363,15 @@ export type Delay = ((({
   "seconds": (number);
   "basis": ("SOURCE_DECLARED") & (string);
 })));
+
+export type EventSuggestion = ({
+  "category": ("EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "OTHER") & (string);
+  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "OTHER") & (string);
+  "stage": ("ANNOUNCED" | "DECIDED" | "COMPLETED" | "CANCELLED" | "UNKNOWN") & (string);
+  "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
+  "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
+  "confidence": ("TITLE_HINT" | "UNKNOWN") & (string);
+});
 
 export type Freshness = ({
   "state": ("FRESH" | "STALE" | "UNKNOWN" | "NOT_APPLICABLE") & (string);
@@ -1332,6 +1382,10 @@ export interface ContractTypes {
   CatalogueSecurity: CatalogueSecurity;
   CatalogueSecurityDetail: CatalogueSecurityDetail;
   CatalogueSecurityPage: CatalogueSecurityPage;
+  CompanyEvent: CompanyEvent;
+  CompanyEventHistory: CompanyEventHistory;
+  CompanyEventInput: CompanyEventInput;
+  CompanyEventPage: CompanyEventPage;
   CompanyInput: CompanyInput;
   CompanySource: CompanySource;
   CompanySourceDetail: CompanySourceDetail;
@@ -1348,6 +1402,7 @@ export interface ContractTypes {
   CsrfInformation: CsrfInformation;
   DecimalString: DecimalString;
   Delay: Delay;
+  EventSuggestion: EventSuggestion;
   Freshness: Freshness;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;

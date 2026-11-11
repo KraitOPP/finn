@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.24.0",
+    "version": "0.25.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -3685,6 +3685,425 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CompanySourceDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/events": {
+      "get": {
+        "operationId": "listCompanyEvents",
+        "summary": "List owned reviewed company event threads",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 300
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyEventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "classifyCompanySource",
+        "summary": "Review a classification and append it to a company event thread",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyEventInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/events/suggestion": {
+      "get": {
+        "operationId": "suggestSourceClassification",
+        "summary": "Suggest a classification from an owned primary source title",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSuggestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/events/{id}/versions": {
+      "get": {
+        "operationId": "getCompanyEventHistory",
+        "summary": "Read retained thread versions and exact source references",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyEventHistory"
                 }
               }
             }
@@ -9298,7 +9717,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.24.0"
+        "const": "0.25.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -11804,6 +12223,347 @@
         "required": [
           "expectedRevision",
           "source"
+        ],
+        "additionalProperties": false
+      },
+      "EventSuggestion": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "EARNINGS",
+              "CAPITAL",
+              "GOVERNANCE",
+              "CORPORATE_ACTION",
+              "OTHER"
+            ]
+          },
+          "subtype": {
+            "type": "string",
+            "enum": [
+              "RESULTS",
+              "RESULTS_MEETING",
+              "BUYBACK",
+              "CAPITAL_RAISE",
+              "AUDITOR",
+              "GOVERNANCE",
+              "DIVIDEND",
+              "SPLIT_BONUS",
+              "MERGER",
+              "OTHER"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "ANNOUNCED",
+              "DECIDED",
+              "COMPLETED",
+              "CANCELLED",
+              "UNKNOWN"
+            ]
+          },
+          "materiality": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNKNOWN"
+            ]
+          },
+          "novelty": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "FOLLOW_UP",
+              "CORRECTION",
+              "ROUTINE",
+              "UNKNOWN"
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "TITLE_HINT",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "category",
+          "subtype",
+          "stage",
+          "materiality",
+          "novelty",
+          "confidence"
+        ],
+        "additionalProperties": false
+      },
+      "CompanyEventInput": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "documentRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "eventId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectedRevision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "groupingKey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subtype": {
+            "type": "string",
+            "enum": [
+              "RESULTS",
+              "RESULTS_MEETING",
+              "BUYBACK",
+              "CAPITAL_RAISE",
+              "AUDITOR",
+              "GOVERNANCE",
+              "DIVIDEND",
+              "SPLIT_BONUS",
+              "MERGER",
+              "OTHER"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "ANNOUNCED",
+              "DECIDED",
+              "COMPLETED",
+              "CANCELLED",
+              "UNKNOWN"
+            ]
+          },
+          "materiality": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNKNOWN"
+            ]
+          },
+          "novelty": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "FOLLOW_UP",
+              "CORRECTION",
+              "ROUTINE",
+              "UNKNOWN"
+            ]
+          },
+          "reviewed": {
+            "const": true
+          }
+        },
+        "required": [
+          "documentId",
+          "documentRevision",
+          "eventId",
+          "expectedRevision",
+          "title",
+          "groupingKey",
+          "subtype",
+          "stage",
+          "materiality",
+          "novelty",
+          "reviewed"
+        ],
+        "additionalProperties": false
+      },
+      "CompanyEvent": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "companyId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "companyName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "documentId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "documentRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "sourceTitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "EARNINGS",
+              "CAPITAL",
+              "GOVERNANCE",
+              "CORPORATE_ACTION",
+              "OTHER"
+            ]
+          },
+          "subtype": {
+            "type": "string",
+            "enum": [
+              "RESULTS",
+              "RESULTS_MEETING",
+              "BUYBACK",
+              "CAPITAL_RAISE",
+              "AUDITOR",
+              "GOVERNANCE",
+              "DIVIDEND",
+              "SPLIT_BONUS",
+              "MERGER",
+              "OTHER"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "ANNOUNCED",
+              "DECIDED",
+              "COMPLETED",
+              "CANCELLED",
+              "UNKNOWN"
+            ]
+          },
+          "materiality": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNKNOWN"
+            ]
+          },
+          "novelty": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "FOLLOW_UP",
+              "CORRECTION",
+              "ROUTINE",
+              "UNKNOWN"
+            ]
+          },
+          "confidence": {
+            "const": "REVIEWED"
+          },
+          "reviewedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "eventId",
+          "companyId",
+          "companyName",
+          "revision",
+          "documentId",
+          "documentRevision",
+          "sourceTitle",
+          "title",
+          "category",
+          "subtype",
+          "stage",
+          "materiality",
+          "novelty",
+          "confidence",
+          "reviewedAt"
+        ],
+        "additionalProperties": false
+      },
+      "CompanyEventPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyEvent"
+            },
+            "maxItems": 40
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "hasMore"
+        ],
+        "additionalProperties": false
+      },
+      "CompanyEventHistory": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyEvent"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       },

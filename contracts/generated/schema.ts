@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.24.0",
+  "contractVersion": "0.25.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "cee75b607c88a0456015f21a5a589086467fe3f55e1a10cd9b7b4c907a047c7d",
+  "sourceSha256": "206fc975e1fa5b7f320ca4806dd3a072b784e480b254f9302abe5330f09db2c8",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -23,6 +23,10 @@ export const contractMetadata = {
     "CatalogueSecurity",
     "CatalogueSecurityDetail",
     "CatalogueSecurityPage",
+    "CompanyEvent",
+    "CompanyEventHistory",
+    "CompanyEventInput",
+    "CompanyEventPage",
     "CompanyInput",
     "CompanySource",
     "CompanySourceDetail",
@@ -39,6 +43,7 @@ export const contractMetadata = {
     "CsrfInformation",
     "DecimalString",
     "Delay",
+    "EventSuggestion",
     "Freshness",
     "HistoryCoverage",
     "HistoryResponse",
@@ -1143,6 +1148,272 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "CompanyEvent": {
+    "type": "object",
+    "properties": {
+      "eventId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "documentId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "documentRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "sourceTitle": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "category": {
+        "type": "string",
+        "enum": [
+          "EARNINGS",
+          "CAPITAL",
+          "GOVERNANCE",
+          "CORPORATE_ACTION",
+          "OTHER"
+        ]
+      },
+      "subtype": {
+        "type": "string",
+        "enum": [
+          "RESULTS",
+          "RESULTS_MEETING",
+          "BUYBACK",
+          "CAPITAL_RAISE",
+          "AUDITOR",
+          "GOVERNANCE",
+          "DIVIDEND",
+          "SPLIT_BONUS",
+          "MERGER",
+          "OTHER"
+        ]
+      },
+      "stage": {
+        "type": "string",
+        "enum": [
+          "ANNOUNCED",
+          "DECIDED",
+          "COMPLETED",
+          "CANCELLED",
+          "UNKNOWN"
+        ]
+      },
+      "materiality": {
+        "type": "string",
+        "enum": [
+          "HIGH",
+          "MEDIUM",
+          "LOW",
+          "UNKNOWN"
+        ]
+      },
+      "novelty": {
+        "type": "string",
+        "enum": [
+          "NEW",
+          "FOLLOW_UP",
+          "CORRECTION",
+          "ROUTINE",
+          "UNKNOWN"
+        ]
+      },
+      "confidence": {
+        "const": "REVIEWED"
+      },
+      "reviewedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "eventId",
+      "companyId",
+      "companyName",
+      "revision",
+      "documentId",
+      "documentRevision",
+      "sourceTitle",
+      "title",
+      "category",
+      "subtype",
+      "stage",
+      "materiality",
+      "novelty",
+      "confidence",
+      "reviewedAt"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyEventHistory": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanyEvent"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyEventInput": {
+    "type": "object",
+    "properties": {
+      "documentId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "documentRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "eventId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "expectedRevision": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "groupingKey": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "subtype": {
+        "type": "string",
+        "enum": [
+          "RESULTS",
+          "RESULTS_MEETING",
+          "BUYBACK",
+          "CAPITAL_RAISE",
+          "AUDITOR",
+          "GOVERNANCE",
+          "DIVIDEND",
+          "SPLIT_BONUS",
+          "MERGER",
+          "OTHER"
+        ]
+      },
+      "stage": {
+        "type": "string",
+        "enum": [
+          "ANNOUNCED",
+          "DECIDED",
+          "COMPLETED",
+          "CANCELLED",
+          "UNKNOWN"
+        ]
+      },
+      "materiality": {
+        "type": "string",
+        "enum": [
+          "HIGH",
+          "MEDIUM",
+          "LOW",
+          "UNKNOWN"
+        ]
+      },
+      "novelty": {
+        "type": "string",
+        "enum": [
+          "NEW",
+          "FOLLOW_UP",
+          "CORRECTION",
+          "ROUTINE",
+          "UNKNOWN"
+        ]
+      },
+      "reviewed": {
+        "const": true
+      }
+    },
+    "required": [
+      "documentId",
+      "documentRevision",
+      "eventId",
+      "expectedRevision",
+      "title",
+      "groupingKey",
+      "subtype",
+      "stage",
+      "materiality",
+      "novelty",
+      "reviewed"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyEventPage": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanyEvent"
+        },
+        "maxItems": 40
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
   "CompanyInput": {
     "type": "object",
     "properties": {
@@ -1390,7 +1661,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.24.0"
+    "const": "0.25.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -1862,6 +2133,81 @@ export const contractSchemas = {
         "additionalProperties": false
       }
     ]
+  },
+  "EventSuggestion": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "enum": [
+          "EARNINGS",
+          "CAPITAL",
+          "GOVERNANCE",
+          "CORPORATE_ACTION",
+          "OTHER"
+        ]
+      },
+      "subtype": {
+        "type": "string",
+        "enum": [
+          "RESULTS",
+          "RESULTS_MEETING",
+          "BUYBACK",
+          "CAPITAL_RAISE",
+          "AUDITOR",
+          "GOVERNANCE",
+          "DIVIDEND",
+          "SPLIT_BONUS",
+          "MERGER",
+          "OTHER"
+        ]
+      },
+      "stage": {
+        "type": "string",
+        "enum": [
+          "ANNOUNCED",
+          "DECIDED",
+          "COMPLETED",
+          "CANCELLED",
+          "UNKNOWN"
+        ]
+      },
+      "materiality": {
+        "type": "string",
+        "enum": [
+          "HIGH",
+          "MEDIUM",
+          "LOW",
+          "UNKNOWN"
+        ]
+      },
+      "novelty": {
+        "type": "string",
+        "enum": [
+          "NEW",
+          "FOLLOW_UP",
+          "CORRECTION",
+          "ROUTINE",
+          "UNKNOWN"
+        ]
+      },
+      "confidence": {
+        "type": "string",
+        "enum": [
+          "TITLE_HINT",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "required": [
+      "category",
+      "subtype",
+      "stage",
+      "materiality",
+      "novelty",
+      "confidence"
+    ],
+    "additionalProperties": false
   },
   "Freshness": {
     "type": "object",

@@ -7,23 +7,23 @@ import type {
 import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
-import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { RouteHeading } from "../Navigation.tsx";
+import { CompanyEvents, EventReview } from "./Events.tsx";
+import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
 const path = "/api/v1/research/sources";
-export const versionPath = (id: string, revision: number) =>
-  `${path}/${id}/versions/${revision}`;
-
 export function Research() {
+  const [generation, setGeneration] = useState(0);
   return (
     <section className="workspace-section">
       <RouteHeading>Research</RouteHeading>
-      <PrimarySources />
+      <PrimarySources onEvent={() => setGeneration((value) => value + 1)} />
+      <CompanyEvents generation={generation} />
     </section>
   );
 }
 
-function PrimarySources() {
+function PrimarySources({ onEvent }: { onEvent: () => void }) {
   const [offset, setOffset] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
@@ -75,6 +75,7 @@ function PrimarySources() {
                   <SourceVersions
                     key={`${item.documentId}-${item.revision}`}
                     item={item}
+                    onEvent={onEvent}
                     onSave={saved}
                   />
                 )}
@@ -115,9 +116,11 @@ function PrimarySources() {
 function SourceVersions({
   item,
   onSave,
+  onEvent,
 }: {
   item: CompanySource;
   onSave: () => void;
+  onEvent: () => void;
 }) {
   const versions = useResource(
     "CompanySourceVersions",
@@ -160,6 +163,11 @@ function SourceVersions({
       ) : (
         <>
           <SourceEvidence detail={detail.value} />
+          <EventReview
+            key={revision}
+            source={detail.value.source}
+            onSaved={onEvent}
+          />
           {revision === item.revision && (
             <button type="button" onClick={() => setEditing(!editing)}>
               {editing ? "Close edit" : "Create a new source version"}
@@ -168,43 +176,6 @@ function SourceVersions({
           {editing && <SourceForm existing={detail.value} onSave={onSave} />}
         </>
       )}
-    </div>
-  );
-}
-
-export function SourceEvidence({ detail }: { detail: CompanySourceDetail }) {
-  const source = detail.source;
-  return (
-    <div>
-      <p>
-        {source.sourceName} · {source.companyName} · Version {source.revision}
-      </p>
-      <p>
-        Published{" "}
-        {source.publishedAt ? (
-          <LocalTime value={source.publishedAt} />
-        ) : (
-          "time unknown"
-        )}{" "}
-        · Saved <LocalTime value={source.ingestedAt} />
-      </p>
-      {source.url && (
-        <a href={source.url} target="_blank" rel="noopener noreferrer">
-          Open original source
-        </a>
-      )}
-      {detail.attachment && (
-        <details>
-          <summary>Read saved text</summary>
-          <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-            {detail.attachment}
-          </pre>
-        </details>
-      )}
-      <details>
-        <summary>Source checksum</summary>
-        <code style={{ overflowWrap: "anywhere" }}>{source.checksum}</code>
-      </details>
     </div>
   );
 }
