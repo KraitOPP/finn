@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.23.0",
+  "contractVersion": "0.24.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "24fcc3467113f6e8183f9d19a6ba6232a3e6b7a3d418f82001461c39924bc930",
+  "sourceSha256": "cee75b607c88a0456015f21a5a589086467fe3f55e1a10cd9b7b4c907a047c7d",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -24,6 +24,12 @@ export const contractMetadata = {
     "CatalogueSecurityDetail",
     "CatalogueSecurityPage",
     "CompanyInput",
+    "CompanySource",
+    "CompanySourceDetail",
+    "CompanySourceEdit",
+    "CompanySourceInput",
+    "CompanySourcePage",
+    "CompanySourceVersions",
     "ContractVersion",
     "CorporateActionApproval",
     "CorporateActionEffect",
@@ -1151,9 +1157,240 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "CompanySource": {
+    "type": "object",
+    "properties": {
+      "documentId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "sourceType": {
+        "type": "string",
+        "enum": [
+          "PRIMARY",
+          "NEWS"
+        ]
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "sourceName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "url": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "hasAttachment": {
+        "type": "boolean"
+      },
+      "checksum": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ingestedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "documentId",
+      "companyId",
+      "companyName",
+      "sourceType",
+      "revision",
+      "title",
+      "sourceName",
+      "url",
+      "hasAttachment",
+      "checksum",
+      "publishedAt",
+      "ingestedAt"
+    ],
+    "additionalProperties": false
+  },
+  "CompanySourceDetail": {
+    "type": "object",
+    "properties": {
+      "source": {
+        "$ref": "#/components/schemas/CompanySource"
+      },
+      "attachment": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 49152
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "source",
+      "attachment"
+    ],
+    "additionalProperties": false
+  },
+  "CompanySourceEdit": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "source": {
+        "$ref": "#/components/schemas/CompanySourceInput"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "source"
+    ],
+    "additionalProperties": false
+  },
+  "CompanySourceInput": {
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "sourceName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "url": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "attachment": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 49152
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "rightsConfirmed": {
+        "const": true
+      }
+    },
+    "required": [
+      "companyId",
+      "title",
+      "sourceName",
+      "url",
+      "attachment",
+      "publishedAt",
+      "rightsConfirmed"
+    ],
+    "additionalProperties": false
+  },
+  "CompanySourcePage": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanySource"
+        },
+        "maxItems": 40
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
+  "CompanySourceVersions": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanySource"
+        },
+        "maxItems": 50
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
   "ContractVersion": {
     "type": "string",
-    "const": "0.23.0"
+    "const": "0.24.0"
   },
   "CorporateActionApproval": {
     "type": "object",

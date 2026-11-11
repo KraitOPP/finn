@@ -18,6 +18,7 @@ import {
   usePreferences,
 } from "./preferences/PreferencesProvider.tsx";
 import { Settings } from "./preferences/Settings.tsx";
+import { Research } from "./research/Sources.tsx";
 
 type Snapshot =
   | { state: "loading" }
@@ -250,13 +251,7 @@ function WorkspaceApp() {
             ) : route === "settings" ? (
               <Settings />
             ) : (
-              <PendingView title="Research">
-                <h2>Research is not enabled yet</h2>
-                <p>
-                  Company evidence, news and summaries will become available
-                  after their sources are connected and checked.
-                </p>
-              </PendingView>
+              <Research />
             )}
           </PrivateView>
         )}

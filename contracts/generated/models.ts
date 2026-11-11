@@ -205,7 +205,51 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.23.0") & (string);
+export type CompanySource = ({
+  "documentId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "sourceType": ("PRIMARY" | "NEWS") & (string);
+  "revision": (number);
+  "title": (string);
+  "sourceName": (string);
+  "url": (((string)) | ((null)));
+  "hasAttachment": (boolean);
+  "checksum": (string);
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "ingestedAt": (UtcInstant);
+});
+
+export type CompanySourceDetail = ({
+  "source": (CompanySource);
+  "attachment": (((string)) | ((null)));
+});
+
+export type CompanySourceEdit = ({
+  "expectedRevision": (number);
+  "source": (CompanySourceInput);
+});
+
+export type CompanySourceInput = ({
+  "companyId": (OpaqueId);
+  "title": (string);
+  "sourceName": (string);
+  "url": (((string)) | ((null)));
+  "attachment": (((string)) | ((null)));
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "rightsConfirmed": (true);
+});
+
+export type CompanySourcePage = ({
+  "items": (Array<(CompanySource)>);
+  "hasMore": (boolean);
+});
+
+export type CompanySourceVersions = ({
+  "items": (Array<(CompanySource)>);
+});
+
+export type ContractVersion = ("0.24.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1289,6 +1333,12 @@ export interface ContractTypes {
   CatalogueSecurityDetail: CatalogueSecurityDetail;
   CatalogueSecurityPage: CatalogueSecurityPage;
   CompanyInput: CompanyInput;
+  CompanySource: CompanySource;
+  CompanySourceDetail: CompanySourceDetail;
+  CompanySourceEdit: CompanySourceEdit;
+  CompanySourceInput: CompanySourceInput;
+  CompanySourcePage: CompanySourcePage;
+  CompanySourceVersions: CompanySourceVersions;
   ContractVersion: ContractVersion;
   CorporateActionApproval: CorporateActionApproval;
   CorporateActionEffect: CorporateActionEffect;
