@@ -3,7 +3,7 @@
     "caseId": "acquisition-complete",
     "definition": "AcquisitionEnvelope",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-acquisition-1",
       "provider": "SYNTHETIC",
       "adapterVersion": "synthetic-1",
@@ -113,7 +113,7 @@
     "caseId": "acquisition-partial",
     "definition": "AcquisitionEnvelope",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-acquisition-1",
       "provider": "SYNTHETIC",
       "adapterVersion": "synthetic-1",
@@ -240,7 +240,7 @@
     "caseId": "acquisition-unavailable",
     "definition": "AcquisitionEnvelope",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-acquisition-1",
       "provider": "SYNTHETIC",
       "adapterVersion": "synthetic-1",
@@ -273,7 +273,7 @@
     "caseId": "quote-stale",
     "definition": "QuoteResponse",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-quote-1",
       "listing": {
         "listingId": "demo-nse-alpha",
@@ -378,7 +378,7 @@
     "caseId": "quote-unavailable",
     "definition": "QuoteResponse",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-quote-1",
       "listing": {
         "listingId": "demo-nse-alpha",
@@ -408,7 +408,7 @@
     "caseId": "history-partial",
     "definition": "HistoryResponse",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-history-1",
       "listing": {
         "listingId": "demo-nse-alpha",
@@ -528,7 +528,7 @@
     "caseId": "history-unavailable",
     "definition": "HistoryResponse",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-history-1",
       "listing": {
         "listingId": "demo-nse-alpha",
@@ -569,7 +569,7 @@
     "caseId": "capabilities-unverified",
     "definition": "ProviderCapabilities",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "provider": "YAHOO_YFINANCE",
       "adapterVersion": "unimplemented",
       "evaluatedAt": "2030-01-04T10:00:00Z",
@@ -639,7 +639,7 @@
     "caseId": "providers-unverified",
     "definition": "ProviderStatusPage",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-providers-1",
       "items": [
         {
@@ -649,7 +649,7 @@
           "lastSuccessfulAcquisitionAt": null,
           "reasonCode": "SYNTHETIC_STATUS_EXAMPLE",
           "capabilities": {
-            "contractVersion": "0.21.0",
+            "contractVersion": "0.22.0",
             "provider": "YAHOO_YFINANCE",
             "adapterVersion": "unimplemented",
             "evaluatedAt": "2030-01-04T10:00:00Z",
@@ -722,7 +722,7 @@
     "caseId": "instruments-empty",
     "definition": "InstrumentPage",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "demo-search-1",
       "items": [],
       "nextCursor": null
@@ -756,7 +756,7 @@
     "caseId": "job-queued",
     "definition": "AsyncJobStatus",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-job-request",
       "jobId": "synthetic-job-queued",
       "revision": 1,
@@ -772,7 +772,7 @@
     "caseId": "job-running",
     "definition": "AsyncJobStatus",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-job-request",
       "jobId": "synthetic-job-running",
       "revision": 1,
@@ -788,7 +788,7 @@
     "caseId": "job-succeeded",
     "definition": "AsyncJobStatus",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-job-request",
       "jobId": "synthetic-job-succeeded",
       "revision": 1,
@@ -804,7 +804,7 @@
     "caseId": "job-partially_succeeded",
     "definition": "AsyncJobStatus",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-job-request",
       "jobId": "synthetic-job-partially_succeeded",
       "revision": 1,
@@ -820,7 +820,7 @@
     "caseId": "job-failed",
     "definition": "AsyncJobStatus",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-job-request",
       "jobId": "synthetic-job-failed",
       "revision": 1,
@@ -836,7 +836,7 @@
     "caseId": "job-cancelled",
     "definition": "AsyncJobStatus",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-job-request",
       "jobId": "synthetic-job-cancelled",
       "revision": 1,
@@ -852,7 +852,7 @@
     "caseId": "session-authenticated",
     "definition": "SessionResponse",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-session-request",
       "authenticated": true,
       "user": {
@@ -870,7 +870,7 @@
     "caseId": "session-anonymous",
     "definition": "SessionResponse",
     "value": {
-      "contractVersion": "0.21.0",
+      "contractVersion": "0.22.0",
       "requestId": "synthetic-session-request",
       "authenticated": false,
       "user": null,

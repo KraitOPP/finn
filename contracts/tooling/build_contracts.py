@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.21.0"
+VERSION = "0.22.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -206,9 +206,29 @@ def definitions() -> dict:
         "revision": {"type":"integer","minimum":1,"maximum":1000000},
         "dueAt": ref("UtcInstant"), "deliverAt": ref("UtcInstant"),
     })
+    indicator_kind = enum(["VOLUME","ALLOCATION"])
+    indicator_revision = {"type":"integer","minimum":1,"maximum":1000000}
+    indicator_settings = {"listingId": ref("OpaqueId"), "portfolioId": nullable(ref("OpaqueId")),
+                          "kind": indicator_kind, "title": text(maxLength=80), "threshold": ref("PositiveDecimalString")}
+    d["IndicatorCreate"] = obj(indicator_settings)
+    d["IndicatorEdit"] = obj({"expectedRevision": indicator_revision, "threshold": ref("PositiveDecimalString"), "enabled": {"type":"boolean"}})
+    d["IndicatorRule"] = obj({
+        **indicator_settings, "ruleId": ref("OpaqueId"), "revision": indicator_revision, "enabled": {"type":"boolean"},
+        "result": enum(["WAITING","INSUFFICIENT_COVERAGE","EVALUATED"]), "lastSession": nullable(ref("SessionDate")),
+        "symbol": text(maxLength=64), "exchange": enum(["NSE","BSE"]),
+    })
+    d["IndicatorList"] = obj({"items": array(ref("IndicatorRule"),maxItems=50)})
+    d["IndicatorEvaluation"] = obj({
+        "evaluationId": ref("OpaqueId"), "revision": indicator_revision, "sessionDate": ref("SessionDate"),
+        "threshold": ref("PositiveDecimalString"), "metric": ref("NonNegativeDecimalString"), "baselineStart": nullable(ref("SessionDate")),
+        "holdingValue": nullable(ref("NonNegativeDecimalString")), "equityValue": nullable(ref("PositiveDecimalString")),
+        "triggered": {"type":"boolean"}, "evaluatedAt": ref("UtcInstant"),
+    })
+    d["IndicatorEvaluations"] = obj({"items": array(ref("IndicatorEvaluation"),maxItems=40)})
     d["NotificationDetail"] = obj({
         "notification": ref("Notification"), "price": nullable(ref("PriceEvaluation")),
         "reminder": nullable(ref("ReminderEvidence")),
+        "indicator": nullable(ref("IndicatorEvaluation")),
         "deliveries": array(ref("NotificationDelivery"),maxItems=2), "attempts": array(ref("NotificationAttempt"),maxItems=6),
     })
     local_minute = text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$",maxLength=16)
@@ -632,6 +652,12 @@ def public_api_document() -> dict:
         },
         "/api/v1/monitoring/reminders/{id}":{"post": maintained("editReviewReminder","Revise an owned reminder schedule","ReviewReminder",identifier,"ReminderEdit")},
         "/api/v1/monitoring/reminders/{id}/schedule":{"post": maintained("changeReminderSchedule","Snooze or cancel an owned reminder","ReviewReminder",identifier,"ReminderScheduleChange")},
+        "/api/v1/monitoring/indicators":{
+            "get": maintained("listIndicatorRules","List owned volume and concentration rules","IndicatorList"),
+            "post": maintained("createIndicatorRule","Create a completed-session indicator rule","IndicatorRule",input_name="IndicatorCreate"),
+        },
+        "/api/v1/monitoring/indicators/{id}":{"post": maintained("editIndicatorRule","Update an owned indicator threshold or enablement","IndicatorRule",identifier,"IndicatorEdit")},
+        "/api/v1/monitoring/indicators/{id}/evaluations":{"get": maintained("listIndicatorEvaluations","Inspect eligible volume and allocation evidence","IndicatorEvaluations",identifier)},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},

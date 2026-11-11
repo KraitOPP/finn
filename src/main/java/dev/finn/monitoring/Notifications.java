@@ -19,7 +19,7 @@ class Notifications {
     record Delivery(String channel, String status, int attempts, String nextAttemptAt, String completedAt, String failureCode) {}
     record ReminderEvidence(int revision, String dueAt, String deliverAt) {}
     record Detail(Item notification, PriceEvaluationReport.Evaluation price, ReminderEvidence reminder,
-                  List<Delivery> deliveries, List<Attempt> attempts) {}
+                  Indicators.Evaluation indicator, List<Delivery> deliveries, List<Attempt> attempts) {}
     record DeliveryItem(UUID activityId, String title, String kind, Delivery delivery) {}
     record DeliveryPage(boolean emailPreviewEnabled, List<DeliveryItem> items) {}
 
@@ -31,12 +31,14 @@ class Notifications {
     private final CurrentUser users;
     private final PriceEvaluationReport prices;
     private final EmailPreviewSink preview;
+    private final Indicators indicators;
 
-    Notifications(JdbcTemplate jdbc, CurrentUser users, PriceEvaluationReport prices, EmailPreviewSink preview) {
+    Notifications(JdbcTemplate jdbc, CurrentUser users, PriceEvaluationReport prices, EmailPreviewSink preview, Indicators indicators) {
         this.jdbc = jdbc;
         this.users = users;
         this.prices = prices;
         this.preview = preview;
+        this.indicators = indicators;
     }
 
     @Transactional
@@ -72,7 +74,9 @@ class Notifications {
                 SELECT * FROM finn.activity_delivery_attempt WHERE owner_id=? AND activity_id=? ORDER BY attempted_at,channel,attempt
                 """, (row, i) -> new Attempt(row.getString("channel"), row.getInt("attempt"), row.getString("outcome"),
                 PriceEvaluationReport.instant(row, "attempted_at")), owner, id);
-        return new Detail(item, evaluation, reminder, deliveries, attempts);
+        var indicator = item.kind().equals("VOLUME_RULE") || item.kind().equals("ALLOCATION_RULE")
+                ? indicators.evidence(owner, evidence) : null;
+        return new Detail(item, evaluation, reminder, indicator, deliveries, attempts);
     }
 
     @Transactional

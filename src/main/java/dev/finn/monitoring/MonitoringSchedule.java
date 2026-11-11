@@ -12,10 +12,12 @@ class MonitoringSchedule {
     private final PriceEvaluationWorker prices;
     private final DeliveryWorker deliveries;
     private final ReviewReminders reminders;
-    MonitoringSchedule(PriceEvaluationWorker prices, DeliveryWorker deliveries, ReviewReminders reminders) {
+    private final Indicators indicators;
+    MonitoringSchedule(PriceEvaluationWorker prices, DeliveryWorker deliveries, ReviewReminders reminders, Indicators indicators) {
         this.prices = prices;
         this.deliveries = deliveries;
         this.reminders = reminders;
+        this.indicators = indicators;
     }
 
     @Scheduled(fixedDelay=15000)
@@ -48,6 +50,17 @@ class MonitoringSchedule {
             }
         } catch (RuntimeException failure) {
             LoggerFactory.getLogger(MonitoringSchedule.class).warn("Reminder scheduling temporarily unavailable");
+        }
+    }
+
+    @Scheduled(fixedDelay=20000)
+    void indicators() {
+        try {
+            for (int i=0; i<8 && indicators.processNext(); i++) {
+                // Each coverage check is isolated from other rules.
+            }
+        } catch (RuntimeException failure) {
+            LoggerFactory.getLogger(MonitoringSchedule.class).warn("Indicator monitoring temporarily unavailable");
         }
     }
 }

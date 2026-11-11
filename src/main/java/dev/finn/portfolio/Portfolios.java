@@ -46,7 +46,9 @@ public class Portfolios {
         return require(owner,id,false,false);
     }
     @Transactional public Detail detail(UUID id){
-        UUID owner=users.requireId();
+        return detail(users.requireId(),id);
+    }
+    public Detail detail(UUID owner,UUID id){
         return new Detail(require(owner,id,false,false),jdbc.query("SELECT * FROM finn.investment_account WHERE owner_id=? AND portfolio_id=? ORDER BY created_at,account_id LIMIT 100",this::accountRow,owner,id));
     }
     @Transactional public Account account(UUID portfolio,UUID id){return requireAccount(users.requireId(),portfolio,id,false);}

@@ -28,6 +28,7 @@ public class Valuations {
     public record AccountTotal(UUID accountId,String name,long ledgerRevision,Totals totals) {}
     public record PortfolioValue(UUID portfolioId,LocalDate asOf,String currency,List<AccountTotal> accounts,Totals totals) {}
     public record Choice(UUID securityId,UUID listingId,boolean allowProviderEstimate) {}
+    public record Exposure(LocalDate sessionDate,BigDecimal holdingValue,BigDecimal equityValue,List<UUID> observations) {}
     private record PriceChoice(UUID listingId,boolean allowProviderEstimate,MarketPrices.Observation observation) {}
 
     private final JdbcTemplate jdbc;
@@ -67,18 +68,48 @@ public class Valuations {
 
     @Transactional
     public PortfolioValue portfolio(UUID id){
-        var owner=users.requireId();var detail=portfolios.detail(id);
+        var owner=users.requireId();var detail=portfolios.detail(owner,id);
+        if(!withinBudget(owner,id))throw new ApiFailure(422,"PORTFOLIO_VALUATION_BUDGET");
+        var today=MarketPrices.today();
+        var accounts=detail.accounts().stream().map(a->new AccountTotal(a.accountId(),a.name(),journal.currentRevision(owner,a.accountId()),
+                calculate(owner,a.accountId(),today,journal.currentRevision(owner,a.accountId()),false).totals())).toList();
+        return new PortfolioValue(id,today,"INR",accounts,combine(accounts.stream().map(AccountTotal::totals).toList()));
+    }
+
+    public Exposure exposure(UUID owner,UUID portfolio,UUID security,LocalDate date){
+        var detail=portfolios.detail(owner,portfolio);
+        if(detail.portfolio().archived() || !withinBudget(owner,portfolio))return null;
+        BigDecimal holding=BigDecimal.ZERO, equity=BigDecimal.ZERO;
+        LocalDate session=null;
+        var observations=new LinkedHashSet<UUID>();
+        int positions=0;
+        for(var account:detail.accounts()){
+            UUID id=account.accountId();
+            var current=calculate(owner,id,date,journal.currentRevision(owner,id),false);
+            if(current.totals().holdingsValue()==null || positions+current.holdings().size()>500)return null;
+            positions+=current.holdings().size();
+            for(var row:current.holdings()){
+                var quote=row.observation();
+                if(quote==null || quote.freshness().equals("STALE"))return null;
+                if(session==null)session=quote.sessionDate();
+                if(!session.equals(quote.sessionDate()))return null;
+                BigDecimal amount=new BigDecimal(row.value());
+                equity=equity.add(amount);
+                if(row.securityId().equals(security))holding=holding.add(amount);
+                observations.add(quote.observationId());
+            }
+        }
+        return equity.signum()>0 ? new Exposure(session,holding,equity,List.copyOf(observations)) : null;
+    }
+
+    private boolean withinBudget(UUID owner,UUID id){
         int events=Objects.requireNonNull(jdbc.queryForObject("""
                 SELECT count(*) FROM (
                     SELECT 1 FROM finn.investment_account a JOIN finn.ledger_event e USING(owner_id,account_id)
                     WHERE a.owner_id=? AND a.portfolio_id=? LIMIT 50001
                 ) event_budget
                 """,Integer.class,owner,id));
-        if(events>50000)throw new ApiFailure(422,"PORTFOLIO_VALUATION_BUDGET");
-        var today=MarketPrices.today();
-        var accounts=detail.accounts().stream().map(a->new AccountTotal(a.accountId(),a.name(),journal.currentRevision(owner,a.accountId()),
-                calculate(owner,a.accountId(),today,journal.currentRevision(owner,a.accountId()),false).totals())).toList();
-        return new PortfolioValue(id,today,"INR",accounts,combine(accounts.stream().map(AccountTotal::totals).toList()));
+        return events<=50000;
     }
 
     AccountValue calculate(UUID owner,UUID account,LocalDate date,long revision,boolean exactReviewedClose){
