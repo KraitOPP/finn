@@ -4,6 +4,7 @@ import { quotePresentation } from "../contracts/presentation.ts";
 import { loadDemoQuote } from "./api/demo.ts";
 import { AuthControls, SessionNotice } from "./auth/AuthControls.tsx";
 import { Securities } from "./instruments/Securities.tsx";
+import { Watchlists } from "./market/Watchlists.tsx";
 import {
   Navigation,
   PendingView,
@@ -241,6 +242,8 @@ function WorkspaceApp() {
               <Portfolios />
             ) : route === "instruments" ? (
               <Securities />
+            ) : route === "watchlists" ? (
+              <Watchlists />
             ) : route === "settings" ? (
               <Settings />
             ) : (

@@ -162,7 +162,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.15.0") & (string);
+export type ContractVersion = ("0.16.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -944,6 +944,38 @@ export type Warning = ({
   "message": (string);
 });
 
+export type WatchlistDetail = ({
+  "watchlist": (WatchlistSummary);
+  "items": (Array<(WatchlistItem)>);
+});
+
+export type WatchlistIndex = ({
+  "items": (Array<(WatchlistSummary)>);
+});
+
+export type WatchlistItem = ({
+  "listingId": (OpaqueId);
+  "securityId": (OpaqueId);
+  "securityName": (string);
+  "exchange": ("NSE" | "BSE") & (string);
+  "symbol": (string);
+  "latest": (((PrivateClose)) | ((null)));
+});
+
+export type WatchlistName = ({
+  "name": (string);
+});
+
+export type WatchlistSummary = ({
+  "watchlistId": (OpaqueId);
+  "name": (string);
+});
+
+export type WatchlistTrack = ({
+  "listingId": (OpaqueId);
+  "tracked": (boolean);
+});
+
 export interface ContractTypes {
   AccountInput: AccountInput;
   AccountValuation: AccountValuation;
@@ -1048,4 +1080,10 @@ export interface ContractTypes {
   ValuationTotals: ValuationTotals;
   ValuedHolding: ValuedHolding;
   Warning: Warning;
+  WatchlistDetail: WatchlistDetail;
+  WatchlistIndex: WatchlistIndex;
+  WatchlistItem: WatchlistItem;
+  WatchlistName: WatchlistName;
+  WatchlistSummary: WatchlistSummary;
+  WatchlistTrack: WatchlistTrack;
 }

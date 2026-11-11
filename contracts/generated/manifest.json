@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.15.0",
+  "contractVersion": "0.16.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "6043f5ba76e7a120ca7ff246e81c9396cb0a613423fb90ad614caa45cf8165f8",
+  "sourceSha256": "96c8b42b752e12b3868495a5599eeba6531d92718720f19d84255b1e8104ba2e",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -106,6 +106,12 @@
     "ValuationSnapshotDetail",
     "ValuationTotals",
     "ValuedHolding",
-    "Warning"
+    "Warning",
+    "WatchlistDetail",
+    "WatchlistIndex",
+    "WatchlistItem",
+    "WatchlistName",
+    "WatchlistSummary",
+    "WatchlistTrack"
   ]
 }

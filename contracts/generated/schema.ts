@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.15.0",
+  "contractVersion": "0.16.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "6043f5ba76e7a120ca7ff246e81c9396cb0a613423fb90ad614caa45cf8165f8",
+  "sourceSha256": "96c8b42b752e12b3868495a5599eeba6531d92718720f19d84255b1e8104ba2e",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -107,7 +107,13 @@ export const contractMetadata = {
     "ValuationSnapshotDetail",
     "ValuationTotals",
     "ValuedHolding",
-    "Warning"
+    "Warning",
+    "WatchlistDetail",
+    "WatchlistIndex",
+    "WatchlistItem",
+    "WatchlistName",
+    "WatchlistSummary",
+    "WatchlistTrack"
   ]
 } as const;
 
@@ -916,7 +922,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.15.0"
+    "const": "0.16.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -5499,6 +5505,137 @@ export const contractSchemas = {
     "required": [
       "code",
       "message"
+    ],
+    "additionalProperties": false
+  },
+  "WatchlistDetail": {
+    "type": "object",
+    "properties": {
+      "watchlist": {
+        "$ref": "#/components/schemas/WatchlistSummary"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/WatchlistItem"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "watchlist",
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "WatchlistIndex": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/WatchlistSummary"
+        },
+        "maxItems": 20
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "WatchlistItem": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "securityId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "securityName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "latest": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PrivateClose"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "listingId",
+      "securityId",
+      "securityName",
+      "exchange",
+      "symbol",
+      "latest"
+    ],
+    "additionalProperties": false
+  },
+  "WatchlistName": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "additionalProperties": false
+  },
+  "WatchlistSummary": {
+    "type": "object",
+    "properties": {
+      "watchlistId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      }
+    },
+    "required": [
+      "watchlistId",
+      "name"
+    ],
+    "additionalProperties": false
+  },
+  "WatchlistTrack": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "tracked": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "listingId",
+      "tracked"
     ],
     "additionalProperties": false
   }
