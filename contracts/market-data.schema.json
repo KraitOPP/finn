@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.30.0",
+  "$id": "urn:finn:contracts:market-data:0.31.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.30.0"
+      "const": "0.31.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2794,6 +2794,395 @@
         "page",
         "state",
         "content"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialDimensions": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string",
+          "enum": [
+            "REVENUE",
+            "EBITDA",
+            "PROFIT_AFTER_TAX",
+            "CASH_FROM_OPERATIONS",
+            "CAPITAL_EXPENDITURE",
+            "FREE_CASH_FLOW",
+            "TOTAL_DEBT",
+            "TOTAL_EQUITY",
+            "EPS_BASIC",
+            "OPERATING_MARGIN"
+          ]
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "STANDALONE",
+            "CONSOLIDATED"
+          ]
+        },
+        "periodKind": {
+          "type": "string",
+          "enum": [
+            "QUARTER",
+            "YTD",
+            "FULL_YEAR",
+            "AS_OF"
+          ]
+        },
+        "periodStart": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "periodEnd": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "MONEY",
+            "PER_SHARE",
+            "PERCENT"
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "INR",
+                "USD",
+                "EUR",
+                "GBP",
+                "JPY"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "metric",
+        "basis",
+        "periodKind",
+        "periodStart",
+        "periodEnd",
+        "unit",
+        "currency"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialOperand": {
+      "type": "object",
+      "properties": {
+        "factId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": [
+        "factId",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "ReportedFactInput": {
+      "type": "object",
+      "properties": {
+        "dimensions": {
+          "$ref": "#/$defs/FinancialDimensions"
+        },
+        "anchorId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "amount": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "ONES",
+            "THOUSAND",
+            "LAKH",
+            "MILLION",
+            "CRORE",
+            "BILLION"
+          ]
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "dimensions",
+        "anchorId",
+        "amount",
+        "scale",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialFactEdit": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "fact": {
+          "$ref": "#/$defs/ReportedFactInput"
+        }
+      },
+      "required": [
+        "companyId",
+        "expectedRevision",
+        "fact"
+      ],
+      "additionalProperties": false
+    },
+    "DeriveFinancialFact": {
+      "type": "object",
+      "properties": {
+        "existingFactId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expectedRevision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operatingCash": {
+          "$ref": "#/$defs/FinancialOperand"
+        },
+        "capitalExpenditure": {
+          "$ref": "#/$defs/FinancialOperand"
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "existingFactId",
+        "expectedRevision",
+        "operatingCash",
+        "capitalExpenditure",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialFact": {
+      "type": "object",
+      "properties": {
+        "factId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "dimensions": {
+          "$ref": "#/$defs/FinancialDimensions"
+        },
+        "amount": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "ONES",
+            "THOUSAND",
+            "LAKH",
+            "MILLION",
+            "CRORE",
+            "BILLION"
+          ]
+        },
+        "normalizedAmount": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "REPORTED",
+            "DERIVED"
+          ]
+        },
+        "anchorId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sourceTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "documentRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "operands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FinancialOperand"
+          },
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "factId",
+        "companyId",
+        "revision",
+        "dimensions",
+        "amount",
+        "scale",
+        "normalizedAmount",
+        "origin",
+        "anchorId",
+        "sourceTitle",
+        "documentRevision",
+        "publishedAt",
+        "reviewedAt",
+        "operands"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialFactPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FinancialFact"
+          },
+          "maxItems": 50
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialFactHistory": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FinancialFact"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialComparison": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "COMPARABLE",
+            "INCOMPARABLE"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "DIFFERENT_REPORTING_BASIS",
+                "DIFFERENT_OR_OVERLAPPING_PERIODS",
+                "NON_POSITIVE_BASE",
+                "PERCENTAGE_POINTS"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current": {
+          "$ref": "#/$defs/FinancialFact"
+        },
+        "previous": {
+          "$ref": "#/$defs/FinancialFact"
+        },
+        "change": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "percentChange": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "reason",
+        "current",
+        "previous",
+        "change",
+        "percentChange"
       ],
       "additionalProperties": false
     },

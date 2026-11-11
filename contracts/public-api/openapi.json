@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.30.0",
+    "version": "0.31.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -3227,6 +3227,17 @@
               "minimum": 0,
               "maximum": 200
             }
+          },
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -4425,6 +4436,796 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResearchLocation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/companies/{company}/facts": {
+      "get": {
+        "operationId": "listCompanyFinancialFacts",
+        "summary": "Read reviewed facts with explicit dimensions",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialFactPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordReportedFact",
+        "summary": "Record a value found in an owned evidence anchor",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialFact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportedFactInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/companies/{company}/facts/derive": {
+      "post": {
+        "operationId": "deriveFreeCashFlow",
+        "summary": "Calculate cash flow less capital expenditure from compatible reviewed versions",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialFact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeriveFinancialFact"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/facts/{id}": {
+      "post": {
+        "operationId": "reviseFinancialFact",
+        "summary": "Append a new reviewed fact version",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialFact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialFactEdit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/facts/{id}/versions": {
+      "get": {
+        "operationId": "getFinancialFactVersions",
+        "summary": "Read the fact's prior reviewed values and evidence",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialFactHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/facts/{id}/comparables": {
+      "get": {
+        "operationId": "listComparableFinancialFacts",
+        "summary": "Find earlier non-overlapping facts in the same series",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialFactHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/facts/{id}/comparison": {
+      "get": {
+        "operationId": "compareFinancialFacts",
+        "summary": "Calculate the change between compatible reviewed periods",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "previous",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialComparison"
                 }
               }
             }
@@ -11520,7 +12321,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.30.0"
+        "const": "0.31.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -14307,6 +15108,395 @@
           "page",
           "state",
           "content"
+        ],
+        "additionalProperties": false
+      },
+      "FinancialDimensions": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": [
+              "REVENUE",
+              "EBITDA",
+              "PROFIT_AFTER_TAX",
+              "CASH_FROM_OPERATIONS",
+              "CAPITAL_EXPENDITURE",
+              "FREE_CASH_FLOW",
+              "TOTAL_DEBT",
+              "TOTAL_EQUITY",
+              "EPS_BASIC",
+              "OPERATING_MARGIN"
+            ]
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "STANDALONE",
+              "CONSOLIDATED"
+            ]
+          },
+          "periodKind": {
+            "type": "string",
+            "enum": [
+              "QUARTER",
+              "YTD",
+              "FULL_YEAR",
+              "AS_OF"
+            ]
+          },
+          "periodStart": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "periodEnd": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "MONEY",
+              "PER_SHARE",
+              "PERCENT"
+            ]
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "INR",
+                  "USD",
+                  "EUR",
+                  "GBP",
+                  "JPY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "metric",
+          "basis",
+          "periodKind",
+          "periodStart",
+          "periodEnd",
+          "unit",
+          "currency"
+        ],
+        "additionalProperties": false
+      },
+      "FinancialOperand": {
+        "type": "object",
+        "properties": {
+          "factId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "factId",
+          "revision"
+        ],
+        "additionalProperties": false
+      },
+      "ReportedFactInput": {
+        "type": "object",
+        "properties": {
+          "dimensions": {
+            "$ref": "#/components/schemas/FinancialDimensions"
+          },
+          "anchorId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "scale": {
+            "type": "string",
+            "enum": [
+              "ONES",
+              "THOUSAND",
+              "LAKH",
+              "MILLION",
+              "CRORE",
+              "BILLION"
+            ]
+          },
+          "reviewed": {
+            "const": true
+          }
+        },
+        "required": [
+          "dimensions",
+          "anchorId",
+          "amount",
+          "scale",
+          "reviewed"
+        ],
+        "additionalProperties": false
+      },
+      "FinancialFactEdit": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "fact": {
+            "$ref": "#/components/schemas/ReportedFactInput"
+          }
+        },
+        "required": [
+          "companyId",
+          "expectedRevision",
+          "fact"
+        ],
+        "additionalProperties": false
+      },
+      "DeriveFinancialFact": {
+        "type": "object",
+        "properties": {
+          "existingFactId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectedRevision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operatingCash": {
+            "$ref": "#/components/schemas/FinancialOperand"
+          },
+          "capitalExpenditure": {
+            "$ref": "#/components/schemas/FinancialOperand"
+          },
+          "reviewed": {
+            "const": true
+          }
+        },
+        "required": [
+          "existingFactId",
+          "expectedRevision",
+          "operatingCash",
+          "capitalExpenditure",
+          "reviewed"
+        ],
+        "additionalProperties": false
+      },
+      "FinancialFact": {
+        "type": "object",
+        "properties": {
+          "factId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "companyId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "dimensions": {
+            "$ref": "#/components/schemas/FinancialDimensions"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "scale": {
+            "type": "string",
+            "enum": [
+              "ONES",
+              "THOUSAND",
+              "LAKH",
+              "MILLION",
+              "CRORE",
+              "BILLION"
+            ]
+          },
+          "normalizedAmount": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "REPORTED",
+              "DERIVED"
+            ]
+          },
+          "anchorId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "sourceTitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "documentRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtcInstant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviewedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "operands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialOperand"
+            },
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "factId",
+          "companyId",
+          "revision",
+          "dimensions",
+          "amount",
+          "scale",
+          "normalizedAmount",
+          "origin",
+          "anchorId",
+          "sourceTitle",
+          "documentRevision",
+          "publishedAt",
+          "reviewedAt",
+          "operands"
+        ],
+        "additionalProperties": false
+      },
+      "FinancialFactPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialFact"
+            },
+            "maxItems": 50
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "hasMore"
+        ],
+        "additionalProperties": false
+      },
+      "FinancialFactHistory": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialFact"
+            },
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "FinancialComparison": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "COMPARABLE",
+              "INCOMPARABLE"
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "DIFFERENT_REPORTING_BASIS",
+                  "DIFFERENT_OR_OVERLAPPING_PERIODS",
+                  "NON_POSITIVE_BASE",
+                  "PERCENTAGE_POINTS"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current": {
+            "$ref": "#/components/schemas/FinancialFact"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/FinancialFact"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "percentChange": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "current",
+          "previous",
+          "change",
+          "percentChange"
         ],
         "additionalProperties": false
       },

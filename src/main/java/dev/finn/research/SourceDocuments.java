@@ -55,13 +55,13 @@ class SourceDocuments {
         this.pdfs = pdfs;
     }
 
-    @Transactional public Page list(int offset) { return listFor(users.requireId(),"PRIMARY",offset); }
+    @Transactional public Page list(int offset,UUID company) { return listFor(users.requireId(),"PRIMARY",offset,company); }
 
-    Page listFor(UUID owner,String kind,int offset) {
-        var rows = jdbc.query(SELECT + """
-                WHERE d.owner_id=? AND d.source_type=? AND d.revision=v.revision
-                ORDER BY v.ingested_at DESC,d.document_id LIMIT 41 OFFSET ?
-                """, SourceDocuments::entry, owner,kind,offset);
+    Page listFor(UUID owner,String kind,int offset,UUID company) {
+        String where=company==null?"":" AND d.company_id=?";
+        var rows = jdbc.query(SELECT+" WHERE d.owner_id=? AND d.source_type=? AND d.revision=v.revision"+where+
+                " ORDER BY v.ingested_at DESC,d.document_id LIMIT 41 OFFSET ?",SourceDocuments::entry,
+                company==null?new Object[]{owner,kind,offset}:new Object[]{owner,kind,company,offset});
         return new Page(rows.stream().limit(40).toList(),rows.size()>40);
     }
 

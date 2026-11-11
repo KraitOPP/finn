@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.30.0"
+VERSION = "0.31.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -305,6 +305,38 @@ def definitions() -> dict:
     })
     d["ResearchLocations"] = obj({"items":array(ref("ResearchLocation"),maxItems=40),"hasMore":{"type":"boolean"}})
     d["ResearchTextPage"] = obj({"page":evidence_page,"state":evidence_page_state,"content":text(minLength=0,maxLength=60000)})
+    d["FinancialDimensions"] = obj({
+        "metric":enum(["REVENUE","EBITDA","PROFIT_AFTER_TAX","CASH_FROM_OPERATIONS","CAPITAL_EXPENDITURE","FREE_CASH_FLOW",
+                        "TOTAL_DEBT","TOTAL_EQUITY","EPS_BASIC","OPERATING_MARGIN"]),
+        "basis":enum(["STANDALONE","CONSOLIDATED"]),"periodKind":enum(["QUARTER","YTD","FULL_YEAR","AS_OF"]),
+        "periodStart":ref("SessionDate"),"periodEnd":ref("SessionDate"),
+        "unit":enum(["MONEY","PER_SHARE","PERCENT"]),"currency":nullable(enum(["INR","USD","EUR","GBP","JPY"])),
+    })
+    fact_scale=enum(["ONES","THOUSAND","LAKH","MILLION","CRORE","BILLION"])
+    d["FinancialOperand"] = obj({"factId":ref("OpaqueId"),"revision":source_revision})
+    d["ReportedFactInput"] = obj({
+        "dimensions":ref("FinancialDimensions"),"anchorId":ref("OpaqueId"),"amount":ref("DecimalString"),
+        "scale":fact_scale,"reviewed":{"const":True},
+    })
+    d["FinancialFactEdit"] = obj({"companyId":ref("OpaqueId"),"expectedRevision":source_revision,"fact":ref("ReportedFactInput")})
+    d["DeriveFinancialFact"] = obj({
+        "existingFactId":nullable(ref("OpaqueId")),"expectedRevision":nullable(source_revision),
+        "operatingCash":ref("FinancialOperand"),"capitalExpenditure":ref("FinancialOperand"),"reviewed":{"const":True},
+    })
+    d["FinancialFact"] = obj({
+        "factId":ref("OpaqueId"),"companyId":ref("OpaqueId"),"revision":source_revision,"dimensions":ref("FinancialDimensions"),
+        "amount":ref("DecimalString"),"scale":fact_scale,"normalizedAmount":ref("DecimalString"),"origin":enum(["REPORTED","DERIVED"]),
+        "anchorId":ref("OpaqueId"),"sourceTitle":text(maxLength=120),"documentRevision":source_revision,
+        "publishedAt":nullable(ref("UtcInstant")),"reviewedAt":ref("UtcInstant"),"operands":array(ref("FinancialOperand"),maxItems=2),
+    })
+    d["FinancialFactPage"] = obj({"items":array(ref("FinancialFact"),maxItems=50),"hasMore":{"type":"boolean"}})
+    d["FinancialFactHistory"] = obj({"items":array(ref("FinancialFact"),maxItems=50)})
+    d["FinancialComparison"] = obj({
+        "state":enum(["COMPARABLE","INCOMPARABLE"]),
+        "reason":nullable(enum(["DIFFERENT_REPORTING_BASIS","DIFFERENT_OR_OVERLAPPING_PERIODS","NON_POSITIVE_BASE","PERCENTAGE_POINTS"])),
+        "current":ref("FinancialFact"),"previous":ref("FinancialFact"),"change":nullable(ref("DecimalString")),
+        "percentChange":nullable(ref("DecimalString")),
+    })
     event_category = enum(["EARNINGS","CAPITAL","GOVERNANCE","CORPORATE_ACTION","OTHER"])
     event_subtype = enum(["RESULTS","RESULTS_MEETING","BUYBACK","CAPITAL_RAISE","AUDITOR","GOVERNANCE","DIVIDEND","SPLIT_BONUS","MERGER","OTHER"])
     event_revision = {"type":"integer","minimum":1,"maximum":100}
@@ -775,6 +807,7 @@ def public_api_document() -> dict:
     market_refresh["responses"]["202"]=market_refresh["responses"].pop("200")
     source_version_path = "/api/v1/research/sources/{id}/versions/{revision}"
     source_version_params = [*identifier,parameter("revision","path",{"type":"integer","minimum":1,"maximum":50},True)]
+    company_parameter=[parameter("company","path",text(format="uuid"),True)]
     pdf_upload = maintained("stageResearchPdf","Stage an owned PDF of at most 3 MiB","ResearchPdfUpload",[csrf_header])
     pdf_upload["requestBody"] = {"required": True, "content": {"application/pdf":{"schema":{"type":"string","format":"binary"}}}}
     pdf_download = maintained("downloadResearchPdf","Download the PDF for a private source version","ResearchPdfUpload",source_version_params)
@@ -808,7 +841,8 @@ def public_api_document() -> dict:
         "/api/v1/monitoring/briefs/preview":{"get": maintained("previewPortfolioBrief","Preview a closed reporting window","PortfolioBrief",[parameter("windowEnd","query",ref("SessionDate"))])},
         "/api/v1/monitoring/briefs/{id}":{"get": maintained("getPortfolioBrief","Inspect an owned immutable brief run","PortfolioBrief",identifier)},
         "/api/v1/research/sources":{
-            "get": maintained("listCompanySources","List private primary source records","CompanySourcePage",[parameter("offset","query",{"type":"integer","minimum":0,"maximum":200})]),
+            "get": maintained("listCompanySources","List private primary source records","CompanySourcePage",[
+                parameter("offset","query",{"type":"integer","minimum":0,"maximum":200}),parameter("companyId","query",text(format="uuid"))]),
             "post": maintained("registerCompanySource","Register a reviewed private HTTPS link or UTF-8 text","CompanySource",input_name="CompanySourceInput"),
         },
         "/api/v1/research/sources/{id}":{"post": maintained("reviseCompanySource","Append a private source revision","CompanySource",identifier,"CompanySourceEdit")},
@@ -826,6 +860,17 @@ def public_api_document() -> dict:
             *source_version_params,parameter("number","path",{"type":"integer","minimum":1,"maximum":20},True)])},
         "/api/v1/research/evidence/{anchor}":{"get":maintained("getEvidenceLocation","Resolve an owned passage to its exact source version and line range","ResearchLocation",[
             parameter("anchor","path",text(format="uuid"),True)])},
+        "/api/v1/research/companies/{company}/facts":{
+            "get":maintained("listCompanyFinancialFacts","Read reviewed facts with explicit dimensions","FinancialFactPage",[
+                *company_parameter,parameter("offset","query",{"type":"integer","minimum":0,"maximum":1500})]),
+            "post":maintained("recordReportedFact","Record a value found in an owned evidence anchor","FinancialFact",company_parameter,"ReportedFactInput"),
+        },
+        "/api/v1/research/companies/{company}/facts/derive":{"post":maintained("deriveFreeCashFlow","Calculate cash flow less capital expenditure from compatible reviewed versions","FinancialFact",company_parameter,"DeriveFinancialFact")},
+        "/api/v1/research/facts/{id}":{"post":maintained("reviseFinancialFact","Append a new reviewed fact version","FinancialFact",identifier,"FinancialFactEdit")},
+        "/api/v1/research/facts/{id}/versions":{"get":maintained("getFinancialFactVersions","Read the fact's prior reviewed values and evidence","FinancialFactHistory",identifier)},
+        "/api/v1/research/facts/{id}/comparables":{"get":maintained("listComparableFinancialFacts","Find earlier non-overlapping facts in the same series","FinancialFactHistory",identifier)},
+        "/api/v1/research/facts/{id}/comparison":{"get":maintained("compareFinancialFacts","Calculate the change between compatible reviewed periods","FinancialComparison",[
+            *identifier,parameter("previous","query",text(format="uuid"),True)])},
         "/api/v1/research/events":{
             "get": maintained("listCompanyEvents","List owned reviewed company event threads","CompanyEventPage",[
                 parameter("companyId","query",text(format="uuid")),parameter("offset","query",{"type":"integer","minimum":0,"maximum":300})]),

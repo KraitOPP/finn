@@ -21,7 +21,8 @@ class SourceDocumentController {
     private final SourceDocuments sources;
     SourceDocumentController(SourceDocuments sources) { this.sources=sources; }
 
-    @GetMapping SourceDocuments.Page list(@RequestParam(defaultValue="0") @Min(0) @Max(200) int offset) { return sources.list(offset); }
+    @GetMapping SourceDocuments.Page list(@RequestParam(defaultValue="0") @Min(0) @Max(200) int offset,
+                                        @RequestParam(required=false) UUID companyId) { return sources.list(offset,companyId); }
     @PostMapping SourceDocuments.Entry create(@Valid @RequestBody Input input) { return sources.save(null,null,input.value()); }
     @PostMapping("/{id}") SourceDocuments.Entry edit(@PathVariable UUID id,@Valid @RequestBody Edit input) {
         return sources.save(id,input.expectedRevision(),input.source().value());
