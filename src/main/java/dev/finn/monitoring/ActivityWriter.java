@@ -20,13 +20,13 @@ public class ActivityWriter {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void add(UUID owner, Kind kind, UUID subject, String key, String title, UUID evidence, OffsetDateTime availableAt) {
+    public UUID add(UUID owner, Kind kind, UUID subject, String key, String title, UUID evidence, OffsetDateTime availableAt) {
         UUID id = UUID.randomUUID();
         int added = jdbc.update("""
                 INSERT INTO finn.activity(activity_id,owner_id,kind,subject_id,dedupe_key,title,evidence_id,available_at)
                 VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (owner_id,kind,dedupe_key) DO NOTHING
                 """, id, owner, kind.name(), subject, key, title, evidence, availableAt);
-        if (added == 0) return;
+        if (added == 0) return null;
         jdbc.update("""
                 INSERT INTO finn.activity_delivery(owner_id,activity_id,channel,next_attempt_at)
                 VALUES (?,?,'IN_APP',?)
@@ -37,6 +37,15 @@ public class ActivityWriter {
                     SELECT owner_id,?,'EMAIL_PREVIEW',? FROM finn.user_preferences WHERE owner_id=? AND email_notifications
                     """, id, availableAt, owner);
         }
+        return id;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void suppressPendingActivity(UUID owner, UUID activity) {
+        jdbc.update("""
+                UPDATE finn.activity_delivery SET status='SUPPRESSED',completed_at=clock_timestamp(),failure_code='SCHEDULE_CHANGED'
+                WHERE owner_id=? AND activity_id=? AND status='PENDING'
+                """,owner,activity);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

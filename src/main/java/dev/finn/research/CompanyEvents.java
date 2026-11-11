@@ -7,6 +7,10 @@ import dev.finn.platform.ApiFailure;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -16,12 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
-class CompanyEvents {
+public class CompanyEvents {
+    public record AnnouncedDate(String type,LocalDate date,String certainty) {}
     record Input(UUID documentId,int documentRevision,UUID eventId,Integer expectedRevision,String title,String groupingKey,
-                 String subtype,String stage,String materiality,String novelty) {}
-    record Version(UUID eventId,UUID companyId,String companyName,int revision,UUID documentId,int documentRevision,
+                 String subtype,String stage,String materiality,String novelty,List<AnnouncedDate> dates) {}
+    public record Version(UUID eventId,UUID versionId,UUID companyId,String companyName,int revision,UUID documentId,int documentRevision,
                    String sourceTitle,String title,String category,String subtype,String stage,String materiality,String novelty,
-                   String confidence,String reviewedAt) {}
+                   String confidence,String reviewedAt,List<AnnouncedDate> dates) {}
     record Page(List<Version> items,boolean hasMore) {}
     record History(List<Version> items) {}
     private record Root(UUID eventId,UUID companyId,int revision) {}
@@ -39,12 +44,15 @@ class CompanyEvents {
     private final CurrentUser users;
     private final SourceDocuments sources;
     private final JsonMapper json;
+    private final FilingRules rules;
+    private static final JsonMapper DATE_READER=JsonMapper.builder().build();
 
-    CompanyEvents(JdbcTemplate jdbc,CurrentUser users,SourceDocuments sources,JsonMapper json) {
+    CompanyEvents(JdbcTemplate jdbc,CurrentUser users,SourceDocuments sources,JsonMapper json,FilingRules rules) {
         this.jdbc=jdbc;
         this.users=users;
         this.sources=sources;
         this.json=json;
+        this.rules=rules;
     }
 
     @Transactional public EventClassifier.Hint suggestion(UUID document,int revision) {
@@ -79,10 +87,13 @@ class CompanyEvents {
         String title=Catalogue.cleanName(input.title());
         var decision=new Decision(input.documentId(),input.documentRevision(),title,subtype.category,subtype.name(),
                 input.stage(),input.materiality(),input.novelty());
+        var dates=validateDates(input.dates());
         String grouping=SourceDocuments.checksum(subtype.name()+"|"+normalize(title)+"|"+normalize(input.groupingKey()));
         Root root=input.eventId()==null ? byGroup(owner,source.companyId(),grouping) : require(owner,input.eventId());
         if (root!=null && !root.companyId().equals(source.companyId())) throw ApiFailure.notFound();
-        String fingerprint=SourceDocuments.checksum(json.writeValueAsString(decision));
+        String dateJson=json.writeValueAsString(dates);
+        String decisionJson=json.writeValueAsString(decision);
+        String fingerprint=SourceDocuments.checksum(dates.isEmpty()?decisionJson:decisionJson+"|"+dateJson);
         UUID id;
         int revision;
         if (root==null) {
@@ -95,9 +106,13 @@ class CompanyEvents {
                     """,id,owner,source.companyId(),grouping);
         } else {
             id=root.eventId();
-            var duplicate=jdbc.query(SELECT+" WHERE e.owner_id=? AND e.event_id=? AND v.fingerprint=?",CompanyEvents::version,
-                    owner,id,fingerprint).stream().findFirst().orElse(null);
-            if (duplicate!=null) return duplicate;
+            var duplicate=byFingerprint(owner,id,fingerprint);
+            if (duplicate!=null) {
+                if (input.expectedRevision()==null||duplicate.revision()>=input.expectedRevision()) return duplicate;
+                fingerprint=SourceDocuments.checksum(fingerprint+"|after|"+input.expectedRevision());
+                var retried=byFingerprint(owner,id,fingerprint);
+                if (retried!=null) return retried;
+            }
             if (input.expectedRevision()!=null && root.revision()!=input.expectedRevision()) throw ApiFailure.conflict();
             if (root.revision()>=100) throw new ApiFailure(429,"COMPANY_EVENT_VERSION_LIMIT");
             revision=root.revision()+1;
@@ -106,10 +121,31 @@ class CompanyEvents {
         }
         jdbc.update("""
                 INSERT INTO finn.company_event_version(owner_id,event_id,revision,document_id,document_revision,title,category,
-                    subtype,stage,materiality,novelty,fingerprint) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                    subtype,stage,materiality,novelty,fingerprint,announced_dates) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS jsonb))
                 """,owner,id,revision,decision.documentId(),decision.documentRevision(),decision.title(),decision.category(),
-                decision.subtype(),decision.stage(),decision.materiality(),decision.novelty(),fingerprint);
-        return current(owner,id);
+                decision.subtype(),decision.stage(),decision.materiality(),decision.novelty(),fingerprint,dateJson);
+        var saved=current(owner,id);
+        rules.onEvent(owner,saved);
+        return saved;
+    }
+
+    public Version evidence(UUID owner,UUID versionId) {
+        return jdbc.query(SELECT+" WHERE e.owner_id=? AND v.event_version_id=?",
+                CompanyEvents::version,owner,versionId).stream().findFirst().orElse(null);
+    }
+
+    private Version byFingerprint(UUID owner,UUID id,String fingerprint) {
+        return jdbc.query(SELECT+" WHERE e.owner_id=? AND e.event_id=? AND v.fingerprint=?",CompanyEvents::version,
+                owner,id,fingerprint).stream().findFirst().orElse(null);
+    }
+
+    private static List<AnnouncedDate> validateDates(List<AnnouncedDate> dates) {
+        if (dates==null) return List.of();
+        var latest=LocalDate.now(ZoneId.of("Asia/Kolkata")).plusYears(10);
+        if (dates.size()>5||dates.stream().map(AnnouncedDate::type).distinct().count()!=dates.size()
+                || dates.stream().anyMatch(date->date.date().isBefore(LocalDate.of(1900,1,1))||date.date().isAfter(latest)))
+            throw ApiFailure.invalid();
+        return dates.stream().sorted(Comparator.comparing(AnnouncedDate::type)).toList();
     }
 
     Version current(UUID owner,UUID id) {
@@ -132,10 +168,13 @@ class CompanyEvents {
     }
 
     static Version version(ResultSet row,int ignored)throws SQLException {
-        return new Version(row.getObject("event_id",UUID.class),row.getObject("company_id",UUID.class),row.getString("company_name"),
+        var dates=new ArrayList<AnnouncedDate>();
+        for(var date:DATE_READER.readTree(row.getString("announced_dates")))
+            dates.add(new AnnouncedDate(date.path("type").asText(),LocalDate.parse(date.path("date").asText()),date.path("certainty").asText()));
+        return new Version(row.getObject("event_id",UUID.class),row.getObject("event_version_id",UUID.class),row.getObject("company_id",UUID.class),row.getString("company_name"),
                 row.getInt("revision"),row.getObject("document_id",UUID.class),row.getInt("document_revision"),row.getString("source_title"),
                 row.getString("title"),row.getString("category"),row.getString("subtype"),row.getString("stage"),
-                row.getString("materiality"),row.getString("novelty"),"REVIEWED",SourceDocuments.instant(row,"reviewed_at"));
+                row.getString("materiality"),row.getString("novelty"),"REVIEWED",SourceDocuments.instant(row,"reviewed_at"),List.copyOf(dates));
     }
 
     static String normalize(String value) {

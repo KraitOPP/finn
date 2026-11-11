@@ -3,6 +3,7 @@ package dev.finn.monitoring;
 
 import dev.finn.identity.CurrentUser;
 import dev.finn.platform.ApiFailure;
+import dev.finn.research.CompanyEvents;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -19,7 +20,8 @@ class Notifications {
     record Delivery(String channel, String status, int attempts, String nextAttemptAt, String completedAt, String failureCode) {}
     record ReminderEvidence(int revision, String dueAt, String deliverAt) {}
     record Detail(Item notification, PriceEvaluationReport.Evaluation price, ReminderEvidence reminder,
-                  Indicators.Evaluation indicator, UUID briefId, List<Delivery> deliveries, List<Attempt> attempts) {}
+                  Indicators.Evaluation indicator, UUID briefId, CompanyEvents.Version companyEvent,
+                  List<Delivery> deliveries, List<Attempt> attempts) {}
     record DeliveryItem(UUID activityId, String title, String kind, Delivery delivery) {}
     record DeliveryPage(boolean emailPreviewEnabled, List<DeliveryItem> items) {}
 
@@ -32,13 +34,16 @@ class Notifications {
     private final PriceEvaluationReport prices;
     private final EmailPreviewSink preview;
     private final Indicators indicators;
+    private final CompanyEvents companyEvents;
 
-    Notifications(JdbcTemplate jdbc, CurrentUser users, PriceEvaluationReport prices, EmailPreviewSink preview, Indicators indicators) {
+    Notifications(JdbcTemplate jdbc, CurrentUser users, PriceEvaluationReport prices, EmailPreviewSink preview, Indicators indicators,
+                  CompanyEvents companyEvents) {
         this.jdbc = jdbc;
         this.users = users;
         this.prices = prices;
         this.preview = preview;
         this.indicators = indicators;
+        this.companyEvents = companyEvents;
     }
 
     @Transactional
@@ -76,7 +81,8 @@ class Notifications {
                 PriceEvaluationReport.instant(row, "attempted_at")), owner, id);
         var indicator = item.kind().equals("VOLUME_RULE") || item.kind().equals("ALLOCATION_RULE")
                 ? indicators.evidence(owner, evidence) : null;
-        return new Detail(item, evaluation, reminder, indicator, item.kind().equals("PORTFOLIO_BRIEF") ? evidence : null, deliveries, attempts);
+        var event=item.kind().equals("COMPANY_EVENT")?companyEvents.evidence(owner,evidence):null;
+        return new Detail(item, evaluation, reminder, indicator, item.kind().equals("PORTFOLIO_BRIEF") ? evidence : null, event, deliveries, attempts);
     }
 
     @Transactional

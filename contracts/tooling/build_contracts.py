@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.27.0"
+VERSION = "0.28.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -230,6 +230,7 @@ def definitions() -> dict:
         "reminder": nullable(ref("ReminderEvidence")),
         "indicator": nullable(ref("IndicatorEvaluation")),
         "briefId": nullable(ref("OpaqueId")),
+        "companyEvent": nullable(ref("CompanyEvent")),
         "deliveries": array(ref("NotificationDelivery"),maxItems=2), "attempts": array(ref("NotificationAttempt"),maxItems=6),
     })
     local_minute = text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$",maxLength=16)
@@ -292,15 +293,20 @@ def definitions() -> dict:
         "materiality": enum(["HIGH","MEDIUM","LOW","UNKNOWN"]), "novelty": enum(["NEW","FOLLOW_UP","CORRECTION","ROUTINE","UNKNOWN"]),
     }
     d["EventSuggestion"] = obj({"category": event_category, **classification, "confidence": enum(["TITLE_HINT","UNKNOWN"])})
+    d["AnnouncedEventDate"] = obj({
+        "type": enum(["MEETING","RESULTS","EX_DATE","RECORD_DATE","OTHER"]),
+        "date": ref("SessionDate"), "certainty": enum(["CONFIRMED","TENTATIVE","CANCELLED"]),
+    })
+    announced_dates = array(ref("AnnouncedEventDate"),maxItems=5)
     d["CompanyEventInput"] = obj({
         "documentId": ref("OpaqueId"), "documentRevision": source_revision, "eventId": nullable(ref("OpaqueId")),
         "expectedRevision": nullable(event_revision), "title": text(maxLength=120), "groupingKey": nullable(text(maxLength=80)),
-        **classification, "reviewed": {"const":True},
-    })
+        **classification, "reviewed": {"const":True}, "dates": announced_dates,
+    }, optional=("dates",))
     d["CompanyEvent"] = obj({
-        "eventId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120), "revision": event_revision,
+        "eventId": ref("OpaqueId"), "versionId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120), "revision": event_revision,
         "documentId": ref("OpaqueId"), "documentRevision": source_revision, "sourceTitle": text(maxLength=120), "title": text(maxLength=120),
-        "category": event_category, **classification, "confidence": {"const":"REVIEWED"}, "reviewedAt": ref("UtcInstant"),
+        "category": event_category, **classification, "confidence": {"const":"REVIEWED"}, "reviewedAt": ref("UtcInstant"), "dates": announced_dates,
     })
     d["CompanyEventPage"] = obj({"items": array(ref("CompanyEvent"),maxItems=40), "hasMore": {"type":"boolean"}})
     d["CompanyEventHistory"] = obj({"items": array(ref("CompanyEvent"),maxItems=100)})
@@ -332,6 +338,25 @@ def definitions() -> dict:
     })
     d["CompanyNewsPage"] = obj({
         "coverage": {"const":"MANUAL_LINKS"}, "items": array(ref("CompanyNewsCluster"),maxItems=25), "hasMore": {"type":"boolean"},
+    })
+    d["FilingRuleSettings"] = obj({
+        "companyId": nullable(ref("OpaqueId")), "title": text(maxLength=80),
+        "category": enum(["ANY","EARNINGS","CAPITAL","GOVERNANCE","CORPORATE_ACTION","OTHER"]),
+        "minimumMateriality": enum(["ANY","MEDIUM","HIGH"]),
+        **{key: {"type":"boolean"} for key in ("arrivals","dates","tentative")},
+    })
+    d["FilingRule"] = obj({
+        "ruleId": ref("OpaqueId"), "revision": reminder_revision, "enabled": {"type":"boolean"}, "settings": ref("FilingRuleSettings"),
+    })
+    d["FilingRuleList"] = obj({"items": array(ref("FilingRule"),maxItems=20)})
+    d["FilingRuleChange"] = obj({"expectedRevision": reminder_revision, "enabled": {"type":"boolean"}})
+    d["CompanyCalendarPage"] = obj({
+        "items": array(obj({
+            "eventId": ref("OpaqueId"), "versionId": ref("OpaqueId"), "revision": event_revision, "title": text(maxLength=120),
+            "companyName": text(maxLength=120), "documentId": ref("OpaqueId"), "documentRevision": source_revision,
+            "date": ref("AnnouncedEventDate"),
+        }),maxItems=40),
+        "hasMore": {"type":"boolean"},
     })
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
@@ -773,6 +798,14 @@ def public_api_document() -> dict:
                 parameter("offset","query",{"type":"integer","minimum":0,"maximum":200})]),
             "post": maintained("registerNewsLink","Register a headline and link as secondary news context","CompanySource",input_name="CompanyNewsInput"),
         },
+        "/api/v1/research/filing-rules":{
+            "get": maintained("listFilingRules","List the owner's company filing rules","FilingRuleList"),
+            "post": maintained("createFilingRule","Select filing categories and date reminders","FilingRule",input_name="FilingRuleSettings"),
+        },
+        "/api/v1/research/filing-rules/{id}":{"post": maintained("toggleFilingRule","Pause or resume a filing rule","FilingRule",identifier,"FilingRuleChange")},
+        "/api/v1/research/calendar":{"get": maintained("listAnnouncedDates","Read current source-backed dates in an owned calendar window","CompanyCalendarPage",[
+            parameter("start","query",ref("SessionDate")),parameter("endExclusive","query",ref("SessionDate")),
+            parameter("offset","query",{"type":"integer","minimum":0,"maximum":1500})])},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},

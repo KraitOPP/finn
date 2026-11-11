@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.27.0",
+  "$id": "urn:finn:contracts:market-data:0.28.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.27.0"
+      "const": "0.28.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1809,6 +1809,16 @@
             }
           ]
         },
+        "companyEvent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CompanyEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "deliveries": {
           "type": "array",
           "items": {
@@ -1830,6 +1840,7 @@
         "reminder",
         "indicator",
         "briefId",
+        "companyEvent",
         "deliveries",
         "attempts"
       ],
@@ -2591,6 +2602,38 @@
       ],
       "additionalProperties": false
     },
+    "AnnouncedEventDate": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "MEETING",
+            "RESULTS",
+            "EX_DATE",
+            "RECORD_DATE",
+            "OTHER"
+          ]
+        },
+        "date": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "certainty": {
+          "type": "string",
+          "enum": [
+            "CONFIRMED",
+            "TENTATIVE",
+            "CANCELLED"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "date",
+        "certainty"
+      ],
+      "additionalProperties": false
+    },
     "CompanyEventInput": {
       "type": "object",
       "properties": {
@@ -2687,6 +2730,13 @@
         },
         "reviewed": {
           "const": true
+        },
+        "dates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnnouncedEventDate"
+          },
+          "maxItems": 5
         }
       },
       "required": [
@@ -2708,6 +2758,9 @@
       "type": "object",
       "properties": {
         "eventId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "versionId": {
           "$ref": "#/$defs/OpaqueId"
         },
         "companyId": {
@@ -2800,10 +2853,18 @@
         },
         "reviewedAt": {
           "$ref": "#/$defs/UtcInstant"
+        },
+        "dates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnnouncedEventDate"
+          },
+          "maxItems": 5
         }
       },
       "required": [
         "eventId",
+        "versionId",
         "companyId",
         "companyName",
         "revision",
@@ -2817,7 +2878,8 @@
         "materiality",
         "novelty",
         "confidence",
-        "reviewedAt"
+        "reviewedAt",
+        "dates"
       ],
       "additionalProperties": false
     },
@@ -3132,6 +3194,189 @@
       },
       "required": [
         "coverage",
+        "items",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "FilingRuleSettings": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "ANY",
+            "EARNINGS",
+            "CAPITAL",
+            "GOVERNANCE",
+            "CORPORATE_ACTION",
+            "OTHER"
+          ]
+        },
+        "minimumMateriality": {
+          "type": "string",
+          "enum": [
+            "ANY",
+            "MEDIUM",
+            "HIGH"
+          ]
+        },
+        "arrivals": {
+          "type": "boolean"
+        },
+        "dates": {
+          "type": "boolean"
+        },
+        "tentative": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "companyId",
+        "title",
+        "category",
+        "minimumMateriality",
+        "arrivals",
+        "dates",
+        "tentative"
+      ],
+      "additionalProperties": false
+    },
+    "FilingRule": {
+      "type": "object",
+      "properties": {
+        "ruleId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "settings": {
+          "$ref": "#/$defs/FilingRuleSettings"
+        }
+      },
+      "required": [
+        "ruleId",
+        "revision",
+        "enabled",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "FilingRuleList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FilingRule"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "FilingRuleChange": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyCalendarPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "eventId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "versionId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "companyName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "documentId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "documentRevision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50
+              },
+              "date": {
+                "$ref": "#/$defs/AnnouncedEventDate"
+              }
+            },
+            "required": [
+              "eventId",
+              "versionId",
+              "revision",
+              "title",
+              "companyName",
+              "documentId",
+              "documentRevision",
+              "date"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 40
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
         "items",
         "hasMore"
       ],
