@@ -156,4 +156,37 @@ final class ImportDatabaseChecks {
         submit(mvc,reconciliation+"/accept",owner,approve("UNITS_ONLY",true,2)).andExpect(status().isConflict());
         read(mvc,ledger,owner).andExpect(jsonPath("$.revision").value(2)).andExpect(jsonPath("$.positions.length()").value(2));
     }
+    static void reconcileByReportDateWithoutRewritingTheLedger(MockMvc mvc,HoldingsImportWorker worker)throws Exception{
+        var fixture=fixture(mvc,"fictional-reconciliation-owner");String owner=fixture.subject();
+        String opening=stage(mvc,fixture,worker,SyntheticWorkbook.holdings());
+        ok(submit(mvc,opening+"/accept",owner,approve("REPORTED_ROW_COST",true,0)));
+        String security=ok(read(mvc,opening+"/preview",owner)).get("rows").get(0).get("matchedSecurityId").asText();
+        ok(submit(mvc,fixture.path()+"/transactions",owner,"""
+                {"idempotencyKey":"%s","event":{"kind":"SELL","effectiveDate":"2020-11-11","securityId":"%s","quantity":"1","price":"11","fees":"0"}}
+                """.formatted(UUID.randomUUID(),security)));
+        String beforeSale=reportDate(mvc,fixture,worker,"10-11-2020")+"/reconciliation";
+        read(mvc,beforeSale,owner).andExpect(status().isOk()).andExpect(jsonPath("$.state").value("COMPARABLE"))
+                .andExpect(jsonPath("$.rows[0].recordedUnits").value("3")).andExpect(jsonPath("$.issueCount").value(0));
+        String afterSale=reportDate(mvc,fixture,worker,"12-11-2020")+"/reconciliation";
+        read(mvc,afterSale,owner).andExpect(jsonPath("$.rows[0].reportedUnits").value("3")).andExpect(jsonPath("$.rows[0].recordedUnits").value("2"))
+                .andExpect(jsonPath("$.rows[0].unitDifference").value("1")).andExpect(jsonPath("$.rows[0].costDifference").value("10.25"));
+        String acknowledge="{\"reviewed\":true,\"expectedLedgerRevision\":3}";
+        read(mvc,afterSale,"fictional-reconciliation-outsider").andExpect(status().isNotFound());
+        submit(mvc,afterSale,"fictional-reconciliation-outsider",acknowledge).andExpect(status().isNotFound());
+        submit(mvc,afterSale,owner,acknowledge).andExpect(status().isOk()).andExpect(jsonPath("$.ledgerRevision").value(3));
+        read(mvc,afterSale,owner).andExpect(jsonPath("$.reviewedAt").isNotEmpty()).andExpect(jsonPath("$.issueCount").value(1));
+        read(mvc,fixture.path()+"/ledger",owner).andExpect(jsonPath("$.revision").value(3));
+        ok(submit(mvc,fixture.path()+"/transactions",owner,"""
+                {"idempotencyKey":"%s","event":{"kind":"FEE","effectiveDate":"2020-11-13","amount":"1"}}
+                """.formatted(UUID.randomUUID())));
+        read(mvc,afterSale,owner).andExpect(jsonPath("$.ledgerRevision").value(4)).andExpect(jsonPath("$.reviewedAt").isEmpty());
+        submit(mvc,afterSale,owner,acknowledge).andExpect(status().isConflict());
+        String beforeCoverage=reportDate(mvc,fixture,worker,"08-11-2020")+"/reconciliation";
+        read(mvc,beforeCoverage,owner).andExpect(jsonPath("$.state").value("HISTORY_UNAVAILABLE")).andExpect(jsonPath("$.rows.length()").value(0));
+        submit(mvc,beforeCoverage,owner,acknowledge.replace("3","4")).andExpect(status().isUnprocessableContent());
+    }
+    private static String reportDate(MockMvc mvc,Fixture fixture,HoldingsImportWorker worker,String date)throws Exception{
+        var later=SyntheticWorkbook.parts();later.compute(SyntheticWorkbook.WORKSHEET,(key,sheet)->sheet.replace("09-11-2020",date));
+        return stage(mvc,fixture,worker,SyntheticWorkbook.zip(later));
+    }
 }

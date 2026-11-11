@@ -30,6 +30,7 @@ public class HoldingsImports {
     public record Metadata(String profile,LocalDate asOfDate,GrowwHoldingsReader.Totals reportedSummary,GrowwHoldingsReader.Totals detailTotals,
                            List<GrowwHoldingsReader.Comparison> comparisons,List<String> warnings,int rowCount){}
     public record PreviewRow(GrowwHoldingsReader.Row source,UUID matchedSecurityId,String mappingStatus){}
+    record Evidence(Metadata metadata,List<PreviewRow> rows){}
     public record PreviewPage(UUID importId,UUID jobId,long ledgerRevisionAtPreview,Metadata metadata,List<PreviewRow> rows,
                               Integer nextOffset,boolean requiresInrConfirmation,boolean commitAvailable,ReviewPlan review){}
     public record Receipt(UUID importId,String outcome,String costMode,int acceptedRows,int skippedRows,int duplicateRows,
@@ -89,14 +90,21 @@ public class HoldingsImports {
         var source=require(owner,portfolio,account,id);
         if(limit<1||limit>100||offset<0||offset>1000)throw ApiFailure.invalid();
         var stage=stage(owner,id);
-        var rows=jdbc.query("""
+        var rows=mappedRows(owner,id,limit,offset);
+        Integer next=offset+rows.size()<stage.metadata().rowCount()?offset+rows.size():null;
+        var plan=prepare(owner,account,id,stage,portfolios.require(owner,portfolio,false,false).archived()).plan();
+        return new PreviewPage(id,source.jobId(),stage.ledgerRevision(),stage.metadata(),rows,next,true,Set.of("READY","DUPLICATE").contains(plan.state()),plan);
+    }
+    Evidence evidence(UUID owner,UUID portfolio,UUID account,UUID id){
+        require(owner,portfolio,account,id);
+        return new Evidence(stage(owner,id).metadata(),mappedRows(owner,id,GrowwHoldingsReader.MAX_ROWS,0));
+    }
+    private List<PreviewRow> mappedRows(UUID owner,UUID id,int limit,int offset){
+        return jdbc.query("""
                 SELECT r.row_payload::text,s.security_id FROM finn.import_preview_row r
                 LEFT JOIN finn.security s ON s.owner_id=r.owner_id AND s.isin::text=(r.row_payload->>'isin')
                 WHERE r.owner_id=? AND r.import_id=? ORDER BY r.row_number LIMIT ? OFFSET ?
                 """,(row,index)->{UUID match=row.getObject("security_id",UUID.class);return new PreviewRow(json.readValue(row.getString(1),GrowwHoldingsReader.Row.class),match,match==null?"UNRESOLVED_SECURITY":"EXISTING_SECURITY");},owner,id,limit,offset);
-        Integer next=offset+rows.size()<stage.metadata().rowCount()?offset+rows.size():null;
-        var plan=prepare(owner,account,id,stage,portfolios.require(owner,portfolio,false,false).archived()).plan();
-        return new PreviewPage(id,source.jobId(),stage.ledgerRevision(),stage.metadata(),rows,next,true,Set.of("READY","DUPLICATE").contains(plan.state()),plan);
     }
     @Transactional public Receipt accept(UUID portfolio,UUID account,UUID id,String costMode,boolean acknowledged,long expectedRevision){
         UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);require(owner,portfolio,account,id);

@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.9.0"
+VERSION = "0.10.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -302,6 +302,11 @@ def definitions() -> dict:
     d["HoldingsAcceptanceInput"]=obj({"confirmInr":{"const":True},"retainUnresolvedListings":{"const":True},"acknowledgeDifferences":{"type":"boolean"},"costMode":cost_mode,"expectedLedgerRevision":ledger_revision},"Explicit review only. Requires current ledger revision and acknowledgement of discrepancies when present. Source IDs are the idempotency boundary; changing an accepted decision conflicts.")
     d["HoldingsAcceptanceReceipt"]=obj({"importId":ref("OpaqueId"),"outcome":enum(["APPLIED","DUPLICATE"]),"costMode":cost_mode,"acceptedRows":import_count,"skippedRows":import_count,"duplicateRows":import_count,"ledgerRevision":ledger_revision,"originalImportId":ledger_id,"replayed":{"type":"boolean"},"acceptedAt":ref("UtcInstant")})
     d["HoldingsReviewPlan"]=obj({"state":enum(["READY","ALREADY_ACCEPTED","DUPLICATE","SOURCE_CONFLICT","RECONCILIATION_ONLY","ROWS_BLOCKED","ARCHIVED"]),"currentLedgerRevision":ledger_revision,"eligibleRows":import_count,"duplicateRows":import_count,"conflictRows":import_count,"reportedCostAvailable":{"type":"boolean"},"differencesRequireAcknowledgement":{"type":"boolean"},"receipt":nullable(ref("HoldingsAcceptanceReceipt"))})
+    d["HoldingsReconciliationRow"]=obj({"sourceRow":nullable({"type":"integer","minimum":12,"maximum":1024}),"securityId":ledger_id,"name":nullable(text(maxLength=512)),"isin":isin,"reportedUnits":evidence_amount,"recordedUnits":evidence_amount,"reportedCost":evidence_amount,"recordedCost":evidence_amount,"unitDifference":evidence_amount,"costDifference":evidence_amount,"issues":array(ref("OpaqueId"),maxItems=12)})
+    reconciliation_count={"type":"integer","minimum":0,"maximum":2000}
+    d["HoldingsReconciliation"]=obj({"importId":ref("OpaqueId"),"reportDate":ref("SessionDate"),"ledgerRevision":ledger_revision,"state":enum(["COMPARABLE","HISTORY_UNAVAILABLE"]),"coverageStart":ledger_date,"historyStatus":enum(["UNKNOWN","HOLDINGS_ONLY","PARTIAL_TRADES"]),"rowCount":reconciliation_count,"issueCount":reconciliation_count,"rows":array(ref("HoldingsReconciliationRow"),maxItems=100),"nextOffset":nullable(reconciliation_count),"reviewedAt":nullable(ref("UtcInstant"))},"Compare immutable ledger entries effective on or before the report date and accepted through this revision. Report minus recorded deltas are not tax-basis equivalence. No mutation or fabricated earlier positions.")
+    d["HoldingsReconciliationInput"]=obj({"reviewed":{"const":True},"expectedLedgerRevision":ledger_revision})
+    d["HoldingsReconciliationReceipt"]=obj({"importId":ref("OpaqueId"),"ledgerRevision":ledger_revision,"reviewedAt":ref("UtcInstant")})
     d["HoldingsPreviewPage"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"ledgerRevisionAtPreview":ledger_revision,"metadata":ref("HoldingsPreviewMetadata"),"rows":array(ref("HoldingsPreviewRow"),maxItems=100),"nextOffset":nullable({"type":"integer","minimum":1,"maximum":1000}),"requiresInrConfirmation":{"const":True},"commitAvailable":{"type":"boolean"},"review":ref("HoldingsReviewPlan")},"Source summaries and detail totals remain separate. Upload and preview never write the journal. Explicit acceptance is limited to a first closing opening snapshot; later reports remain reconciliation evidence.")
     d["SessionResponse"] = {"oneOf": [
         obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
@@ -423,6 +428,7 @@ def public_api_document() -> dict:
         import_path+"/{id}/original":{"get":original},
         import_path+"/{id}/retry":{"post":maintained("retryHoldingsPreview","Create a new job for a recoverable preview failure","ImportTicket",[*import_id,csrf_header])},
         import_path+"/{id}/accept":{"post":maintained("acceptHoldingsOpening","Accept a reviewed opening snapshot atomically or deduplicate an overlap","HoldingsAcceptanceReceipt",import_id,"HoldingsAcceptanceInput")},
+        import_path+"/{id}/reconciliation":{"get":maintained("getHoldingsReconciliation","Compare source holdings with the owned ledger at the report date","HoldingsReconciliation",[*import_id,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("offset","query",{"type":"integer","minimum":0,"maximum":2000})]),"post":maintained("reviewHoldingsReconciliation","Acknowledge the comparison without changing the ledger","HoldingsReconciliationReceipt",import_id,"HoldingsReconciliationInput")},
         journal_path+"/ledger": {"get":maintained("getAccountLedger","Replay the owned account ledger and coverage","LedgerView",ledger_account)},
         journal_path+"/transactions": {"get":maintained("getLedgerEvents","Page the immutable journal","LedgerPage",[*ledger_account,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("before","query",{"type":"integer","minimum":1,"maximum":10001})]),"post":maintained("recordLedgerEvent","Record an accepted investment entry with an idempotency key","LedgerReceipt",ledger_account,"LedgerRecordInput")},
         journal_path+"/transactions/{event}/reverse": {"post":maintained("reverseLedgerEvent","Append a linked reversal after validating chronological balances","LedgerReceipt",ledger_event,"LedgerReverseInput")},

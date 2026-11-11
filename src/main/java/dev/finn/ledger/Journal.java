@@ -56,10 +56,17 @@ public class Journal {
     private List<Stored> load(UUID owner,UUID account){return jdbc.query(EVENTS+" ORDER BY e.sequence LIMIT ?",this::row,owner,account,LedgerEngine.MAX_EVENTS+1);}
     @Transactional public View view(UUID portfolio,UUID account){UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);return project(owner,account);}
     public View project(UUID owner,UUID account){
-        var rows=load(owner,account);var projection=LedgerEngine.replay(rows.stream().map(Stored::event).toList());
+        var rows=load(owner,account);return viewRows(rows,rows.isEmpty()?0:rows.getLast().event().sequence());
+    }
+    public View projectAt(UUID owner,UUID account,LocalDate date,long revision){
+        var rows=jdbc.query(EVENTS+" AND e.effective_date<=? AND e.sequence<=? ORDER BY e.sequence LIMIT ?",this::row,owner,account,date,revision,LedgerEngine.MAX_EVENTS+1);
+        return viewRows(rows,revision);
+    }
+    private View viewRows(List<Stored> rows,long revision){
+        var projection=LedgerEngine.replay(rows.stream().map(Stored::event).toList());
         Map<UUID,String> names=new HashMap<>();for(var row:rows)if(row.event().securityId()!=null)names.put(row.event().securityId(),row.securityName());
         var positions=projection.positions().stream().map(p->new PositionView(p.securityId(),names.get(p.securityId()),text(p.quantity()),text(p.recordedCost()),text(p.averageCost()),p.costBasis())).toList();
-        return new View(rows.isEmpty()?0:rows.getLast().event().sequence(),LedgerEngine.CALCULATION_VERSION,"INR",positions,text(projection.cashBalance()),text(projection.recordedCashComponents()),projection.cashMovementsComplete(),text(projection.realisedPnl()),text(projection.knownRealisedPnl()),text(projection.recordedFees()),projection.recordedFeesComplete(),text(projection.standaloneFees()),text(projection.netContributions()),projection.cashBaselineDate(),projection.coverageStart(),projection.historyStatus(),projection.warnings());
+        return new View(revision,LedgerEngine.CALCULATION_VERSION,"INR",positions,text(projection.cashBalance()),text(projection.recordedCashComponents()),projection.cashMovementsComplete(),text(projection.realisedPnl()),text(projection.knownRealisedPnl()),text(projection.recordedFees()),projection.recordedFeesComplete(),text(projection.standaloneFees()),text(projection.netContributions()),projection.cashBaselineDate(),projection.coverageStart(),projection.historyStatus(),projection.warnings());
     }
     @Transactional public Page page(UUID portfolio,UUID account,int limit,Long before){
         UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);
