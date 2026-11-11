@@ -92,8 +92,8 @@ function PreferencesForm({ value }: { value: Preferences }) {
       <fieldset>
         <legend>Notification preferences</legend>
         <p className="field-help">
-          Choices are saved for future delivery. Alerts, reminders and email are
-          not enabled yet.
+          In-app delivery follows the choice below. Email needs a configured
+          provider. Local installations can opt into an email preview.
         </p>
         <label className="check-label">
           <input

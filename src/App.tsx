@@ -5,12 +5,11 @@ import { loadDemoQuote } from "./api/demo.ts";
 import { AuthControls, SessionNotice } from "./auth/AuthControls.tsx";
 import { Securities } from "./instruments/Securities.tsx";
 import { Watchlists } from "./market/Watchlists.tsx";
-import { PriceRules } from "./monitoring/PriceRules.tsx";
+import { Inbox } from "./monitoring/Inbox.tsx";
 import {
   Navigation,
   PendingView,
   PrivateView,
-  RouteHeading,
   useRoute,
 } from "./Navigation.tsx";
 import { Portfolios } from "./portfolio/Portfolios.tsx";
@@ -247,10 +246,7 @@ function WorkspaceApp() {
             ) : route === "watchlists" ? (
               <Watchlists />
             ) : route === "inbox" ? (
-              <section className="workspace-section">
-                <RouteHeading>Inbox</RouteHeading>
-                <PriceRules />
-              </section>
+              <Inbox />
             ) : route === "settings" ? (
               <Settings />
             ) : (

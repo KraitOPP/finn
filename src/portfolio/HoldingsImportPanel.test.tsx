@@ -29,7 +29,7 @@ const preferences = {
   inAppNotifications: true,
   emailNotifications: false,
   revision: 0,
-  deliveryAvailable: false,
+  deliveryAvailable: true,
 };
 const created = "2020-11-10T10:00:00Z",
   finished = "2020-11-10T10:00:01Z";

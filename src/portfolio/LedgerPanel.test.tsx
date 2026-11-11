@@ -27,7 +27,7 @@ const preferences = {
   inAppNotifications: true,
   emailNotifications: false,
   revision: 0,
-  deliveryAvailable: false,
+  deliveryAvailable: true,
 };
 const reply = (value: unknown) =>
   new Response(JSON.stringify(value), {

@@ -82,7 +82,7 @@ it("creates an INR source account and restores an archived portfolio without los
         inAppNotifications: true,
         emailNotifications: false,
         revision: 0,
-        deliveryAvailable: false,
+        deliveryAvailable: true,
       });
     return reply(
       url === "/api/v1/portfolios"

@@ -172,7 +172,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.19.0") & (string);
+export type ContractVersion = ("0.20.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -620,6 +620,57 @@ export type MarketFeed = ({
 
 export type NonNegativeDecimalString = (string);
 
+export type Notification = ({
+  "activityId": (OpaqueId);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT") & (string);
+  "subjectId": (OpaqueId);
+  "title": (string);
+  "createdAt": (UtcInstant);
+  "readAt": (((UtcInstant)) | ((null)));
+});
+
+export type NotificationAttempt = ({
+  "channel": ("IN_APP" | "EMAIL_PREVIEW") & (string);
+  "attempt": (number);
+  "outcome": ("DELIVERED" | "SUPPRESSED" | "PREVIEWED" | "RETRY" | "FAILED") & (string);
+  "attemptedAt": (UtcInstant);
+});
+
+export type NotificationDelivery = ({
+  "channel": ("IN_APP" | "EMAIL_PREVIEW") & (string);
+  "status": ("PENDING" | "DELIVERED" | "SUPPRESSED" | "PREVIEWED" | "FAILED") & (string);
+  "attempts": (number);
+  "nextAttemptAt": (UtcInstant);
+  "completedAt": (((UtcInstant)) | ((null)));
+  "failureCode": (((OpaqueId)) | ((null)));
+});
+
+export type NotificationDeliveryPage = ({
+  "emailPreviewEnabled": (boolean);
+  "items": (Array<({
+  "activityId": (OpaqueId);
+  "title": (string);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT") & (string);
+  "delivery": (NotificationDelivery);
+})>);
+});
+
+export type NotificationDetail = ({
+  "notification": (Notification);
+  "price": (((PriceEvaluation)) | ((null)));
+  "deliveries": (Array<(NotificationDelivery)>);
+  "attempts": (Array<(NotificationAttempt)>);
+});
+
+export type NotificationPage = ({
+  "items": (Array<(Notification)>);
+  "nextBefore": (((OpaqueId)) | ((null)));
+});
+
+export type NotificationRead = ({
+  "read": (boolean);
+});
+
 export type OpaqueId = (string);
 
 export type PortfolioArchiveInput = ({
@@ -664,7 +715,7 @@ export type Preferences = ({
   "inAppNotifications": (boolean);
   "emailNotifications": (boolean);
   "revision": (number);
-  "deliveryAvailable": (false);
+  "deliveryAvailable": (true);
 });
 
 export type PreferencesUpdate = ({
@@ -1136,6 +1187,13 @@ export interface ContractTypes {
   MarketDiagnostics: MarketDiagnostics;
   MarketFeed: MarketFeed;
   NonNegativeDecimalString: NonNegativeDecimalString;
+  Notification: Notification;
+  NotificationAttempt: NotificationAttempt;
+  NotificationDelivery: NotificationDelivery;
+  NotificationDeliveryPage: NotificationDeliveryPage;
+  NotificationDetail: NotificationDetail;
+  NotificationPage: NotificationPage;
+  NotificationRead: NotificationRead;
   OpaqueId: OpaqueId;
   PortfolioArchiveInput: PortfolioArchiveInput;
   PortfolioDetail: PortfolioDetail;
