@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.18.0",
+  "$id": "urn:finn:contracts:market-data:0.19.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.18.0"
+      "const": "0.19.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1165,6 +1165,140 @@
       "required": [
         "expectedRevision",
         "settings"
+      ],
+      "additionalProperties": false
+    },
+    "AlertCloseEvidence": {
+      "type": "object",
+      "properties": {
+        "observationId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sessionDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "MANUAL_REVIEWED",
+            "YAHOO_YFINANCE"
+          ]
+        },
+        "priceBasis": {
+          "type": "string",
+          "enum": [
+            "AS_REPORTED_EXCHANGE",
+            "PROVIDER_DEFINED"
+          ]
+        },
+        "close": {
+          "$ref": "#/$defs/PositiveDecimalString"
+        },
+        "sourceReference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "receivedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "observationId",
+        "sessionDate",
+        "source",
+        "priceBasis",
+        "close",
+        "sourceReference",
+        "receivedAt"
+      ],
+      "additionalProperties": false
+    },
+    "PriceEvaluation": {
+      "type": "object",
+      "properties": {
+        "evaluationId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "sessionDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "TRIGGERED",
+            "BELOW_OR_ABOVE_RESET",
+            "NO_MATCH",
+            "INSUFFICIENT_HISTORY",
+            "COOLDOWN",
+            "ALREADY_LATCHED"
+          ]
+        },
+        "evaluatedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "observation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AlertCloseEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AlertCloseEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "evaluationId",
+        "revision",
+        "sessionDate",
+        "outcome",
+        "evaluatedAt",
+        "observation",
+        "previous"
+      ],
+      "additionalProperties": false
+    },
+    "PriceEvaluationReport": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "PAUSED",
+            "EXPIRED",
+            "WAITING_FOR_PRICE",
+            "STALE",
+            "EVALUATED",
+            "INSUFFICIENT_HISTORY"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PriceEvaluation"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "status",
+        "items"
       ],
       "additionalProperties": false
     },

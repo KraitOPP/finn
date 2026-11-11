@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.18.0"
+VERSION = "0.19.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -170,6 +170,21 @@ def definitions() -> dict:
     })
     d["PriceRuleList"] = obj({"items": array(ref("PriceRule"),maxItems=100)})
     d["PriceRuleEdit"] = obj({"expectedRevision": price_rule_revision, "settings": ref("PriceRuleSettings")})
+    d["AlertCloseEvidence"] = obj({
+        "observationId": ref("OpaqueId"), "sessionDate": ref("SessionDate"),
+        "source": enum(["MANUAL_REVIEWED","YAHOO_YFINANCE"]),
+        "priceBasis": enum(["AS_REPORTED_EXCHANGE","PROVIDER_DEFINED"]), "close": ref("PositiveDecimalString"),
+        "sourceReference": text(maxLength=240), "receivedAt": ref("UtcInstant"),
+    })
+    d["PriceEvaluation"] = obj({
+        "evaluationId": ref("OpaqueId"), "revision": price_rule_revision, "sessionDate": ref("SessionDate"),
+        "outcome": enum(["TRIGGERED","BELOW_OR_ABOVE_RESET","NO_MATCH","INSUFFICIENT_HISTORY","COOLDOWN","ALREADY_LATCHED"]),
+        "evaluatedAt": ref("UtcInstant"), "observation": nullable(ref("AlertCloseEvidence")), "previous": nullable(ref("AlertCloseEvidence")),
+    })
+    d["PriceEvaluationReport"] = obj({
+        "status": enum(["PAUSED","EXPIRED","WAITING_FOR_PRICE","STALE","EVALUATED","INSUFFICIENT_HISTORY"]),
+        "items": array(ref("PriceEvaluation"),maxItems=50),
+    })
     diagnostic_count = {"type":"integer","minimum":0}
     d["PriceCoverage"] = obj({field: diagnostic_count for field in ("trackedListings","withClose","recentClose")})
     d["PriceQuota"] = obj({
@@ -561,6 +576,7 @@ def public_api_document() -> dict:
         },
         "/api/v1/monitoring/rules/{id}":{"post": maintained("editPriceRule","Append a reviewed price rule version","PriceRule",identifier,"PriceRuleEdit")},
         "/api/v1/monitoring/rules/{id}/versions":{"get": maintained("getPriceRuleVersions","Inspect the owned rule and its previous definitions","PriceRuleList",identifier)},
+        "/api/v1/monitoring/rules/{id}/evaluations":{"get": maintained("getPriceRuleEvaluations","Read observed decisions and retained evidence","PriceEvaluationReport",identifier)},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},

@@ -80,7 +80,7 @@ class PriceRules {
         if (current.settings().equals(settings)) return current;
         if (expected >= 100) throw new ApiFailure(429, "PRICE_RULE_VERSION_LIMIT");
         int revision = expected + 1;
-        int updated = jdbc.update("UPDATE finn.monitor_rule SET revision=? WHERE owner_id=? AND rule_id=? AND revision=?",
+        int updated = jdbc.update("UPDATE finn.monitor_rule SET revision=?,next_check_at=clock_timestamp() WHERE owner_id=? AND rule_id=? AND revision=?",
                 revision, owner, id, expected);
         if (updated != 1) throw ApiFailure.conflict();
         insert(owner, id, revision, settings);

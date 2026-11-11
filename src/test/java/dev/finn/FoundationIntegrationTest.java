@@ -69,6 +69,10 @@ class FoundationIntegrationTest {
     @org.springframework.test.context.bean.override.mockito.MockitoSpyBean dev.finn.market.YahooProcess yahoo;
     @Autowired dev.finn.market.MarketPrices prices;
 
+    @Autowired dev.finn.monitoring.PriceEvaluationWorker priceWorker;
+    @Test void priceEvaluationIsDurableAndDoesNotReplayOldObservations() throws Exception {
+        dev.finn.market.PriceEvaluationChecks.persistsOnlyNewSessionsAndSurvivesRollback(mvc,jdbc,transactions,priceWorker);
+    }
     @Test void priceRulesRetainPrivateVersions() throws Exception { dev.finn.market.PriceRuleApiChecks.versionsArePrivateAndRetainThresholds(mvc); }
     @Test void watchlistsDeduplicateAndStayOwnerScoped() throws Exception { dev.finn.market.WatchlistDatabaseChecks.separatesListsAndDuplicateListings(mvc); }
     @Test void datedSnapshotsRetainExactInputsAndGaps() throws Exception { dev.finn.market.SnapshotDatabaseChecks.snapshotsKeepGapsAndImmutableInputs(mvc,prices,jobs,yahoo); }
@@ -113,7 +117,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.18.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.19.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())
