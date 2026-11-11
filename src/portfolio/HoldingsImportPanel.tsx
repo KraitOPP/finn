@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type {
+  HoldingsAcceptanceReceipt,
   HoldingsPreviewPage,
   ImportTicket,
 } from "../../contracts/generated/models.ts";
@@ -7,6 +8,7 @@ import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { useDisplayInstant } from "../preferences/PreferencesProvider.tsx";
+import { ReviewOpening, receiptMessage } from "./ReviewOpening.tsx";
 
 const XLSX =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -59,9 +61,11 @@ const amount = (value: string | null) => value ?? "Unavailable";
 export function HoldingsImportPanel({
   base,
   archived,
+  onAccepted,
 }: {
   base: string;
   archived: boolean;
+  onAccepted?: (receipt: HoldingsAcceptanceReceipt) => void;
 }) {
   const auth = useAuthentication();
   const displayInstant = useDisplayInstant();
@@ -314,12 +318,25 @@ export function HoldingsImportPanel({
                 </button>
               </p>
             ) : preview.value ? (
-              <Preview
-                page={preview.value}
-                original={`${base}/imports/${selected.importId}/original`}
-                offset={offset}
-                onOffset={setOffset}
-              />
+              <>
+                <Preview
+                  page={preview.value}
+                  original={`${base}/imports/${selected.importId}/original`}
+                  offset={offset}
+                  onOffset={setOffset}
+                />
+                <ReviewOpening
+                  page={preview.value}
+                  archived={archived}
+                  path={`${base}/imports/${selected.importId}/accept`}
+                  onReload={preview.reload}
+                  onAccepted={(receipt) => {
+                    setNotice(receiptMessage(receipt));
+                    preview.reload();
+                    onAccepted?.(receipt);
+                  }}
+                />
+              </>
             ) : (
               <p role="status">Loading reconciliation and source rows…</p>
             ))}
@@ -462,10 +479,6 @@ function Preview({
           Download original
         </a>
       </div>
-      <p className="field-help">
-        Preview only. Opening holdings require explicit INR and reconciliation
-        review before posting is enabled.
-      </p>
     </>
   );
 }

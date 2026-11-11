@@ -6,6 +6,7 @@ import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { RouteHeading } from "../Navigation.tsx";
 import { HoldingsImportPanel } from "./HoldingsImportPanel.tsx";
 import { LedgerPanel } from "./LedgerPanel.tsx";
+import { receiptMessage } from "./ReviewOpening.tsx";
 
 export function Portfolios() {
   const portfolios = useResource("PortfolioList", "/api/v1/portfolios");
@@ -276,6 +277,12 @@ function PortfolioDetail({
               key={`import-${selected.accountId}`}
               base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
               archived={portfolio.archived}
+              onAccepted={(receipt) => {
+                if (receipt.outcome === "APPLIED") {
+                  setAccountNotice(receiptMessage(receipt));
+                  detail.reload();
+                }
+              }}
             />
           )}
         </section>

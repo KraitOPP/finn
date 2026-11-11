@@ -21,5 +21,6 @@
   ],
   "nextOffset": null,
   "requiresInrConfirmation": true,
-  "commitAvailable": false
+  "commitAvailable": true,
+  "review": {"state": "READY", "currentLedgerRevision": 0, "eligibleRows": 2, "duplicateRows": 0, "conflictRows": 0, "reportedCostAvailable": true, "differencesRequireAcknowledgement": true, "receipt": null}
 }

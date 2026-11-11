@@ -226,6 +226,9 @@ a {
   border-top: 1px solid #dfe4dc;
   padding-top: 14px;
 }
+.acceptance-card {
+  margin-top: 24px;
+}
 .ledger-workspace > h4 {
   margin-top: 32px;
 }

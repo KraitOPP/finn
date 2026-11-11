@@ -61,14 +61,53 @@ function mount() {
   );
 }
 
-it("sends a private raw workbook and presents discrepancies without posting holdings", async () => {
+it("previews raw bytes and posts only after explicit review, with unknown costs by default", async () => {
   let sent = false;
+  let accepted = false;
+  const receipt = {
+    importId: preview.importId,
+    outcome: "APPLIED",
+    costMode: "UNITS_ONLY",
+    acceptedRows: 2,
+    skippedRows: 0,
+    duplicateRows: 0,
+    ledgerRevision: 2,
+    originalImportId: null,
+    replayed: false,
+    acceptedAt: finished,
+  };
   const fetcher = vi.fn(async (path: unknown, options?: RequestInit) => {
     const url = String(path);
     if (url.endsWith("/session")) return reply(session);
     if (url.endsWith("/preferences")) return reply(preferences);
     if (url.includes("/jobs/")) return reply(job("SUCCEEDED", null));
-    if (url.includes("/preview?")) return reply(preview);
+    if (url.includes("/preview?"))
+      return reply(
+        accepted
+          ? {
+              ...preview,
+              commitAvailable: false,
+              review: {
+                ...preview.review,
+                state: "ALREADY_ACCEPTED",
+                currentLedgerRevision: 2,
+                receipt,
+              },
+            }
+          : preview,
+      );
+    if (url.endsWith("/accept")) {
+      expect(options?.method).toBe("POST");
+      expect(JSON.parse(String(options?.body))).toEqual({
+        confirmInr: true,
+        retainUnresolvedListings: true,
+        acknowledgeDifferences: true,
+        costMode: "UNITS_ONLY",
+        expectedLedgerRevision: 0,
+      });
+      accepted = true;
+      return reply(receipt);
+    }
     if (options?.method === "POST") {
       expect(options.body).toBeInstanceOf(File);
       expect(options.headers).toMatchObject({
@@ -122,9 +161,38 @@ it("sends a private raw workbook and presents discrepancies without posting hold
   expect(
     fetcher.mock.calls.filter(([, init]) => init?.method === "POST"),
   ).toHaveLength(1);
+  const accept = screen.getByRole("button", {
+    name: "Accept opening holdings",
+  });
+  expect(accept).toBeDisabled();
+  await userEvent.click(
+    screen.getByRole("checkbox", { name: /confirm that the amounts/i }),
+  );
+  await userEvent.click(
+    screen.getByRole("checkbox", {
+      name: /keep exchange listings unresolved/i,
+    }),
+  );
+  expect(accept).toBeDisabled();
+  await userEvent.click(
+    screen.getByRole("checkbox", {
+      name: /reviewed the report and row differences/i,
+    }),
+  );
+  await userEvent.click(accept);
   expect(
-    screen.queryByRole("button", { name: /commit holdings/i }),
-  ).not.toBeInTheDocument();
+    (
+      await screen.findAllByText(
+        /2 opening holdings recorded with costs left unknown/,
+      )
+    ).length,
+  ).toBeGreaterThan(0);
+  expect(
+    fetcher.mock.calls.filter(
+      ([url, init]) =>
+        String(url).endsWith("/accept") && init?.method === "POST",
+    ),
+  ).toHaveLength(1);
 });
 
 it("does not offer downloads or retries for a workbook rejected as active content", async () => {

@@ -31,6 +31,20 @@ const safeMessages: Record<string, string> = {
     "This workspace has reached its stored workbook limit.",
   IMPORT_RETRY_LIMIT_REACHED: "This workbook has reached its retry limit.",
   UPLOAD_CAPACITY_REACHED: "Other uploads are in progress. Try again shortly.",
+  IMPORT_LEDGER_CHANGED:
+    "The ledger changed after this review. Reload the preview and review the current account.",
+  IMPORT_SOURCE_CONFLICT:
+    "Some rows differ from the accepted opening snapshot. Review them without replacing the ledger.",
+  IMPORT_ALREADY_REVIEWED:
+    "This workbook already has a saved decision. Reload the preview to see its receipt.",
+  IMPORT_RECONCILIATION_REQUIRED:
+    "This account already has equity history. Compare the report without posting another opening.",
+  IMPORT_DIFFERENCES_REQUIRE_REVIEW:
+    "Review and acknowledge the report differences before recording holdings.",
+  IMPORT_REPORTED_COST_UNAVAILABLE:
+    "Reported row costs are incomplete or exceed the supported precision. You can keep costs unknown.",
+  SECURITY_LABEL_REVIEW_REQUIRED:
+    "Create or review this ISIN in Securities with a shorter display label, then reload the preview.",
 };
 
 export class ApiError extends Error {

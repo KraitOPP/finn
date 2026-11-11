@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.8.0",
+  "contractVersion": "0.9.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "86a5b523d9b8e7ff5db343e16d020b3e114a5a8bd08b9ecdbf9b672877073981",
+  "sourceSha256": "c1934e1df47b93fded8f748c96a2370e0f223180b4ce2dae7af323435554575f",
   "schemaNames": [
     "AccountInput",
     "AcquisitionEnvelope",
@@ -24,12 +24,15 @@ export const contractMetadata = {
     "Freshness",
     "HistoryCoverage",
     "HistoryResponse",
+    "HoldingsAcceptanceInput",
+    "HoldingsAcceptanceReceipt",
     "HoldingsComparison",
     "HoldingsImportList",
     "HoldingsImportSummary",
     "HoldingsPreviewMetadata",
     "HoldingsPreviewPage",
     "HoldingsPreviewRow",
+    "HoldingsReviewPlan",
     "HoldingsRowIssue",
     "HoldingsSourceRow",
     "HoldingsTotals",
@@ -575,7 +578,11 @@ export const contractSchemas = {
         "maxLength": 120
       },
       "source": {
-        "const": "MANUAL_USER"
+        "type": "string",
+        "enum": [
+          "MANUAL_USER",
+          "GROWW_HOLDINGS"
+        ]
       }
     },
     "required": [
@@ -793,7 +800,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.8.0"
+    "const": "0.9.0"
   },
   "CsrfInformation": {
     "type": "object",
@@ -1083,6 +1090,112 @@ export const contractSchemas = {
     "additionalProperties": false,
     "description": "Ascending sessionDate/observationId order. ONE_DAY only. Never fill gaps with zero or a silent previous close. Cursors bind listing, range, basis and source-selection snapshot."
   },
+  "HoldingsAcceptanceInput": {
+    "type": "object",
+    "properties": {
+      "confirmInr": {
+        "const": true
+      },
+      "retainUnresolvedListings": {
+        "const": true
+      },
+      "acknowledgeDifferences": {
+        "type": "boolean"
+      },
+      "costMode": {
+        "type": "string",
+        "enum": [
+          "UNITS_ONLY",
+          "REPORTED_ROW_COST"
+        ]
+      },
+      "expectedLedgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      }
+    },
+    "required": [
+      "confirmInr",
+      "retainUnresolvedListings",
+      "acknowledgeDifferences",
+      "costMode",
+      "expectedLedgerRevision"
+    ],
+    "additionalProperties": false,
+    "description": "Explicit review only. Requires current ledger revision and acknowledgement of discrepancies when present. Source IDs are the idempotency boundary; changing an accepted decision conflicts."
+  },
+  "HoldingsAcceptanceReceipt": {
+    "type": "object",
+    "properties": {
+      "importId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "outcome": {
+        "type": "string",
+        "enum": [
+          "APPLIED",
+          "DUPLICATE"
+        ]
+      },
+      "costMode": {
+        "type": "string",
+        "enum": [
+          "UNITS_ONLY",
+          "REPORTED_ROW_COST"
+        ]
+      },
+      "acceptedRows": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "skippedRows": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "duplicateRows": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "ledgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "originalImportId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "replayed": {
+        "type": "boolean"
+      },
+      "acceptedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "importId",
+      "outcome",
+      "costMode",
+      "acceptedRows",
+      "skippedRows",
+      "duplicateRows",
+      "ledgerRevision",
+      "originalImportId",
+      "replayed",
+      "acceptedAt"
+    ],
+    "additionalProperties": false
+  },
   "HoldingsComparison": {
     "type": "object",
     "properties": {
@@ -1297,7 +1410,10 @@ export const contractSchemas = {
         "const": true
       },
       "commitAvailable": {
-        "const": false
+        "type": "boolean"
+      },
+      "review": {
+        "$ref": "#/components/schemas/HoldingsReviewPlan"
       }
     },
     "required": [
@@ -1308,10 +1424,11 @@ export const contractSchemas = {
       "rows",
       "nextOffset",
       "requiresInrConfirmation",
-      "commitAvailable"
+      "commitAvailable",
+      "review"
     ],
     "additionalProperties": false,
-    "description": "Private preview only. Source summaries and detail totals remain separate. Upload/staging never writes the journal. The supported report does not establish trade history, fees, cash or returns."
+    "description": "Source summaries and detail totals remain separate. Upload and preview never write the journal. Explicit acceptance is limited to a first closing opening snapshot; later reports remain reconciliation evidence."
   },
   "HoldingsPreviewRow": {
     "type": "object",
@@ -1344,6 +1461,70 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "An exact owned ISIN can identify a security; exchange listing is never inferred."
+  },
+  "HoldingsReviewPlan": {
+    "type": "object",
+    "properties": {
+      "state": {
+        "type": "string",
+        "enum": [
+          "READY",
+          "ALREADY_ACCEPTED",
+          "DUPLICATE",
+          "SOURCE_CONFLICT",
+          "RECONCILIATION_ONLY",
+          "ROWS_BLOCKED",
+          "ARCHIVED"
+        ]
+      },
+      "currentLedgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "eligibleRows": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "duplicateRows": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "conflictRows": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "reportedCostAvailable": {
+        "type": "boolean"
+      },
+      "differencesRequireAcknowledgement": {
+        "type": "boolean"
+      },
+      "receipt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/HoldingsAcceptanceReceipt"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "state",
+      "currentLedgerRevision",
+      "eligibleRows",
+      "duplicateRows",
+      "conflictRows",
+      "reportedCostAvailable",
+      "differencesRequireAcknowledgement",
+      "receipt"
+    ],
+    "additionalProperties": false
   },
   "HoldingsRowIssue": {
     "type": "object",

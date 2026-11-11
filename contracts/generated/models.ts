@@ -99,7 +99,7 @@ export type CatalogueCompanies = (Array<(CatalogueCompany)>);
 export type CatalogueCompany = ({
   "companyId": (OpaqueId);
   "name": (string);
-  "source": ("MANUAL_USER");
+  "source": ("MANUAL_USER" | "GROWW_HOLDINGS") & (string);
 });
 
 export type CatalogueListing = ({
@@ -143,7 +143,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.8.0") & (string);
+export type ContractVersion = ("0.9.0") & (string);
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -199,6 +199,27 @@ export type HistoryResponse = ({
   "warnings": (Array<(Warning)>);
 });
 
+export type HoldingsAcceptanceInput = ({
+  "confirmInr": (true);
+  "retainUnresolvedListings": (true);
+  "acknowledgeDifferences": (boolean);
+  "costMode": ("UNITS_ONLY" | "REPORTED_ROW_COST") & (string);
+  "expectedLedgerRevision": (number);
+});
+
+export type HoldingsAcceptanceReceipt = ({
+  "importId": (OpaqueId);
+  "outcome": ("APPLIED" | "DUPLICATE") & (string);
+  "costMode": ("UNITS_ONLY" | "REPORTED_ROW_COST") & (string);
+  "acceptedRows": (number);
+  "skippedRows": (number);
+  "duplicateRows": (number);
+  "ledgerRevision": (number);
+  "originalImportId": (((OpaqueId)) | ((null)));
+  "replayed": (boolean);
+  "acceptedAt": (UtcInstant);
+});
+
 export type HoldingsComparison = ({
   "field": ("BUY_VALUE" | "CLOSING_VALUE" | "UNREALISED_PNL") & (string);
   "reported": (((DecimalString)) | ((null)));
@@ -238,13 +259,25 @@ export type HoldingsPreviewPage = ({
   "rows": (Array<(HoldingsPreviewRow)>);
   "nextOffset": (((number)) | ((null)));
   "requiresInrConfirmation": (true);
-  "commitAvailable": (false);
+  "commitAvailable": (boolean);
+  "review": (HoldingsReviewPlan);
 });
 
 export type HoldingsPreviewRow = ({
   "source": (HoldingsSourceRow);
   "matchedSecurityId": (((OpaqueId)) | ((null)));
   "mappingStatus": ("UNRESOLVED_SECURITY" | "EXISTING_SECURITY") & (string);
+});
+
+export type HoldingsReviewPlan = ({
+  "state": ("READY" | "ALREADY_ACCEPTED" | "DUPLICATE" | "SOURCE_CONFLICT" | "RECONCILIATION_ONLY" | "ROWS_BLOCKED" | "ARCHIVED") & (string);
+  "currentLedgerRevision": (number);
+  "eligibleRows": (number);
+  "duplicateRows": (number);
+  "conflictRows": (number);
+  "reportedCostAvailable": (boolean);
+  "differencesRequireAcknowledgement": (boolean);
+  "receipt": (((HoldingsAcceptanceReceipt)) | ((null)));
 });
 
 export type HoldingsRowIssue = ({
@@ -694,12 +727,15 @@ export interface ContractTypes {
   Freshness: Freshness;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;
+  HoldingsAcceptanceInput: HoldingsAcceptanceInput;
+  HoldingsAcceptanceReceipt: HoldingsAcceptanceReceipt;
   HoldingsComparison: HoldingsComparison;
   HoldingsImportList: HoldingsImportList;
   HoldingsImportSummary: HoldingsImportSummary;
   HoldingsPreviewMetadata: HoldingsPreviewMetadata;
   HoldingsPreviewPage: HoldingsPreviewPage;
   HoldingsPreviewRow: HoldingsPreviewRow;
+  HoldingsReviewPlan: HoldingsReviewPlan;
   HoldingsRowIssue: HoldingsRowIssue;
   HoldingsSourceRow: HoldingsSourceRow;
   HoldingsTotals: HoldingsTotals;
