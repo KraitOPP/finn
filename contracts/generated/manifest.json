@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.33.0",
+  "contractVersion": "0.34.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "de2e8d54e3ca3a3e31b9117ea0068cac8a0655d113b5c5bb0876314a8a706ea9",
+  "sourceSha256": "fb3b7464a3c816c39de0b5f69201bfe864fbde802292edeb1c8c0fbd67636a30",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -169,7 +169,10 @@
     "ResearchReportCapabilities",
     "ResearchReportFeedback",
     "ResearchReportFeedbackInput",
+    "ResearchReportHistory",
     "ResearchReportInput",
+    "ResearchReportSummary",
+    "ResearchSearchResult",
     "ResearchTextPage",
     "ReviewCloseInput",
     "ReviewReminder",

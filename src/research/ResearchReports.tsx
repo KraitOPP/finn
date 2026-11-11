@@ -15,7 +15,7 @@ import {
 const root = "/api/v1/research";
 const states: Record<ResearchReport["state"], string> = {
   PENDING: "Waiting for the local model to rank passages.",
-  EVIDENCE: "Matching passages from current primary documents.",
+  EVIDENCE: "Matching passages from primary documents at generation time.",
   INSUFFICIENT:
     "No matching primary evidence was found. Try a more specific term or add an indexed source.",
   CONFLICTING_CONTEXT:
@@ -28,12 +28,26 @@ export function ResearchReports({ company }: { company: string }) {
   const [question, setQuestion] = useState("");
   const [rankLocally, setRankLocally] = useState(false);
   const [id, setId] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [offset, setOffset] = useState(0);
   const command = usePrivateCommand();
   const capabilities = useResource(
     "ResearchReportCapabilities",
     `${root}/report-capabilities`,
   );
   const localAvailable = capabilities.value?.localRanking === true;
+  const history = useResource(
+    "ResearchReportHistory",
+    historyOpen
+      ? `${root}/companies/${company}/reports?offset=${offset}`
+      : null,
+  );
+  function saved(report: ResearchReport) {
+    setId(report.reportId);
+    setRankLocally(false);
+    setOffset(0);
+    history.reload();
+  }
   return (
     <details>
       <summary>Ask a question or review company evidence</summary>
@@ -51,7 +65,7 @@ export function ResearchReports({ company }: { company: string }) {
               },
             ),
           );
-          if (report) setId(report.reportId);
+          if (report) saved(report);
         }}
       >
         <label>
@@ -91,13 +105,56 @@ export function ResearchReports({ company }: { company: string }) {
         </button>
         {command.error && <p role="alert">{command.error}</p>}
       </form>
-      {id && <ReportView key={id} id={id} />}
+      <details onToggle={(event) => setHistoryOpen(event.currentTarget.open)}>
+        <summary>Saved report history</summary>
+        {history.error && <p role="alert">{history.error}</p>}
+        {historyOpen && !history.value && !history.error && (
+          <p role="status">Loading saved reports…</p>
+        )}
+        {history.value?.items.length === 0 && (
+          <p>No saved reports on this page.</p>
+        )}
+        {history.value?.items.map((item) => (
+          <div key={item.reportId}>
+            <button
+              type="button"
+              aria-pressed={id === item.reportId}
+              onClick={() => setId(item.reportId)}
+            >
+              {item.question} · version {item.version}
+            </button>{" "}
+            <LocalTime value={item.asOf} />
+          </div>
+        ))}
+        {offset > 0 && (
+          <button type="button" onClick={() => setOffset(offset - 20)}>
+            Previous reports
+          </button>
+        )}
+        {history.value?.hasMore && (
+          <button type="button" onClick={() => setOffset(offset + 20)}>
+            Next reports
+          </button>
+        )}
+      </details>
+      {id && (
+        <ReportView key={id} id={id} onNavigate={setId} onRefresh={saved} />
+      )}
     </details>
   );
 }
 
-export function ReportView({ id }: { id: string }) {
+function ReportView({
+  id,
+  onNavigate,
+  onRefresh,
+}: {
+  id: string;
+  onNavigate: (id: string) => void;
+  onRefresh: (report: ResearchReport) => void;
+}) {
   const data = useResource("ResearchReport", `${root}/reports/${id}`);
+  const command = usePrivateCommand();
   const waiting = data.value?.state === "PENDING";
   useEffect(() => {
     if (!waiting) return;
@@ -111,8 +168,41 @@ export function ReportView({ id }: { id: string }) {
     <article>
       <h4>{report.question}</h4>
       <p>
-        Evidence as of <LocalTime value={report.asOf} />
+        Version {report.version} · Evidence as of{" "}
+        <LocalTime value={report.asOf} />
       </p>
+      {report.previousReportId && (
+        <button
+          type="button"
+          onClick={() => {
+            if (report.previousReportId) onNavigate(report.previousReportId);
+          }}
+        >
+          Open previous version
+        </button>
+      )}
+      {report.current && !waiting && (
+        <button
+          type="button"
+          disabled={command.busy}
+          onClick={async () => {
+            const next = await command.run((csrf) =>
+              requestContract(
+                "ResearchReport",
+                `${root}/reports/${id}/refresh`,
+                {
+                  method: "POST",
+                  csrf,
+                },
+              ),
+            );
+            if (next) onRefresh(next);
+          }}
+        >
+          Save a new version using current sources
+        </button>
+      )}
+      {command.error && <p role="alert">{command.error}</p>}
       <p role="status">{states[report.state]}</p>
       {report.state === "LOCAL_RANKED" && <p>Model {report.modelName}</p>}
       {report.citations.map((item) => (

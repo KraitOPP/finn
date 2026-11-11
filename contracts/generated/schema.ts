@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.33.0",
+  "contractVersion": "0.34.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "de2e8d54e3ca3a3e31b9117ea0068cac8a0655d113b5c5bb0876314a8a706ea9",
+  "sourceSha256": "fb3b7464a3c816c39de0b5f69201bfe864fbde802292edeb1c8c0fbd67636a30",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -170,7 +170,10 @@ export const contractMetadata = {
     "ResearchReportCapabilities",
     "ResearchReportFeedback",
     "ResearchReportFeedbackInput",
+    "ResearchReportHistory",
     "ResearchReportInput",
+    "ResearchReportSummary",
+    "ResearchSearchResult",
     "ResearchTextPage",
     "ReviewCloseInput",
     "ReviewReminder",
@@ -2251,7 +2254,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.33.0"
+    "const": "0.34.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -8158,6 +8161,24 @@ export const contractSchemas = {
         "minLength": 1,
         "maxLength": 30
       },
+      "version": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 500
+      },
+      "previousReportId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "current": {
+        "type": "boolean"
+      },
       "citations": {
         "type": "array",
         "items": {
@@ -8191,6 +8212,9 @@ export const contractSchemas = {
       "state",
       "modelName",
       "policyVersion",
+      "version",
+      "previousReportId",
+      "current",
       "citations",
       "facts",
       "feedback"
@@ -8263,6 +8287,26 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "ResearchReportHistory": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ResearchReportSummary"
+        },
+        "maxItems": 20
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
   "ResearchReportInput": {
     "type": "object",
     "properties": {
@@ -8278,6 +8322,66 @@ export const contractSchemas = {
     "required": [
       "question",
       "rankLocally"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchReportSummary": {
+    "type": "object",
+    "properties": {
+      "reportId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "question": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 320
+      },
+      "asOf": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "version": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 500
+      }
+    },
+    "required": [
+      "reportId",
+      "question",
+      "asOf",
+      "version"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchSearchResult": {
+    "type": "object",
+    "properties": {
+      "documents": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanySource"
+        },
+        "maxItems": 20
+      },
+      "passages": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ResearchLocation"
+        },
+        "maxItems": 20
+      },
+      "moreDocuments": {
+        "type": "boolean"
+      },
+      "morePassages": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "documents",
+      "passages",
+      "moreDocuments",
+      "morePassages"
     ],
     "additionalProperties": false
   },

@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.33.0") & (string);
+export type ContractVersion = ("0.34.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1438,6 +1438,9 @@ export type ResearchReport = ({
   "state": ("PENDING" | "EVIDENCE" | "INSUFFICIENT" | "CONFLICTING_CONTEXT" | "LOCAL_RANKED" | "MODEL_FALLBACK") & (string);
   "modelName": (((string)) | ((null)));
   "policyVersion": (string);
+  "version": (number);
+  "previousReportId": (((OpaqueId)) | ((null)));
+  "current": (boolean);
   "citations": (Array<(ResearchLocation)>);
   "facts": (Array<(FinancialFact)>);
   "feedback": (((ResearchReportFeedback)) | ((null)));
@@ -1458,9 +1461,28 @@ export type ResearchReportFeedbackInput = ({
   "anchorId": (((OpaqueId)) | ((null)));
 });
 
+export type ResearchReportHistory = ({
+  "items": (Array<(ResearchReportSummary)>);
+  "hasMore": (boolean);
+});
+
 export type ResearchReportInput = ({
   "question": (string);
   "rankLocally": (boolean);
+});
+
+export type ResearchReportSummary = ({
+  "reportId": (OpaqueId);
+  "question": (string);
+  "asOf": (UtcInstant);
+  "version": (number);
+});
+
+export type ResearchSearchResult = ({
+  "documents": (Array<(CompanySource)>);
+  "passages": (Array<(ResearchLocation)>);
+  "moreDocuments": (boolean);
+  "morePassages": (boolean);
 });
 
 export type ResearchTextPage = ({
@@ -1833,7 +1855,10 @@ export interface ContractTypes {
   ResearchReportCapabilities: ResearchReportCapabilities;
   ResearchReportFeedback: ResearchReportFeedback;
   ResearchReportFeedbackInput: ResearchReportFeedbackInput;
+  ResearchReportHistory: ResearchReportHistory;
   ResearchReportInput: ResearchReportInput;
+  ResearchReportSummary: ResearchReportSummary;
+  ResearchSearchResult: ResearchSearchResult;
   ResearchTextPage: ResearchTextPage;
   ReviewCloseInput: ReviewCloseInput;
   ReviewReminder: ReviewReminder;
