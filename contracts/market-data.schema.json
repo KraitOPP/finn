@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.6.0",
+  "$id": "urn:finn:contracts:market-data:0.7.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.6.0"
+      "const": "0.7.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2226,6 +2226,657 @@
       ],
       "additionalProperties": false,
       "description": "Archive blocks financial writes and preserves readable account/ledger history. Restore is supported; no deletion is exposed."
+    },
+    "LedgerEntryInput": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "BUY",
+            "SELL",
+            "FEE",
+            "DEPOSIT",
+            "WITHDRAWAL",
+            "OPENING_POSITION",
+            "OPENING_CASH"
+          ]
+        },
+        "effectiveDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "securityId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "listingId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "price": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fees": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "effectiveDate",
+        "securityId",
+        "listingId",
+        "quantity",
+        "price",
+        "amount",
+        "fees",
+        "reference"
+      ],
+      "additionalProperties": false,
+      "description": "Record an already executed transaction or reviewed opening balance. Exact decimal text only. BUY/SELL require security, whole units and price; fees null means unknown. FEE/DEPOSIT/WITHDRAWAL use positive amount. OPENING_POSITION uses quantity plus optional total opening cost in amount. OPENING_CASH uses a nonnegative end-of-day balance. No event executes a trade."
+    },
+    "LedgerRecordInput": {
+      "type": "object",
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 36,
+          "format": "uuid"
+        },
+        "event": {
+          "$ref": "#/$defs/LedgerEntryInput"
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "event"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerReverseInput": {
+      "type": "object",
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 36,
+          "format": "uuid"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "reference"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerCorrectInput": {
+      "type": "object",
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 36,
+          "format": "uuid"
+        },
+        "replacement": {
+          "$ref": "#/$defs/LedgerEntryInput"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "replacement",
+        "reference"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerReceipt": {
+      "type": "object",
+      "properties": {
+        "commandId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "eventIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpaqueId"
+          },
+          "maxItems": 2,
+          "minItems": 1
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "commandId",
+        "revision",
+        "eventIds",
+        "replayed"
+      ],
+      "additionalProperties": false,
+      "description": "Same owner/account key and normalized inputs return the original command and event IDs. Changed inputs conflict. Reversal plus replacement is atomic."
+    },
+    "LedgerEventView": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "BUY",
+            "SELL",
+            "FEE",
+            "DEPOSIT",
+            "WITHDRAWAL",
+            "OPENING_POSITION",
+            "OPENING_CASH",
+            "REVERSAL"
+          ]
+        },
+        "effectiveDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "securityId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "listingId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "price": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fees": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 31,
+              "pattern": "^(?:0|[1-9][0-9]{0,21})(?:\\.[0-9]{1,8})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eventId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "securityName": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exchange": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "NSE",
+                "BSE"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reversalOf": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reversedBy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replacesEventId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "MANUAL",
+            "GROWW_HOLDINGS",
+            "REVIEWED_CORPORATE_ACTION"
+          ]
+        },
+        "sourceReference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recordedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "kind",
+        "effectiveDate",
+        "securityId",
+        "listingId",
+        "quantity",
+        "price",
+        "amount",
+        "fees",
+        "reference",
+        "eventId",
+        "sequence",
+        "securityName",
+        "exchange",
+        "reversalOf",
+        "reversedBy",
+        "replacesEventId",
+        "source",
+        "sourceReference",
+        "recordedAt"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LedgerEventView"
+          },
+          "maxItems": 100
+        },
+        "nextBefore": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "nextBefore"
+      ],
+      "additionalProperties": false,
+      "description": "Descending account sequence; before is exclusive. Original and reversing records remain visible."
+    },
+    "LedgerPosition": {
+      "type": "object",
+      "properties": {
+        "securityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "securityName": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "$ref": "#/$defs/IntegerString"
+        },
+        "recordedCost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "averageCost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "costBasis": {
+          "type": "string",
+          "enum": [
+            "RECORDED_TRADES",
+            "REPORTED_OPENING_COST",
+            "MIXED_RECORDED_COST",
+            "UNKNOWN"
+          ]
+        }
+      },
+      "required": [
+        "securityId",
+        "securityName",
+        "quantity",
+        "recordedCost",
+        "averageCost",
+        "costBasis"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerView": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "calculationVersion": {
+          "const": "MOVING_AVERAGE_1"
+        },
+        "currency": {
+          "const": "INR"
+        },
+        "positions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LedgerPosition"
+          },
+          "maxItems": 1000
+        },
+        "cashBalance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recordedCashComponents": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "cashMovementsComplete": {
+          "type": "boolean"
+        },
+        "realisedPnl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "knownRealisedPnl": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "recordedFees": {
+          "$ref": "#/$defs/NonNegativeDecimalString"
+        },
+        "recordedFeesComplete": {
+          "type": "boolean"
+        },
+        "standaloneFees": {
+          "$ref": "#/$defs/NonNegativeDecimalString"
+        },
+        "netContributions": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "cashBaselineDate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverageStart": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "historyStatus": {
+          "type": "string",
+          "enum": [
+            "UNKNOWN",
+            "HOLDINGS_ONLY",
+            "PARTIAL_TRADES"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpaqueId"
+          },
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "revision",
+        "calculationVersion",
+        "currency",
+        "positions",
+        "cashBalance",
+        "recordedCashComponents",
+        "cashMovementsComplete",
+        "realisedPnl",
+        "knownRealisedPnl",
+        "recordedFees",
+        "recordedFeesComplete",
+        "standaloneFees",
+        "netContributions",
+        "cashBaselineDate",
+        "coverageStart",
+        "historyStatus",
+        "warnings"
+      ],
+      "additionalProperties": false,
+      "description": "Tracked positions and accounting effects, not a full broker balance or tax calculation. Cash requires an explicit baseline and known movements. Coverage is partial; never fabricate past returns. Quantity/cost are by security; valuation needs a separate reviewed listing."
     },
     "SessionResponse": {
       "oneOf": [

@@ -10,6 +10,7 @@ import static dev.finn.ledger.LedgerViolation.Code.*;
 public final class LedgerEngine {
     public static final String CALCULATION_VERSION="MOVING_AVERAGE_1";
     public static final int MAX_EVENTS=10000;
+    public static final int MAX_POSITIONS=1000;
     public record Position(UUID securityId,BigDecimal quantity,BigDecimal recordedCost,BigDecimal averageCost,String costBasis){}
     public record Projection(List<Position> positions,BigDecimal cashBalance,BigDecimal recordedCashComponents,
                              boolean cashMovementsComplete,BigDecimal realisedPnl,BigDecimal knownRealisedPnl,
@@ -93,6 +94,7 @@ public final class LedgerEngine {
             Pool pool=entry.getValue();LedgerRules.bounded(pool.cost);LedgerRules.bounded(pool.quantity);
             return new Position(entry.getKey(),pool.quantity,pool.cost,pool.cost==null?null:pool.cost.divide(pool.quantity,8,RoundingMode.HALF_EVEN),pool.basis);
         }).toList();
+        if(positions.size()>MAX_POSITIONS)throw new LedgerViolation(LEDGER_CAPACITY_REACHED);
         if(positions.stream().anyMatch(position->position.recordedCost()==null))warnings.add("RECORDED_COST_UNKNOWN");
         if(!realisedComplete)warnings.add("REALISED_PNL_INCOMPLETE");
         if(cashDate==null)warnings.add("STARTING_CASH_UNKNOWN");

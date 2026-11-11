@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -269,6 +269,24 @@ def definitions() -> dict:
     d["InvestmentAccount"] = {"description":"A source account is a private tracking record, never a broker API connection or trading permission. Creation does not establish history coverage.","oneOf":[obj({**account_fields,"historyStatus":{"const":"UNKNOWN"},"historyStartDate":{"type":"null"}}),obj({**account_fields,"historyStatus":enum(["HOLDINGS_ONLY","PARTIAL_TRADES"]),"historyStartDate":ref("SessionDate")})]}
     d["AccountInput"] = obj({"name":text(maxLength=120),"source":enum(["GROWW","MANUAL","OTHER"]),"currency":{"const":"INR"}})
     d["PortfolioDetail"] = obj({"portfolio":ref("PortfolioSummary"),"accounts":array(ref("InvestmentAccount"),maxItems=100)}, "Archive blocks financial writes and preserves readable account/ledger history. Restore is supported; no deletion is exposed.")
+    ledger_types=["BUY","SELL","FEE","DEPOSIT","WITHDRAWAL","OPENING_POSITION","OPENING_CASH"]
+    ledger_id=nullable(ref("OpaqueId"))
+    ledger_date=nullable(ref("SessionDate"))
+    ledger_decimal=nullable(text(pattern=r"^(?:0|[1-9][0-9]{0,21})(?:\.[0-9]{1,8})?$",maxLength=31))
+    ledger_text=nullable(text(maxLength=120))
+    ledger_revision={"type":"integer","minimum":0,"maximum":10000}
+    ledger_sequence={**ledger_revision,"minimum":1}
+    ledger_input={"kind":enum(ledger_types),"effectiveDate":ref("SessionDate"),"securityId":ledger_id,"listingId":ledger_id,"quantity":ledger_decimal,"price":ledger_decimal,"amount":ledger_decimal,"fees":ledger_decimal,"reference":ledger_text}
+    d["LedgerEntryInput"]=obj(ledger_input,"Record an already executed transaction or reviewed opening balance. Exact decimal text only. BUY/SELL require security, whole units and price; fees null means unknown. FEE/DEPOSIT/WITHDRAWAL use positive amount. OPENING_POSITION uses quantity plus optional total opening cost in amount. OPENING_CASH uses a nonnegative end-of-day balance. No event executes a trade.")
+    ledger_key={"idempotencyKey":text(format="uuid",maxLength=36)}
+    d["LedgerRecordInput"]=obj({**ledger_key,"event":ref("LedgerEntryInput")})
+    d["LedgerReverseInput"]=obj({**ledger_key,"reference":ledger_text})
+    d["LedgerCorrectInput"]=obj({**ledger_key,"replacement":ref("LedgerEntryInput"),"reference":ledger_text})
+    d["LedgerReceipt"]=obj({"commandId":ref("OpaqueId"),"revision":ledger_sequence,"eventIds":array(ref("OpaqueId"),minItems=1,maxItems=2),"replayed":{"type":"boolean"}},"Same owner/account key and normalized inputs return the original command and event IDs. Changed inputs conflict. Reversal plus replacement is atomic.")
+    d["LedgerEventView"]=obj({**ledger_input,"kind":enum([*ledger_types,"REVERSAL"]),"eventId":ref("OpaqueId"),"sequence":ledger_sequence,"securityName":ledger_text,"exchange":nullable(enum(["NSE","BSE"])),"reversalOf":ledger_id,"reversedBy":ledger_id,"replacesEventId":ledger_id,"source":enum(["MANUAL","GROWW_HOLDINGS","REVIEWED_CORPORATE_ACTION"]),"sourceReference":ledger_id,"recordedAt":ref("UtcInstant")})
+    d["LedgerPage"]=obj({"items":array(ref("LedgerEventView"),maxItems=100),"nextBefore":nullable(ledger_sequence)},"Descending account sequence; before is exclusive. Original and reversing records remain visible.")
+    d["LedgerPosition"]=obj({"securityId":ref("OpaqueId"),"securityName":ledger_text,"quantity":ref("IntegerString"),"recordedCost":nullable(ref("NonNegativeDecimalString")),"averageCost":nullable(ref("NonNegativeDecimalString")),"costBasis":enum(["RECORDED_TRADES","REPORTED_OPENING_COST","MIXED_RECORDED_COST","UNKNOWN"])})
+    d["LedgerView"]=obj({"revision":ledger_revision,"calculationVersion":{"const":"MOVING_AVERAGE_1"},"currency":{"const":"INR"},"positions":array(ref("LedgerPosition"),maxItems=1000),"cashBalance":nullable(ref("DecimalString")),"recordedCashComponents":ref("DecimalString"),"cashMovementsComplete":{"type":"boolean"},"realisedPnl":nullable(ref("DecimalString")),"knownRealisedPnl":ref("DecimalString"),"recordedFees":ref("NonNegativeDecimalString"),"recordedFeesComplete":{"type":"boolean"},"standaloneFees":ref("NonNegativeDecimalString"),"netContributions":ref("DecimalString"),"cashBaselineDate":ledger_date,"coverageStart":ledger_date,"historyStatus":enum(["UNKNOWN","HOLDINGS_ONLY","PARTIAL_TRADES"]),"warnings":array(ref("OpaqueId"),maxItems=32)},"Tracked positions and accounting effects, not a full broker balance or tax calculation. Cash requires an explicit baseline and known movements. Coverage is partial; never fabricate past returns. Quantity/cost are by security; valuation needs a separate reviewed listing.")
     d["SessionResponse"] = {"oneOf": [
         obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
         obj({**page_common, "authenticated": {"const": False}, "user": {"type": "null"}, "csrf": ref("CsrfInformation")}),
@@ -367,10 +385,18 @@ def public_api_document() -> dict:
         if input_name:
             result_op["parameters"].append(parameter("X-CSRF-TOKEN", "header", text(maxLength=2048), True))
             result_op["requestBody"]={"required": True, "content": {"application/json": {"schema": ref(input_name)}}}
-            result_op["responses"]["409"]=response("Duplicate identity or non-monotonic symbol change; review before retrying.", "Problem", "application/problem+json")
+            result_op["responses"]["403"]=response("CSRF token missing or rejected.", "Problem", "application/problem+json")
+            result_op["responses"]["409"]=response("Conflict; inspect the current resource and review before retrying.", "Problem", "application/problem+json")
         return result_op
     identifier=[parameter("id", "path", text(format="uuid"), True)]
+    ledger_account=[parameter(name,"path",text(format="uuid"),True) for name in ("portfolio","account")]
+    ledger_event=[*ledger_account,parameter("event","path",text(format="uuid"),True)]
+    journal_path="/api/v1/portfolios/{portfolio}/accounts/{account}"
     paths.update({
+        journal_path+"/ledger": {"get":maintained("getAccountLedger","Replay the owned account ledger and coverage","LedgerView",ledger_account)},
+        journal_path+"/transactions": {"get":maintained("getLedgerEvents","Page the immutable journal","LedgerPage",[*ledger_account,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("before","query",{"type":"integer","minimum":1,"maximum":10001})]),"post":maintained("recordLedgerEvent","Record an accepted investment entry with an idempotency key","LedgerReceipt",ledger_account,"LedgerRecordInput")},
+        journal_path+"/transactions/{event}/reverse": {"post":maintained("reverseLedgerEvent","Append a linked reversal after validating chronological balances","LedgerReceipt",ledger_event,"LedgerReverseInput")},
+        journal_path+"/transactions/{event}/correct": {"post":maintained("correctLedgerEvent","Atomically reverse and replace an accepted record","LedgerReceipt",ledger_event,"LedgerCorrectInput")},
         "/api/v1/portfolios": {"get":maintained("getPortfolios","List owned active and archived portfolios","PortfolioList"),"post":maintained("createPortfolio","Create an INR tracking portfolio","PortfolioSummary",input_name="PortfolioInput")},
         "/api/v1/portfolios/{id}": {"get":maintained("getPortfolio","Inspect an owned portfolio and its source accounts","PortfolioDetail",identifier)},
         "/api/v1/portfolios/{id}/archive": {"post":maintained("archivePortfolio","Archive or restore a portfolio without deleting history","PortfolioSummary",identifier,"PortfolioArchiveInput")},
@@ -385,10 +411,10 @@ def public_api_document() -> dict:
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "Identity, preferences, manual catalogue, portfolios/accounts and fixed synthetic demo routes are implemented. Ledger and market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
+                 "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger and fixed synthetic demo routes are implemented. Import and market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
-        "x-finn-status": "PARTIALLY_IMPLEMENTED_PORTFOLIO_ACCOUNTS",
+        "x-finn-status": "PARTIALLY_IMPLEMENTED_IMMUTABLE_LEDGER",
         "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
         "paths": paths,
         "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-FINN_SESSION",

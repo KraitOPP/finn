@@ -778,5 +778,60 @@
       }
     ],
     "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-number-amount",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "event",
+          "amount"
+        ],
+        "value": 250.5
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-scientific-notation",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "event",
+          "amount"
+        ],
+        "value": "2.5e2"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-manual-reversal",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "event",
+          "kind"
+        ],
+        "value": "REVERSAL"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-invalid-idempotency",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "idempotencyKey"
+        ],
+        "value": "not-a-uuid"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
   }
 ]

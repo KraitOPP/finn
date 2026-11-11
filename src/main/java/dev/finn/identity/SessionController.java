@@ -20,7 +20,7 @@ class SessionController {
     @GetMapping("/api/v1/session")
     ResponseEntity<SessionResponse> session(Authentication authentication, CsrfToken csrf) {
         boolean authenticated = authentication != null && authentication.getPrincipal() instanceof OidcUser;
-        var body = new SessionResponse("0.6.0", UUID.randomUUID().toString(), authenticated,
+        var body = new SessionResponse("0.7.0", UUID.randomUUID().toString(), authenticated,
                 authenticated ? users.require() : null,
                 new CsrfInformation(csrf.getHeaderName(), csrf.getParameterName(), csrf.getToken()));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);

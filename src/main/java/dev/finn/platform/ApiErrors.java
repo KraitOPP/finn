@@ -1,6 +1,7 @@
 package dev.finn.platform;
 
 import java.util.Map;
+import dev.finn.ledger.LedgerViolation;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,6 +19,11 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 class ApiErrors {
+    @ExceptionHandler(LedgerViolation.class)
+    ResponseEntity<Map<String, Object>> ledger(LedgerViolation error,HttpServletRequest request) {
+        int status=switch(error.code()){case INVALID_EVENT,AMOUNT_OUT_OF_RANGE -> 422;default -> 409;};
+        return Problems.response(request,status,error.code().name());
+    }
     @ExceptionHandler(DuplicateKeyException.class)
     ResponseEntity<Map<String, Object>> duplicate(HttpServletRequest request) {
         return Problems.response(request, 409, "DUPLICATE_RESOURCE");

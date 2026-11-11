@@ -1,6 +1,6 @@
 # FINN contracts
 
-These contracts describe application and provider boundaries. Public contract 0.6.0 implements the fixed synthetic demo, OIDC session/profile/logout, preferences, manual instrument catalogue and portfolios/source accounts. Ledger and other market operations remain explicitly `PLANNED`. This is not proof of provider coverage or legal data entitlements.
+These contracts describe application and provider boundaries. Public contract 0.7.0 implements the fixed synthetic demo, identity, preferences, manual instrument catalogue, portfolios/accounts and immutable ledger. Import and other market operations remain planned. This is not proof of provider coverage or legal data entitlements.
 
 ## Files and ownership
 
