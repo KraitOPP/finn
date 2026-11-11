@@ -17,7 +17,9 @@ class Notifications {
     record Page(List<Item> items, UUID nextBefore) {}
     record Attempt(String channel, int attempt, String outcome, String attemptedAt) {}
     record Delivery(String channel, String status, int attempts, String nextAttemptAt, String completedAt, String failureCode) {}
-    record Detail(Item notification, PriceEvaluationReport.Evaluation price, List<Delivery> deliveries, List<Attempt> attempts) {}
+    record ReminderEvidence(int revision, String dueAt, String deliverAt) {}
+    record Detail(Item notification, PriceEvaluationReport.Evaluation price, ReminderEvidence reminder,
+                  List<Delivery> deliveries, List<Attempt> attempts) {}
     record DeliveryItem(UUID activityId, String title, String kind, Delivery delivery) {}
     record DeliveryPage(boolean emailPreviewEnabled, List<DeliveryItem> items) {}
 
@@ -58,15 +60,19 @@ class Notifications {
     public Detail detail(UUID id) {
         UUID owner = users.requireId();
         Item item = find(owner, id);
-        var evaluation = item.kind().equals("PRICE_RULE") ? prices.read(owner, jdbc.queryForObject(
-                "SELECT evidence_id FROM finn.activity WHERE owner_id=? AND activity_id=?", UUID.class, owner, id)) : null;
+        UUID evidence = jdbc.queryForObject("SELECT evidence_id FROM finn.activity WHERE owner_id=? AND activity_id=?", UUID.class, owner, id);
+        var evaluation = item.kind().equals("PRICE_RULE") ? prices.read(owner, evidence) : null;
+        var reminder = item.kind().equals("REVIEW_REMINDER") ? jdbc.query("""
+                SELECT revision,due_at,deliver_at FROM finn.review_occurrence WHERE owner_id=? AND occurrence_id=?
+                """, (row, i) -> new ReminderEvidence(row.getInt("revision"), PriceEvaluationReport.instant(row, "due_at"),
+                PriceEvaluationReport.instant(row, "deliver_at")), owner, evidence).stream().findFirst().orElse(null) : null;
         var deliveries = jdbc.query("SELECT * FROM finn.activity_delivery WHERE owner_id=? AND activity_id=? ORDER BY channel",
                 Notifications::delivery, owner, id);
         var attempts = jdbc.query("""
                 SELECT * FROM finn.activity_delivery_attempt WHERE owner_id=? AND activity_id=? ORDER BY attempted_at,channel,attempt
                 """, (row, i) -> new Attempt(row.getString("channel"), row.getInt("attempt"), row.getString("outcome"),
                 PriceEvaluationReport.instant(row, "attempted_at")), owner, id);
-        return new Detail(item, evaluation, deliveries, attempts);
+        return new Detail(item, evaluation, reminder, deliveries, attempts);
     }
 
     @Transactional

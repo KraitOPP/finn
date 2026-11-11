@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.20.0"
+VERSION = "0.21.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -202,10 +202,29 @@ def definitions() -> dict:
         "channel": channel, "attempt": {"type":"integer","minimum":1,"maximum":3},
         "outcome": enum(["DELIVERED","SUPPRESSED","PREVIEWED","RETRY","FAILED"]), "attemptedAt": ref("UtcInstant"),
     })
+    d["ReminderEvidence"] = obj({
+        "revision": {"type":"integer","minimum":1,"maximum":1000000},
+        "dueAt": ref("UtcInstant"), "deliverAt": ref("UtcInstant"),
+    })
     d["NotificationDetail"] = obj({
         "notification": ref("Notification"), "price": nullable(ref("PriceEvaluation")),
+        "reminder": nullable(ref("ReminderEvidence")),
         "deliveries": array(ref("NotificationDelivery"),maxItems=2), "attempts": array(ref("NotificationAttempt"),maxItems=6),
     })
+    local_minute = text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$",maxLength=16)
+    clock_minute = text(pattern=r"^[0-9]{2}:[0-9]{2}$",maxLength=5)
+    reminder_revision = {"type":"integer","minimum":1,"maximum":1000000}
+    d["ReminderSettings"] = obj({
+        "title": text(maxLength=120), "scheduledLocal": local_minute, "timeZone": text(maxLength=64),
+        "recurrence": enum(["ONCE","DAILY","WEEKLY"]), "quietStart": nullable(clock_minute), "quietEnd": nullable(clock_minute),
+    })
+    d["ReviewReminder"] = obj({
+        "reminderId": ref("OpaqueId"), "revision": reminder_revision, "state": enum(["ACTIVE","CANCELLED","COMPLETED"]),
+        "settings": ref("ReminderSettings"), "nextAt": nullable(ref("UtcInstant")),
+    })
+    d["ReminderList"] = obj({"items": array(ref("ReviewReminder"),maxItems=50)})
+    d["ReminderEdit"] = obj({"expectedRevision": reminder_revision, "settings": ref("ReminderSettings")})
+    d["ReminderScheduleChange"] = obj({"expectedRevision": reminder_revision, "snoozeUntil": nullable(local_minute)})
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
         "items": array(obj({"activityId": ref("OpaqueId"), "title": text(maxLength=160), "kind": activity_kind,
@@ -607,6 +626,12 @@ def public_api_document() -> dict:
         "/api/v1/monitoring/notifications/{id}":{"get": maintained("getNotification","Inspect an owned in-app item and its delivery evidence","NotificationDetail",identifier)},
         "/api/v1/monitoring/notifications/{id}/read":{"post": maintained("setNotificationRead","Change the read state of an owned notification","Notification",identifier,"NotificationRead")},
         "/api/v1/monitoring/deliveries":{"get": maintained("listNotificationDeliveries","Inspect pending, completed, and failed attempts for the owner","NotificationDeliveryPage")},
+        "/api/v1/monitoring/reminders":{
+            "get": maintained("listReviewReminders","List the owner's review calendar","ReminderList"),
+            "post": maintained("createReviewReminder","Create a local-time review reminder","ReviewReminder",input_name="ReminderSettings"),
+        },
+        "/api/v1/monitoring/reminders/{id}":{"post": maintained("editReviewReminder","Revise an owned reminder schedule","ReviewReminder",identifier,"ReminderEdit")},
+        "/api/v1/monitoring/reminders/{id}/schedule":{"post": maintained("changeReminderSchedule","Snooze or cancel an owned reminder","ReviewReminder",identifier,"ReminderScheduleChange")},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},

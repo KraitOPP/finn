@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
 class MonitoringSchedule {
     private final PriceEvaluationWorker prices;
     private final DeliveryWorker deliveries;
-    MonitoringSchedule(PriceEvaluationWorker prices, DeliveryWorker deliveries) {
+    private final ReviewReminders reminders;
+    MonitoringSchedule(PriceEvaluationWorker prices, DeliveryWorker deliveries, ReviewReminders reminders) {
         this.prices = prices;
         this.deliveries = deliveries;
+        this.reminders = reminders;
     }
 
     @Scheduled(fixedDelay=15000)
@@ -35,6 +37,17 @@ class MonitoringSchedule {
             }
         } catch (RuntimeException failure) {
             LoggerFactory.getLogger(MonitoringSchedule.class).warn("Notification delivery temporarily unavailable");
+        }
+    }
+
+    @Scheduled(fixedDelay=10000)
+    void reminders() {
+        try {
+            for (int i=0; i<16 && reminders.processNext(); i++) {
+                // Separate transactions keep other reminders available.
+            }
+        } catch (RuntimeException failure) {
+            LoggerFactory.getLogger(MonitoringSchedule.class).warn("Reminder scheduling temporarily unavailable");
         }
     }
 }

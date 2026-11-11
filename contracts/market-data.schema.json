@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.20.0",
+  "$id": "urn:finn:contracts:market-data:0.21.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.20.0"
+      "const": "0.21.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1486,6 +1486,28 @@
       ],
       "additionalProperties": false
     },
+    "ReminderEvidence": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "dueAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "deliverAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "revision",
+        "dueAt",
+        "deliverAt"
+      ],
+      "additionalProperties": false
+    },
     "NotificationDetail": {
       "type": "object",
       "properties": {
@@ -1496,6 +1518,16 @@
           "anyOf": [
             {
               "$ref": "#/$defs/PriceEvaluation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reminder": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReminderEvidence"
             },
             {
               "type": "null"
@@ -1520,8 +1552,177 @@
       "required": [
         "notification",
         "price",
+        "reminder",
         "deliveries",
         "attempts"
+      ],
+      "additionalProperties": false
+    },
+    "ReminderSettings": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "scheduledLocal": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "recurrence": {
+          "type": "string",
+          "enum": [
+            "ONCE",
+            "DAILY",
+            "WEEKLY"
+          ]
+        },
+        "quietStart": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 5,
+              "pattern": "^[0-9]{2}:[0-9]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quietEnd": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 5,
+              "pattern": "^[0-9]{2}:[0-9]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "scheduledLocal",
+        "timeZone",
+        "recurrence",
+        "quietStart",
+        "quietEnd"
+      ],
+      "additionalProperties": false
+    },
+    "ReviewReminder": {
+      "type": "object",
+      "properties": {
+        "reminderId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "CANCELLED",
+            "COMPLETED"
+          ]
+        },
+        "settings": {
+          "$ref": "#/$defs/ReminderSettings"
+        },
+        "nextAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "reminderId",
+        "revision",
+        "state",
+        "settings",
+        "nextAt"
+      ],
+      "additionalProperties": false
+    },
+    "ReminderList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReviewReminder"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "ReminderEdit": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "settings": {
+          "$ref": "#/$defs/ReminderSettings"
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "ReminderScheduleChange": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "snoozeUntil": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "snoozeUntil"
       ],
       "additionalProperties": false
     },

@@ -72,6 +72,10 @@ class FoundationIntegrationTest {
     @org.springframework.test.context.bean.override.mockito.MockitoSpyBean dev.finn.monitoring.EmailPreviewSink emailPreview;
     @Autowired dev.finn.monitoring.ActivityWriter activityWriter;
     @Autowired dev.finn.monitoring.DeliveryWorker deliveryWorker;
+    @Autowired dev.finn.monitoring.ReviewReminders reminders;
+    @Test void remindersRespectQuietHoursAndCancellation() throws Exception {
+        dev.finn.market.ReminderChecks.quietOccurrencesCanBeCancelledWithoutRaces(mvc,jdbc,reminders);
+    }
     @Test void notificationDeliveryIsPrivateAndRetriesIndependently() throws Exception {
         dev.finn.market.NotificationChecks.deliversInAppIndependentlyFromEmail(mvc,jdbc,transactions,activityWriter,deliveryWorker,emailPreview);
     }
@@ -123,7 +127,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.20.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.21.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

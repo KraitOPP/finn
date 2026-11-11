@@ -38,4 +38,14 @@ public class ActivityWriter {
                     """, id, availableAt, owner);
         }
     }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void suppressPending(UUID owner, Kind kind, UUID subject) {
+        jdbc.update("""
+                UPDATE finn.activity_delivery d SET status='SUPPRESSED',completed_at=clock_timestamp(),
+                    failure_code='SCHEDULE_CHANGED'
+                FROM finn.activity a WHERE a.owner_id=d.owner_id AND a.activity_id=d.activity_id
+                    AND a.owner_id=? AND a.kind=? AND a.subject_id=? AND d.status='PENDING'
+                """, owner, kind.name(), subject);
+    }
 }
