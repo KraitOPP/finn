@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.34.0"
+VERSION = "0.35.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -336,6 +336,18 @@ def definitions() -> dict:
     d["CompanyResearchNoteInput"] = obj(research_note)
     d["CompanyResearchNote"] = obj({**research_note,"noteId":ref("OpaqueId"),"resolved":{"type":"boolean"}})
     d["CompanyResearchResolution"] = obj({"resolved":{"type":"boolean"}})
+    d["ThesisReviewSchedule"] = obj({"scheduledLocal":text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"),
+        "timeZone":text(minLength=1,maxLength=64)})
+    thesis_input = {"title":text(minLength=1,maxLength=100),"rationale":text(minLength=1,maxLength=2400),
+        "risks":text(maxLength=1600),"milestones":text(maxLength=1600),
+        "decision":enum(["MONITOR","REAFFIRM","REVISE","PAUSE","CLOSE"]),"decisionNote":text(maxLength=1200),
+        "review":nullable(ref("ThesisReviewSchedule")),"anchorIds":array(ref("OpaqueId"),maxItems=5)}
+    thesis_revision = {"type":"integer","minimum":1,"maximum":100}
+    d["InvestmentThesisInput"] = obj(thesis_input)
+    d["InvestmentThesisEdit"] = obj({"expectedRevision":thesis_revision,"thesis":ref("InvestmentThesisInput")})
+    d["InvestmentThesis"] = obj({**thesis_input,"thesisId":ref("OpaqueId"),"companyId":ref("OpaqueId"),
+        "revision":thesis_revision,"reminderId":nullable(ref("OpaqueId")),"savedAt":ref("UtcInstant")})
+    d["InvestmentTheses"] = obj({"items":array(ref("InvestmentThesis"),maxItems=100)})
     d["ResearchReportCapabilities"] = obj({"localRanking":{"type":"boolean"}})
     d["ResearchReportInput"] = obj({"question":text(minLength=1,maxLength=320),"rankLocally":{"type":"boolean"}})
     report_feedback = {"note":text(minLength=1,maxLength=500),"anchorId":nullable(ref("OpaqueId"))}
@@ -889,6 +901,14 @@ def public_api_document() -> dict:
             parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/companies/{company}/overview":{"get":maintained(
             "getCompanyResearchOverview","Read company evidence coverage and reviewed highlights","CompanyResearchOverview",company_parameter)},
+        "/api/v1/research/companies/{company}/theses":{
+            "get":maintained("listInvestmentTheses","Read the latest thesis versions for a company","InvestmentTheses",company_parameter),
+            "post":maintained("createInvestmentThesis","Save original reasoning and an optional review reminder","InvestmentThesis",
+                company_parameter,"InvestmentThesisInput"),
+        },
+        "/api/v1/research/theses/{id}":{"post":maintained("reviseInvestmentThesis","Append a thesis revision","InvestmentThesis",identifier,"InvestmentThesisEdit")},
+        "/api/v1/research/theses/{id}/versions":{"get":maintained("readInvestmentThesisVersions","Read immutable thesis reasoning and decisions",
+            "InvestmentTheses",identifier)},
         "/api/v1/research/report-capabilities":{"get":maintained(
             "getResearchReportCapabilities","Read the configured research modes","ResearchReportCapabilities")},
         "/api/v1/research/companies/{company}/reports":{

@@ -89,6 +89,21 @@ public class ReviewReminders {
     }
 
     @Transactional
+    public UUID syncThesisReview(UUID id,String title,String scheduledLocal,String zone) {
+        var existing=id==null?null:require(users.requireId(),id,true);
+        if(scheduledLocal==null) {
+            if(existing!=null&&!existing.state().equals("CANCELLED"))change(id,existing.revision(),null);
+            return null;
+        }
+        var settings=new Settings(title,scheduledLocal,zone,"ONCE",
+                existing==null?null:existing.values().settings().quietStart(),
+                existing==null?null:existing.values().settings().quietEnd());
+        if(existing!=null&&!existing.state().equals("ACTIVE")&&existing.values().settings().scheduledLocal().equals(scheduledLocal)
+                &&existing.values().zone().getId().equals(zone))return id;
+        return save(id,existing==null?null:existing.revision(),settings).reminderId();
+    }
+
+    @Transactional
     public boolean processNext() {
         var due = jdbc.query("""
                 SELECT * FROM finn.review_reminder WHERE state='ACTIVE' AND next_at<=clock_timestamp()
