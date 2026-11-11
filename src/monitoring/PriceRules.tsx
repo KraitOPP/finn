@@ -8,6 +8,8 @@ import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { ListingPicker } from "../instruments/ListingPicker.tsx";
 
+import { PriceEvaluations } from "./PriceEvaluations.tsx";
+
 const path = "/api/v1/monitoring/rules";
 const comparisons: Record<PriceRuleSettings["comparison"], string> = {
   ABOVE: "Closes above",
@@ -21,6 +23,7 @@ const comparisons: Record<PriceRuleSettings["comparison"], string> = {
 export function PriceRules() {
   const rules = useResource("PriceRuleList", path);
   const [editing, setEditing] = useState<PriceRule | null>(null);
+  const [evaluations, setEvaluations] = useState<string | null>(null);
   const [history, setHistory] = useState<string | null>(null);
   return (
     <section className="detail-card">
@@ -66,11 +69,22 @@ export function PriceRules() {
                 >
                   Versions of {rule.settings.name}
                 </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEvaluations(
+                      evaluations === rule.ruleId ? null : rule.ruleId,
+                    )
+                  }
+                >
+                  Evaluations of {rule.settings.name}
+                </button>
               </div>
             </li>
           ))}
         </ul>
       )}
+      {evaluations && <PriceEvaluations key={evaluations} id={evaluations} />}
       {history && <RuleHistory key={history} id={history} />}
       <RuleForm
         key={editing ? `${editing.ruleId}-${editing.revision}` : "new"}

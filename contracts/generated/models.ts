@@ -38,6 +38,16 @@ export type AcquisitionEnvelope = ({
 
 export type AdjustmentBasis = ("AS_REPORTED_EXCHANGE" | "SPLIT_ADJUSTED" | "TOTAL_RETURN_ADJUSTED" | "PROVIDER_DEFINED" | "UNKNOWN") & (string);
 
+export type AlertCloseEvidence = ({
+  "observationId": (OpaqueId);
+  "sessionDate": (SessionDate);
+  "source": ("MANUAL_REVIEWED" | "YAHOO_YFINANCE") & (string);
+  "priceBasis": ("AS_REPORTED_EXCHANGE" | "PROVIDER_DEFINED") & (string);
+  "close": (PositiveDecimalString);
+  "sourceReference": (string);
+  "receivedAt": (UtcInstant);
+});
+
 export type AsyncJobStatus = ((({
   "contractVersion": (ContractVersion);
   "requestId": (OpaqueId);
@@ -162,7 +172,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.18.0") & (string);
+export type ContractVersion = ("0.19.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -678,6 +688,21 @@ export type PriceCoverage = ({
   "recentClose": (number);
 });
 
+export type PriceEvaluation = ({
+  "evaluationId": (OpaqueId);
+  "revision": (number);
+  "sessionDate": (SessionDate);
+  "outcome": ("TRIGGERED" | "BELOW_OR_ABOVE_RESET" | "NO_MATCH" | "INSUFFICIENT_HISTORY" | "COOLDOWN" | "ALREADY_LATCHED") & (string);
+  "evaluatedAt": (UtcInstant);
+  "observation": (((AlertCloseEvidence)) | ((null)));
+  "previous": (((AlertCloseEvidence)) | ((null)));
+});
+
+export type PriceEvaluationReport = ({
+  "status": ("PAUSED" | "EXPIRED" | "WAITING_FOR_PRICE" | "STALE" | "EVALUATED" | "INSUFFICIENT_HISTORY") & (string);
+  "items": (Array<(PriceEvaluation)>);
+});
+
 export type PriceFetchQueued = ({
   "jobId": (OpaqueId);
   "start": (SessionDate);
@@ -1053,6 +1078,7 @@ export interface ContractTypes {
   AccountValuationTotal: AccountValuationTotal;
   AcquisitionEnvelope: AcquisitionEnvelope;
   AdjustmentBasis: AdjustmentBasis;
+  AlertCloseEvidence: AlertCloseEvidence;
   AsyncJobStatus: AsyncJobStatus;
   Capability: Capability;
   CatalogueCompanies: CatalogueCompanies;
@@ -1122,6 +1148,8 @@ export interface ContractTypes {
   PreferencesUpdate: PreferencesUpdate;
   PriceBasis: PriceBasis;
   PriceCoverage: PriceCoverage;
+  PriceEvaluation: PriceEvaluation;
+  PriceEvaluationReport: PriceEvaluationReport;
   PriceFetchQueued: PriceFetchQueued;
   PriceFetchWindow: PriceFetchWindow;
   PriceObservation: PriceObservation;

@@ -1,15 +1,16 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.18.0",
+  "contractVersion": "0.19.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "d46d308d6d3a709f3fbd30b8550f320a1faf1d833fb06c2f429794081de3c999",
+  "sourceSha256": "3c76a2eaaa6353a965319a7960db9250f8362ee6944e1232574e36a65641f5be",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
     "AccountValuationTotal",
     "AcquisitionEnvelope",
     "AdjustmentBasis",
+    "AlertCloseEvidence",
     "AsyncJobStatus",
     "Capability",
     "CatalogueCompanies",
@@ -79,6 +80,8 @@ export const contractMetadata = {
     "PreferencesUpdate",
     "PriceBasis",
     "PriceCoverage",
+    "PriceEvaluation",
+    "PriceEvaluationReport",
     "PriceFetchQueued",
     "PriceFetchWindow",
     "PriceObservation",
@@ -314,6 +317,52 @@ export const contractSchemas = {
       "PROVIDER_DEFINED",
       "UNKNOWN"
     ]
+  },
+  "AlertCloseEvidence": {
+    "type": "object",
+    "properties": {
+      "observationId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "sessionDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "MANUAL_REVIEWED",
+          "YAHOO_YFINANCE"
+        ]
+      },
+      "priceBasis": {
+        "type": "string",
+        "enum": [
+          "AS_REPORTED_EXCHANGE",
+          "PROVIDER_DEFINED"
+        ]
+      },
+      "close": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "sourceReference": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "receivedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "observationId",
+      "sessionDate",
+      "source",
+      "priceBasis",
+      "close",
+      "sourceReference",
+      "receivedAt"
+    ],
+    "additionalProperties": false
   },
   "AsyncJobStatus": {
     "description": "Owner-scoped durable job status. Revision increases on committed changes. Terminal states are immutable; explicit retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
@@ -930,7 +979,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.18.0"
+    "const": "0.19.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -4036,6 +4085,94 @@ export const contractSchemas = {
       "trackedListings",
       "withClose",
       "recentClose"
+    ],
+    "additionalProperties": false
+  },
+  "PriceEvaluation": {
+    "type": "object",
+    "properties": {
+      "evaluationId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "sessionDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "outcome": {
+        "type": "string",
+        "enum": [
+          "TRIGGERED",
+          "BELOW_OR_ABOVE_RESET",
+          "NO_MATCH",
+          "INSUFFICIENT_HISTORY",
+          "COOLDOWN",
+          "ALREADY_LATCHED"
+        ]
+      },
+      "evaluatedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "observation": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AlertCloseEvidence"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "previous": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AlertCloseEvidence"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "evaluationId",
+      "revision",
+      "sessionDate",
+      "outcome",
+      "evaluatedAt",
+      "observation",
+      "previous"
+    ],
+    "additionalProperties": false
+  },
+  "PriceEvaluationReport": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PAUSED",
+          "EXPIRED",
+          "WAITING_FOR_PRICE",
+          "STALE",
+          "EVALUATED",
+          "INSUFFICIENT_HISTORY"
+        ]
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PriceEvaluation"
+        },
+        "maxItems": 50
+      }
+    },
+    "required": [
+      "status",
+      "items"
     ],
     "additionalProperties": false
   },
