@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.23.0",
+  "$id": "urn:finn:contracts:market-data:0.24.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.23.0"
+      "const": "0.24.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2282,6 +2282,237 @@
         "items",
         "snapshots",
         "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "CompanySourceInput": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "sourceName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attachment": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 49152
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rightsConfirmed": {
+          "const": true
+        }
+      },
+      "required": [
+        "companyId",
+        "title",
+        "sourceName",
+        "url",
+        "attachment",
+        "publishedAt",
+        "rightsConfirmed"
+      ],
+      "additionalProperties": false
+    },
+    "CompanySource": {
+      "type": "object",
+      "properties": {
+        "documentId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "sourceType": {
+          "type": "string",
+          "enum": [
+            "PRIMARY",
+            "NEWS"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "sourceName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hasAttachment": {
+          "type": "boolean"
+        },
+        "checksum": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ingestedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "documentId",
+        "companyId",
+        "companyName",
+        "sourceType",
+        "revision",
+        "title",
+        "sourceName",
+        "url",
+        "hasAttachment",
+        "checksum",
+        "publishedAt",
+        "ingestedAt"
+      ],
+      "additionalProperties": false
+    },
+    "CompanySourcePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanySource"
+          },
+          "maxItems": 40
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "CompanySourceVersions": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanySource"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "CompanySourceDetail": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/CompanySource"
+        },
+        "attachment": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 49152
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "attachment"
+      ],
+      "additionalProperties": false
+    },
+    "CompanySourceEdit": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "source": {
+          "$ref": "#/$defs/CompanySourceInput"
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "source"
       ],
       "additionalProperties": false
     },

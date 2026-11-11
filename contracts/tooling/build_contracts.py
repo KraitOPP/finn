@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.23.0"
+VERSION = "0.24.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -268,6 +268,22 @@ def definitions() -> dict:
         }),maxItems=50),
         "truncated": {"type":"boolean"},
     })
+    source_revision = {"type":"integer","minimum":1,"maximum":50}
+    d["CompanySourceInput"] = obj({
+        "companyId": ref("OpaqueId"), "title": text(maxLength=120), "sourceName": text(maxLength=120),
+        "url": nullable(text(maxLength=1000)), "attachment": nullable(text(maxLength=49152)),
+        "publishedAt": nullable(ref("UtcInstant")), "rightsConfirmed": {"const":True},
+    })
+    d["CompanySource"] = obj({
+        "documentId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120),
+        "sourceType": enum(["PRIMARY","NEWS"]), "revision": source_revision, "title": text(maxLength=120),
+        "sourceName": text(maxLength=120), "url": nullable(text(maxLength=1000)), "hasAttachment": {"type":"boolean"},
+        "checksum": text(pattern=r"^[0-9a-f]{64}$",maxLength=64), "publishedAt": nullable(ref("UtcInstant")), "ingestedAt": ref("UtcInstant"),
+    })
+    d["CompanySourcePage"] = obj({"items": array(ref("CompanySource"),maxItems=40), "hasMore": {"type":"boolean"}})
+    d["CompanySourceVersions"] = obj({"items": array(ref("CompanySource"),maxItems=50)})
+    d["CompanySourceDetail"] = obj({"source": ref("CompanySource"), "attachment": nullable(text(maxLength=49152))})
+    d["CompanySourceEdit"] = obj({"expectedRevision": source_revision, "source": ref("CompanySourceInput")})
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
         "items": array(obj({"activityId": ref("OpaqueId"), "title": text(maxLength=160), "kind": activity_kind,
@@ -685,6 +701,13 @@ def public_api_document() -> dict:
         "/api/v1/monitoring/briefs/schedule":{"post": maintained("saveBriefSchedule","Configure the owner's local brief schedule","BriefSchedule",input_name="BriefScheduleInput")},
         "/api/v1/monitoring/briefs/preview":{"get": maintained("previewPortfolioBrief","Preview a closed reporting window","PortfolioBrief",[parameter("windowEnd","query",ref("SessionDate"))])},
         "/api/v1/monitoring/briefs/{id}":{"get": maintained("getPortfolioBrief","Inspect an owned immutable brief run","PortfolioBrief",identifier)},
+        "/api/v1/research/sources":{
+            "get": maintained("listCompanySources","List private primary source records","CompanySourcePage",[parameter("offset","query",{"type":"integer","minimum":0,"maximum":200})]),
+            "post": maintained("registerCompanySource","Register a reviewed private HTTPS link or UTF-8 text","CompanySource",input_name="CompanySourceInput"),
+        },
+        "/api/v1/research/sources/{id}":{"post": maintained("reviseCompanySource","Append a private source revision","CompanySource",identifier,"CompanySourceEdit")},
+        "/api/v1/research/sources/{id}/versions":{"get": maintained("listSourceVersions","Read all retained versions for an owned source","CompanySourceVersions",identifier)},
+        "/api/v1/research/sources/{id}/versions/{revision}":{"get": maintained("getSourceVersion","Read a private source version and its text","CompanySourceDetail",[*identifier,parameter("revision","path",{"type":"integer","minimum":1,"maximum":50},True)])},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
