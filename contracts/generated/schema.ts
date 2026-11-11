@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.12.0",
+  "contractVersion": "0.13.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "619a4afe72034f6e8007826528baaec8678f075c79201a169b2640f43fa1cef4",
+  "sourceSha256": "53ea66221cd9703d9069b03800bb4ab52df80343a561faaca78e661c1e3f89fa",
   "schemaNames": [
     "AccountInput",
     "AcquisitionEnvelope",
@@ -62,6 +62,7 @@ export const contractMetadata = {
     "LedgerView",
     "ListingIdentity",
     "ListingInput",
+    "MarketFeed",
     "NonNegativeDecimalString",
     "OpaqueId",
     "PortfolioArchiveInput",
@@ -73,7 +74,11 @@ export const contractMetadata = {
     "Preferences",
     "PreferencesUpdate",
     "PriceBasis",
+    "PriceFetchQueued",
+    "PriceFetchWindow",
     "PriceObservation",
+    "PrivateClose",
+    "PrivateCloseHistory",
     "Problem",
     "ProblemField",
     "Provenance",
@@ -82,6 +87,7 @@ export const contractMetadata = {
     "ProviderStatus",
     "ProviderStatusPage",
     "QuoteResponse",
+    "ReviewCloseInput",
     "Rights",
     "SecurityInput",
     "SessionDate",
@@ -810,7 +816,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.12.0"
+    "const": "0.13.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3418,6 +3424,133 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "MarketFeed": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "yahoo": {
+        "type": "string",
+        "enum": [
+          "DISABLED",
+          "CONFIGURATION_REQUIRED",
+          "REVIEWED_MAPPING_REQUIRED",
+          "PRIVATE_DAILY"
+        ]
+      },
+      "officialFiles": {
+        "type": "string",
+        "enum": [
+          "UNVERIFIED"
+        ]
+      },
+      "streaming": {
+        "type": "string",
+        "enum": [
+          "UNVERIFIED"
+        ]
+      },
+      "latest": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PrivateClose"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "latestJobId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "latestJobState": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCEEDED",
+              "PARTIALLY_SUCCEEDED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "failureCode": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "lastAttemptAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "acceptedRows": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "lastSuccessAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "knownDelaySeconds": {
+        "type": "null"
+      }
+    },
+    "required": [
+      "listingId",
+      "yahoo",
+      "officialFiles",
+      "streaming",
+      "latest",
+      "latestJobId",
+      "latestJobState",
+      "failureCode",
+      "lastAttemptAt",
+      "acceptedRows",
+      "lastSuccessAt",
+      "knownDelaySeconds"
+    ],
+    "additionalProperties": false
+  },
   "NonNegativeDecimalString": {
     "type": "string",
     "minLength": 1,
@@ -3653,6 +3786,42 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "PriceFetchQueued": {
+    "type": "object",
+    "properties": {
+      "jobId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "start": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "endExclusive": {
+        "$ref": "#/components/schemas/SessionDate"
+      }
+    },
+    "required": [
+      "jobId",
+      "start",
+      "endExclusive"
+    ],
+    "additionalProperties": false
+  },
+  "PriceFetchWindow": {
+    "type": "object",
+    "properties": {
+      "start": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "endExclusive": {
+        "$ref": "#/components/schemas/SessionDate"
+      }
+    },
+    "required": [
+      "start",
+      "endExclusive"
+    ],
+    "additionalProperties": false
+  },
   "PriceObservation": {
     "type": "object",
     "properties": {
@@ -3765,6 +3934,98 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "One present EOD observation. A missing close is represented by unavailable result and no observation. Partial OHLC/volume stay null. As-traded and adjusted series are never interchangeable."
+  },
+  "PrivateClose": {
+    "type": "object",
+    "properties": {
+      "observationId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "sessionDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "MANUAL_REVIEWED",
+          "YAHOO_YFINANCE"
+        ]
+      },
+      "priceBasis": {
+        "type": "string",
+        "enum": [
+          "AS_REPORTED_EXCHANGE",
+          "PROVIDER_DEFINED"
+        ]
+      },
+      "currency": {
+        "type": "string",
+        "const": "INR"
+      },
+      "close": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "sourceReference": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "receivedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "freshness": {
+        "type": "string",
+        "enum": [
+          "STALE",
+          "DELAY_UNKNOWN"
+        ]
+      }
+    },
+    "required": [
+      "observationId",
+      "listingId",
+      "sessionDate",
+      "source",
+      "priceBasis",
+      "currency",
+      "close",
+      "sourceReference",
+      "receivedAt",
+      "freshness"
+    ],
+    "additionalProperties": false,
+    "description": "Owner-only completed-session close. Receipt time is not trade time; staleness is a conservative calendar-day label."
+  },
+  "PrivateCloseHistory": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "start": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "endExclusive": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "observations": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PrivateClose"
+        },
+        "maxItems": 180
+      }
+    },
+    "required": [
+      "listingId",
+      "start",
+      "endExclusive",
+      "observations"
+    ],
+    "additionalProperties": false
   },
   "Problem": {
     "type": "object",
@@ -4176,6 +4437,33 @@ export const contractSchemas = {
         "additionalProperties": false
       }
     ]
+  },
+  "ReviewCloseInput": {
+    "type": "object",
+    "properties": {
+      "sessionDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "close": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "sourceReference": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "reviewed": {
+        "type": "boolean",
+        "const": true
+      }
+    },
+    "required": [
+      "sessionDate",
+      "close",
+      "sourceReference",
+      "reviewed"
+    ],
+    "additionalProperties": false
   },
   "Rights": {
     "description": "A routing restriction, not a legal entitlement. Public real-data distribution is outside this contract's validated modes.",

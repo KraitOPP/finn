@@ -143,7 +143,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.12.0") & (string);
+export type ContractVersion = ("0.13.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -560,6 +560,21 @@ export type ListingInput = ({
   "confirmed": (true);
 });
 
+export type MarketFeed = ({
+  "listingId": (OpaqueId);
+  "yahoo": ("DISABLED" | "CONFIGURATION_REQUIRED" | "REVIEWED_MAPPING_REQUIRED" | "PRIVATE_DAILY") & (string);
+  "officialFiles": ("UNVERIFIED") & (string);
+  "streaming": ("UNVERIFIED") & (string);
+  "latest": (((PrivateClose)) | ((null)));
+  "latestJobId": (((OpaqueId)) | ((null)));
+  "latestJobState": ((("QUEUED" | "RUNNING" | "SUCCEEDED" | "PARTIALLY_SUCCEEDED" | "FAILED" | "CANCELLED") & (string)) | ((null)));
+  "failureCode": (((OpaqueId)) | ((null)));
+  "lastAttemptAt": (((UtcInstant)) | ((null)));
+  "acceptedRows": (((number)) | ((null)));
+  "lastSuccessAt": (((UtcInstant)) | ((null)));
+  "knownDelaySeconds": (null);
+});
+
 export type NonNegativeDecimalString = (string);
 
 export type OpaqueId = (string);
@@ -616,6 +631,17 @@ export type PriceBasis = ({
   "adjustmentAsOf": (((SessionDate)) | ((null)));
 });
 
+export type PriceFetchQueued = ({
+  "jobId": (OpaqueId);
+  "start": (SessionDate);
+  "endExclusive": (SessionDate);
+});
+
+export type PriceFetchWindow = ({
+  "start": (SessionDate);
+  "endExclusive": (SessionDate);
+});
+
 export type PriceObservation = ({
   "observationId": (OpaqueId);
   "listing": (ListingIdentity);
@@ -631,6 +657,26 @@ export type PriceObservation = ({
   "basis": (PriceBasis);
   "finality": ("FINAL" | "PROVISIONAL" | "UNKNOWN") & (string);
   "provenance": (Provenance);
+});
+
+export type PrivateClose = ({
+  "observationId": (OpaqueId);
+  "listingId": (OpaqueId);
+  "sessionDate": (SessionDate);
+  "source": ("MANUAL_REVIEWED" | "YAHOO_YFINANCE") & (string);
+  "priceBasis": ("AS_REPORTED_EXCHANGE" | "PROVIDER_DEFINED") & (string);
+  "currency": ("INR") & (string);
+  "close": (PositiveDecimalString);
+  "sourceReference": (string);
+  "receivedAt": (UtcInstant);
+  "freshness": ("STALE" | "DELAY_UNKNOWN") & (string);
+});
+
+export type PrivateCloseHistory = ({
+  "listingId": (OpaqueId);
+  "start": (SessionDate);
+  "endExclusive": (SessionDate);
+  "observations": (Array<(PrivateClose)>);
 });
 
 export type Problem = ({
@@ -712,6 +758,13 @@ export type QuoteResponse = ((({
   "availability": ("NOT_YET_PUBLISHED" | "NO_TRADE" | "NOT_COVERED" | "TEMPORARILY_UNAVAILABLE" | "INVALID_DATA" | "UNKNOWN") & (string);
   "observation": (null);
 })));
+
+export type ReviewCloseInput = ({
+  "sessionDate": (SessionDate);
+  "close": (PositiveDecimalString);
+  "sourceReference": (string);
+  "reviewed": (true) & (boolean);
+});
 
 export type Rights = ((({
   "policyId": (OpaqueId);
@@ -861,6 +914,7 @@ export interface ContractTypes {
   LedgerView: LedgerView;
   ListingIdentity: ListingIdentity;
   ListingInput: ListingInput;
+  MarketFeed: MarketFeed;
   NonNegativeDecimalString: NonNegativeDecimalString;
   OpaqueId: OpaqueId;
   PortfolioArchiveInput: PortfolioArchiveInput;
@@ -872,7 +926,11 @@ export interface ContractTypes {
   Preferences: Preferences;
   PreferencesUpdate: PreferencesUpdate;
   PriceBasis: PriceBasis;
+  PriceFetchQueued: PriceFetchQueued;
+  PriceFetchWindow: PriceFetchWindow;
   PriceObservation: PriceObservation;
+  PrivateClose: PrivateClose;
+  PrivateCloseHistory: PrivateCloseHistory;
   Problem: Problem;
   ProblemField: ProblemField;
   Provenance: Provenance;
@@ -881,6 +939,7 @@ export interface ContractTypes {
   ProviderStatus: ProviderStatus;
   ProviderStatusPage: ProviderStatusPage;
   QuoteResponse: QuoteResponse;
+  ReviewCloseInput: ReviewCloseInput;
   Rights: Rights;
   SecurityInput: SecurityInput;
   SessionDate: SessionDate;
