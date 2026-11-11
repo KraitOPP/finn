@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.7.0",
+  "$id": "urn:finn:contracts:market-data:0.8.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.7.0"
+      "const": "0.8.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2878,6 +2878,476 @@
       "additionalProperties": false,
       "description": "Tracked positions and accounting effects, not a full broker balance or tax calculation. Cash requires an explicit baseline and known movements. Coverage is partial; never fabricate past returns. Quantity/cost are by security; valuation needs a separate reviewed listing."
     },
+    "ImportTicket": {
+      "type": "object",
+      "properties": {
+        "importId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "jobId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "duplicate": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "importId",
+        "jobId",
+        "duplicate"
+      ],
+      "additionalProperties": false,
+      "description": "Byte-identical uploads reuse the original and its current job within the same owned account."
+    },
+    "HoldingsImportSummary": {
+      "type": "object",
+      "properties": {
+        "importId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "jobId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "SUCCEEDED",
+            "FAILED",
+            "PARTIALLY_SUCCEEDED",
+            "CANCELLED"
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5242880
+        },
+        "failureCode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "importId",
+        "jobId",
+        "state",
+        "createdAt",
+        "sizeBytes",
+        "failureCode"
+      ],
+      "additionalProperties": false
+    },
+    "HoldingsImportList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HoldingsImportSummary"
+          },
+          "maxItems": 30
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "HoldingsRowIssue": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "column": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H"
+          ]
+        },
+        "blocksCommit": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "column",
+        "blocksCommit"
+      ],
+      "additionalProperties": false
+    },
+    "HoldingsSourceRow": {
+      "type": "object",
+      "properties": {
+        "rowNumber": {
+          "type": "integer",
+          "minimum": 12,
+          "maximum": 1024
+        },
+        "reportedName": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "isin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "averageCost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "buyValue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closingPrice": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closingValue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unrealisedPnl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HoldingsRowIssue"
+          },
+          "maxItems": 24
+        }
+      },
+      "required": [
+        "rowNumber",
+        "reportedName",
+        "isin",
+        "quantity",
+        "averageCost",
+        "buyValue",
+        "closingPrice",
+        "closingValue",
+        "unrealisedPnl",
+        "issues"
+      ],
+      "additionalProperties": false,
+      "description": "Source evidence only. Zero or missing closing price cannot become a market observation. No source account identity is staged."
+    },
+    "HoldingsPreviewRow": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/HoldingsSourceRow"
+        },
+        "matchedSecurityId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mappingStatus": {
+          "type": "string",
+          "enum": [
+            "UNRESOLVED_SECURITY",
+            "EXISTING_SECURITY"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "matchedSecurityId",
+        "mappingStatus"
+      ],
+      "additionalProperties": false,
+      "description": "An exact owned ISIN can identify a security; exchange listing is never inferred."
+    },
+    "HoldingsTotals": {
+      "type": "object",
+      "properties": {
+        "buyValue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closingValue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unrealisedPnl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "buyValue",
+        "closingValue",
+        "unrealisedPnl"
+      ],
+      "additionalProperties": false
+    },
+    "HoldingsComparison": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": [
+            "BUY_VALUE",
+            "CLOSING_VALUE",
+            "UNREALISED_PNL"
+          ]
+        },
+        "reported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "detailSum": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "difference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "MATCH",
+            "MISMATCH",
+            "INCOMPLETE"
+          ]
+        }
+      },
+      "required": [
+        "field",
+        "reported",
+        "detailSum",
+        "difference",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "HoldingsPreviewMetadata": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "const": "groww-holdings-xlsx-v1"
+        },
+        "asOfDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "reportedSummary": {
+          "$ref": "#/$defs/HoldingsTotals"
+        },
+        "detailTotals": {
+          "$ref": "#/$defs/HoldingsTotals"
+        },
+        "comparisons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HoldingsComparison"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpaqueId"
+          },
+          "maxItems": 32
+        },
+        "rowCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "profile",
+        "asOfDate",
+        "reportedSummary",
+        "detailTotals",
+        "comparisons",
+        "warnings",
+        "rowCount"
+      ],
+      "additionalProperties": false
+    },
+    "HoldingsPreviewPage": {
+      "type": "object",
+      "properties": {
+        "importId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "jobId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "ledgerRevisionAtPreview": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "metadata": {
+          "$ref": "#/$defs/HoldingsPreviewMetadata"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HoldingsPreviewRow"
+          },
+          "maxItems": 100
+        },
+        "nextOffset": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requiresInrConfirmation": {
+          "const": true
+        },
+        "commitAvailable": {
+          "const": false
+        }
+      },
+      "required": [
+        "importId",
+        "jobId",
+        "ledgerRevisionAtPreview",
+        "metadata",
+        "rows",
+        "nextOffset",
+        "requiresInrConfirmation",
+        "commitAvailable"
+      ],
+      "additionalProperties": false,
+      "description": "Private preview only. Source summaries and detail totals remain separate. Upload/staging never writes the journal. The supported report does not establish trade history, fees, cash or returns."
+    },
     "SessionResponse": {
       "oneOf": [
         {
@@ -2939,7 +3409,7 @@
       ]
     },
     "AsyncJobStatus": {
-      "description": "Owner-scoped status snapshot, not a queue implementation. Revision is server-assigned and increases on committed changes. Terminal states are immutable; retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
+      "description": "Owner-scoped durable job status. Revision increases on committed changes. Terminal states are immutable; explicit retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
       "oneOf": [
         {
           "type": "object",

@@ -1,6 +1,7 @@
 package dev.finn.identity;
 
 import java.util.UUID;
+import dev.finn.platform.ApiVersion;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,7 +21,7 @@ class SessionController {
     @GetMapping("/api/v1/session")
     ResponseEntity<SessionResponse> session(Authentication authentication, CsrfToken csrf) {
         boolean authenticated = authentication != null && authentication.getPrincipal() instanceof OidcUser;
-        var body = new SessionResponse("0.7.0", UUID.randomUUID().toString(), authenticated,
+        var body = new SessionResponse(ApiVersion.CURRENT, UUID.randomUUID().toString(), authenticated,
                 authenticated ? users.require() : null,
                 new CsrfInformation(csrf.getHeaderName(), csrf.getParameterName(), csrf.getToken()));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);

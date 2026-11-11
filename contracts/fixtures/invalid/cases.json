@@ -833,5 +833,48 @@
       }
     ],
     "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preview-numeric-buy-value",
+    "baseCaseId": "holdings-preview-mismatch",
+    "changes": [
+      {
+        "path": [
+          "rows",
+          0,
+          "source",
+          "buyValue"
+        ],
+        "value": 30.75
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preview-unreviewed-posting",
+    "baseCaseId": "holdings-preview-mismatch",
+    "changes": [
+      {
+        "path": [
+          "commitAvailable"
+        ],
+        "value": true
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preview-account-metadata",
+    "baseCaseId": "holdings-preview-mismatch",
+    "changes": [
+      {
+        "path": [
+          "metadata",
+          "accountNumber"
+        ],
+        "value": "fictional-forbidden-identifier"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
   }
 ]

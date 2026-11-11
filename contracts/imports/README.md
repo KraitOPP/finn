@@ -6,6 +6,8 @@ Version: 0.2.0. This is a separately versioned internal interchange contract. Th
 
 The entirely invented `fixtures/groww-holdings.synthetic.json` illustrates the normalized shape. It is not a copied/redacted real portfolio or a workbook fixture.
 
+The public holdings preview uses the separate `HoldingsPreviewPage` schema in the maintained OpenAPI. Uploads and previews bind the session owner, portfolio and account; private originals and parsed evidence stay in PostgreSQL on the configured external data volume. The queued parser uses conditional leases and stages metadata/rows atomically with job success. Reads show both summaries, paged source rows and exact owned ISIN matches without selecting a listing. No upload or preview posts holdings.
+
 ## Observed holdings profile
 
 The observed worksheet is `Sheet1`, with date caption at `A4`, summary labels/values at `A7:B9`, headers at `A11:H11` and detail from row 12. The exact caption prefix is `Holdings statement for stocks as on ` followed by `dd-MM-uuuu`. Use strict date parsing and reject invalid dates; the filename is not the report-date authority. Validate header names, column order and summary labels before mapping; unsupported layouts must not be guessed. Preserve original row locations when skipping blank rows, and reject unexpected nonblank footer/data layouts until supported.

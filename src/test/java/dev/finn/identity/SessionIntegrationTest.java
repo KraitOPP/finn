@@ -31,7 +31,7 @@ import org.testcontainers.utility.MountableFile;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties="finn.jobs.enabled=false")
 @ActiveProfiles("test")
 @Testcontainers
 class SessionIntegrationTest {

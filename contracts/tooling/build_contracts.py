@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.7.0"
+VERSION = "0.8.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -287,6 +287,17 @@ def definitions() -> dict:
     d["LedgerPage"]=obj({"items":array(ref("LedgerEventView"),maxItems=100),"nextBefore":nullable(ledger_sequence)},"Descending account sequence; before is exclusive. Original and reversing records remain visible.")
     d["LedgerPosition"]=obj({"securityId":ref("OpaqueId"),"securityName":ledger_text,"quantity":ref("IntegerString"),"recordedCost":nullable(ref("NonNegativeDecimalString")),"averageCost":nullable(ref("NonNegativeDecimalString")),"costBasis":enum(["RECORDED_TRADES","REPORTED_OPENING_COST","MIXED_RECORDED_COST","UNKNOWN"])})
     d["LedgerView"]=obj({"revision":ledger_revision,"calculationVersion":{"const":"MOVING_AVERAGE_1"},"currency":{"const":"INR"},"positions":array(ref("LedgerPosition"),maxItems=1000),"cashBalance":nullable(ref("DecimalString")),"recordedCashComponents":ref("DecimalString"),"cashMovementsComplete":{"type":"boolean"},"realisedPnl":nullable(ref("DecimalString")),"knownRealisedPnl":ref("DecimalString"),"recordedFees":ref("NonNegativeDecimalString"),"recordedFeesComplete":{"type":"boolean"},"standaloneFees":ref("NonNegativeDecimalString"),"netContributions":ref("DecimalString"),"cashBaselineDate":ledger_date,"coverageStart":ledger_date,"historyStatus":enum(["UNKNOWN","HOLDINGS_ONLY","PARTIAL_TRADES"]),"warnings":array(ref("OpaqueId"),maxItems=32)},"Tracked positions and accounting effects, not a full broker balance or tax calculation. Cash requires an explicit baseline and known movements. Coverage is partial; never fabricate past returns. Quantity/cost are by security; valuation needs a separate reviewed listing.")
+    d["ImportTicket"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"duplicate":{"type":"boolean"}},"Byte-identical uploads reuse the original and its current job within the same owned account.")
+    d["HoldingsImportSummary"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"state":enum(["QUEUED","RUNNING","SUCCEEDED","FAILED","PARTIALLY_SUCCEEDED","CANCELLED"]),"createdAt":ref("UtcInstant"),"sizeBytes":{"type":"integer","minimum":1,"maximum":5242880},"failureCode":nullable(text(pattern=r"^[A-Z][A-Z0-9_]{0,63}$",maxLength=64))})
+    d["HoldingsImportList"]=obj({"items":array(ref("HoldingsImportSummary"),maxItems=30)})
+    d["HoldingsRowIssue"]=obj({"code":ref("OpaqueId"),"column":enum(list("ABCDEFGH")),"blocksCommit":{"type":"boolean"}})
+    evidence_amount=nullable(ref("DecimalString"))
+    d["HoldingsSourceRow"]=obj({"rowNumber":{"type":"integer","minimum":12,"maximum":1024},"reportedName":nullable(text(maxLength=512)),"isin":isin,"quantity":evidence_amount,"averageCost":evidence_amount,"buyValue":evidence_amount,"closingPrice":evidence_amount,"closingValue":evidence_amount,"unrealisedPnl":evidence_amount,"issues":array(ref("HoldingsRowIssue"),maxItems=24)},"Source evidence only. Zero or missing closing price cannot become a market observation. No source account identity is staged.")
+    d["HoldingsPreviewRow"]=obj({"source":ref("HoldingsSourceRow"),"matchedSecurityId":ledger_id,"mappingStatus":enum(["UNRESOLVED_SECURITY","EXISTING_SECURITY"])},"An exact owned ISIN can identify a security; exchange listing is never inferred.")
+    d["HoldingsTotals"]=obj({"buyValue":evidence_amount,"closingValue":evidence_amount,"unrealisedPnl":evidence_amount})
+    d["HoldingsComparison"]=obj({"field":enum(["BUY_VALUE","CLOSING_VALUE","UNREALISED_PNL"]),"reported":evidence_amount,"detailSum":evidence_amount,"difference":evidence_amount,"status":enum(["MATCH","MISMATCH","INCOMPLETE"])})
+    d["HoldingsPreviewMetadata"]=obj({"profile":{"const":"groww-holdings-xlsx-v1"},"asOfDate":ref("SessionDate"),"reportedSummary":ref("HoldingsTotals"),"detailTotals":ref("HoldingsTotals"),"comparisons":array(ref("HoldingsComparison"),minItems=3,maxItems=3),"warnings":array(ref("OpaqueId"),maxItems=32),"rowCount":{"type":"integer","minimum":1,"maximum":1000}})
+    d["HoldingsPreviewPage"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"ledgerRevisionAtPreview":ledger_revision,"metadata":ref("HoldingsPreviewMetadata"),"rows":array(ref("HoldingsPreviewRow"),maxItems=100),"nextOffset":nullable({"type":"integer","minimum":1,"maximum":1000}),"requiresInrConfirmation":{"const":True},"commitAvailable":{"const":False}},"Private preview only. Source summaries and detail totals remain separate. Upload/staging never writes the journal. The supported report does not establish trade history, fees, cash or returns.")
     d["SessionResponse"] = {"oneOf": [
         obj({**page_common, "authenticated": {"const": True}, "user": ref("UserProfile"), "csrf": ref("CsrfInformation")}),
         obj({**page_common, "authenticated": {"const": False}, "user": {"type": "null"}, "csrf": ref("CsrfInformation")}),
@@ -307,7 +318,7 @@ def definitions() -> dict:
         ("CANCELLED", nullable(ref("UtcInstant")), ref("UtcInstant"), {"type": "null"}),
     ]
     d["AsyncJobStatus"] = {
-        "description": "Owner-scoped status snapshot, not a queue implementation. Revision is server-assigned and increases on committed changes. Terminal states are immutable; retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
+        "description": "Owner-scoped durable job status. Revision increases on committed changes. Terminal states are immutable; explicit retry creates a new job. Failure codes are safe application codes, never raw exceptions or source values.",
         "oneOf": [obj({**job_common, "state": {"type": "string", "const": state},
                        "startedAt": started, "finishedAt": finished, "failureCode": failure})
                   for state, started, finished, failure in job_states],
@@ -377,7 +388,7 @@ def public_api_document() -> dict:
         "/api/v1/data/providers": {"get": operation("getProviderStatuses", "Get source capabilities and acquisition status", "ProviderStatusPage", [])},
         "/api/v1/jobs/{jobId}": {"get": operation("getJobStatus", "Get an owned background job status", "AsyncJobStatus", [
             parameter("jobId", "path", ref("OpaqueId"), True,
-                      "Owner-scoped job ID. Unknown and inaccessible jobs both return 404.")])},
+                      "Owner-scoped job ID. Unknown and inaccessible jobs both return 404.")], True,"IMPLEMENTED")},
     }
     def maintained(op_id, summary, result, parameters=(), input_name=None):
         result_op=operation(op_id, summary, result, list(parameters), True, "IMPLEMENTED")
@@ -392,7 +403,20 @@ def public_api_document() -> dict:
     ledger_account=[parameter(name,"path",text(format="uuid"),True) for name in ("portfolio","account")]
     ledger_event=[*ledger_account,parameter("event","path",text(format="uuid"),True)]
     journal_path="/api/v1/portfolios/{portfolio}/accounts/{account}"
+    import_path=journal_path+"/imports"
+    import_id=[*ledger_account,parameter("id","path",text(format="uuid"),True)]
+    csrf_header=parameter("X-CSRF-TOKEN","header",text(maxLength=2048),True)
+    workbook_media="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    upload=maintained("uploadHoldingsWorkbook","Stage a supported Groww XLSX without mutating holdings","ImportTicket",[*ledger_account,csrf_header])
+    upload["requestBody"]={"required":True,"content":{workbook_media:{"schema":{"type":"string","format":"binary"}}},"description":"Raw workbook bytes, at most 5 MiB. No broker credentials or filename are required."}
+    upload["responses"].update({"403":response("CSRF rejected.","Problem","application/problem+json"),"413":response("Workbook exceeds the bound.","Problem","application/problem+json"),"415":response("Unsupported upload media type.","Problem","application/problem+json")})
+    original=maintained("downloadHoldingsOriginal","Download a statically validated original as its owner","ImportTicket",import_id)
+    original["responses"]["200"]={"description":"Original bytes; private attachment, no-store.","content":{"application/octet-stream":{"schema":{"type":"string","format":"binary"}}}}
     paths.update({
+        import_path:{"get":maintained("listHoldingsImports","List owned holdings imports","HoldingsImportList",ledger_account),"post":upload},
+        import_path+"/{id}/preview":{"get":maintained("getHoldingsPreview","Review a completed holdings snapshot preview","HoldingsPreviewPage",[*import_id,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("offset","query",{"type":"integer","minimum":0,"maximum":1000})])},
+        import_path+"/{id}/original":{"get":original},
+        import_path+"/{id}/retry":{"post":maintained("retryHoldingsPreview","Create a new job for a recoverable preview failure","ImportTicket",[*import_id,csrf_header])},
         journal_path+"/ledger": {"get":maintained("getAccountLedger","Replay the owned account ledger and coverage","LedgerView",ledger_account)},
         journal_path+"/transactions": {"get":maintained("getLedgerEvents","Page the immutable journal","LedgerPage",[*ledger_account,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("before","query",{"type":"integer","minimum":1,"maximum":10001})]),"post":maintained("recordLedgerEvent","Record an accepted investment entry with an idempotency key","LedgerReceipt",ledger_account,"LedgerRecordInput")},
         journal_path+"/transactions/{event}/reverse": {"post":maintained("reverseLedgerEvent","Append a linked reversal after validating chronological balances","LedgerReceipt",ledger_event,"LedgerReverseInput")},
@@ -411,10 +435,10 @@ def public_api_document() -> dict:
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger and fixed synthetic demo routes are implemented. Import and market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
+                 "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger, private holdings previews and durable jobs are implemented. Market operations and reviewed import posting remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
-        "x-finn-status": "PARTIALLY_IMPLEMENTED_IMMUTABLE_LEDGER",
+        "x-finn-status": "PARTIALLY_IMPLEMENTED_HOLDINGS_PREVIEW",
         "x-finn-versioning": "Immutable semantic-versioned contract artifact; independent frontend/backend releases record tested contract SHA. Even 0.x breaking changes require compatibility review.",
         "paths": paths,
         "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-FINN_SESSION",

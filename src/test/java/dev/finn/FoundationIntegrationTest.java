@@ -29,7 +29,7 @@ import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.MountableFile;
 import org.testcontainers.utility.DockerImageName;
 
-@SpringBootTest
+@SpringBootTest(properties="finn.jobs.enabled=false")
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
@@ -66,6 +66,13 @@ class FoundationIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired Flyway flyway;
+    @Autowired dev.finn.jobs.JobQueue jobs;
+    @Autowired dev.finn.imports.HoldingsImports imports;
+    @Autowired dev.finn.imports.HoldingsImportWorker importWorker;
+
+    @Test void holdingsPreviewIsPrivateAndSurvivesAnExpiredLease() throws Exception {ImportDatabaseChecks.previewOwnershipAndRecovery(mvc,jdbc,jobs,imports,importWorker);}
+    @Test void unsafeHoldingsPackagesNeverBecomeDownloadableOrPost() throws Exception {ImportDatabaseChecks.rejectsUnsafeUploads(mvc,importWorker);}
+    @Test void exhaustedImportCanBeRetriedWithoutChangingTheOriginalJob() throws Exception {ImportDatabaseChecks.exhaustedLeaseCanBeRetriedAsANewJob(mvc,jdbc,jobs,importWorker);}
 
     @Test void ledgerCommandsAreIdempotentAndCorrectionsAreAtomic() throws Exception {LedgerDatabaseChecks.recordCorrectAndReplay(mvc,jdbc);}
     @Test void competingLedgerWritesCannotOversell() throws Exception {LedgerDatabaseChecks.concurrentSales(mvc);}
@@ -90,7 +97,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.7.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.8.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

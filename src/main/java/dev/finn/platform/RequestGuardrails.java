@@ -18,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 final class RequestGuardrails extends OncePerRequestFilter {
     private final Semaphore requests = new Semaphore(32, true);
+    private final Semaphore uploads = new Semaphore(4, true);
     static final class BodyLimit extends IOException {}
 
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -33,14 +34,18 @@ final class RequestGuardrails extends OncePerRequestFilter {
         if (request.getRequestURI().length() > 1024 || (request.getQueryString() != null && request.getQueryString().length() > 2048)) {
             Problems.write(request, response, 414, "REQUEST_TOO_LARGE"); return;
         }
-        long limit = request.getRequestURI().endsWith("/imports") ? 5 * 1024 * 1024 : 64 * 1024;
+        boolean upload="POST".equals(request.getMethod())&&request.getRequestURI().endsWith("/imports");
+        long limit = upload ? 5 * 1024 * 1024 : 64 * 1024;
         if (request.getContentLengthLong() > limit) { Problems.write(request, response, 413, "REQUEST_TOO_LARGE"); return; }
         if (!requests.tryAcquire()) {
             response.setHeader("Retry-After", "2");
             Problems.write(request, response, 429, "REQUEST_CAPACITY_REACHED"); return;
         }
+        if(upload&&!uploads.tryAcquire()){
+            requests.release();response.setHeader("Retry-After","2");Problems.write(request,response,429,"UPLOAD_CAPACITY_REACHED");return;
+        }
         try { chain.doFilter(new LimitedRequest(request, limit), response); }
-        finally { requests.release(); }
+        finally { if(upload)uploads.release();requests.release(); }
     }
 
     static final class LimitedRequest extends HttpServletRequestWrapper {
