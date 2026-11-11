@@ -1,10 +1,12 @@
 {
-  "contractVersion": "0.13.0",
+  "contractVersion": "0.14.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "53ea66221cd9703d9069b03800bb4ab52df80343a561faaca78e661c1e3f89fa",
+  "sourceSha256": "c8fab01e535b741f839b9e765d68b173b133fee4af3139279ef1103f9df735bb",
   "schemaNames": [
     "AccountInput",
+    "AccountValuation",
+    "AccountValuationTotal",
     "AcquisitionEnvelope",
     "AdjustmentBasis",
     "AsyncJobStatus",
@@ -69,6 +71,7 @@
     "PortfolioInput",
     "PortfolioList",
     "PortfolioSummary",
+    "PortfolioValuation",
     "PositiveDecimalString",
     "Preferences",
     "PreferencesUpdate",
@@ -97,6 +100,9 @@
     "SymbolInput",
     "UserProfile",
     "UtcInstant",
+    "ValuationListing",
+    "ValuationTotals",
+    "ValuedHolding",
     "Warning"
   ]
 }

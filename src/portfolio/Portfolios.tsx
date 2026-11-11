@@ -3,6 +3,10 @@ import type { InvestmentAccount } from "../../contracts/generated/models.ts";
 import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
+import {
+  AccountValuationPanel,
+  PortfolioValuationPanel,
+} from "../market/ValuationPanel.tsx";
 import { RouteHeading } from "../Navigation.tsx";
 import { CorporateActionsPanel } from "./CorporateActionsPanel.tsx";
 import { HoldingsImportPanel } from "./HoldingsImportPanel.tsx";
@@ -218,6 +222,7 @@ function PortfolioDetail({
           </button>
         </div>
       )}
+      <PortfolioValuationPanel id={id} />
       <h3>Source accounts</h3>
       {accounts.length === 0 ? (
         <p>No accounts yet. Add the source of your portfolio records.</p>
@@ -264,6 +269,11 @@ function PortfolioDetail({
           <h3>{selected.name}</h3>
           <p>{coverage(selected)}</p>
           {accountNotice && <p role="status">{accountNotice}</p>}
+          <AccountValuationPanel
+            key={`valuation-${selected.accountId}`}
+            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+            archived={portfolio.archived}
+          />
           <LedgerPanel
             key={selected.accountId}
             base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}

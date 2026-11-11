@@ -5,6 +5,25 @@ export type AccountInput = ({
   "currency": ("INR");
 });
 
+export type AccountValuation = ({
+  "accountId": (OpaqueId);
+  "asOf": (SessionDate);
+  "ledgerRevision": (number);
+  "calculationVersion": (OpaqueId);
+  "currency": ("INR") & (string);
+  "coverageStart": (((SessionDate)) | ((null)));
+  "historyStatus": ("UNKNOWN" | "HOLDINGS_ONLY" | "PARTIAL_TRADES") & (string);
+  "holdings": (Array<(ValuedHolding)>);
+  "totals": (ValuationTotals);
+});
+
+export type AccountValuationTotal = ({
+  "accountId": (OpaqueId);
+  "name": (string);
+  "ledgerRevision": (number);
+  "totals": (ValuationTotals);
+});
+
 export type AcquisitionEnvelope = ({
   "contractVersion": (ContractVersion);
   "requestId": (OpaqueId);
@@ -143,7 +162,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.13.0") & (string);
+export type ContractVersion = ("0.14.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -605,6 +624,14 @@ export type PortfolioSummary = ({
   "revision": (number);
 });
 
+export type PortfolioValuation = ({
+  "portfolioId": (OpaqueId);
+  "asOf": (SessionDate);
+  "currency": ("INR") & (string);
+  "accounts": (Array<(AccountValuationTotal)>);
+  "totals": (ValuationTotals);
+});
+
 export type PositiveDecimalString = (string);
 
 export type Preferences = ({
@@ -851,6 +878,43 @@ export type UserProfile = ({
 
 export type UtcInstant = (string);
 
+export type ValuationListing = ({
+  "securityId": (OpaqueId);
+  "listingId": (((OpaqueId)) | ((null)));
+  "allowProviderEstimate": (boolean);
+});
+
+export type ValuationTotals = ({
+  "positions": (number);
+  "priced": (number);
+  "stalePrices": (number);
+  "providerEstimates": (number);
+  "knownHoldingsValue": (((DecimalString)) | ((null)));
+  "holdingsValue": (((DecimalString)) | ((null)));
+  "knownUnrealisedPnl": (((DecimalString)) | ((null)));
+  "unrealisedPnl": (((DecimalString)) | ((null)));
+  "cashBalance": (((DecimalString)) | ((null)));
+  "portfolioValue": (((DecimalString)) | ((null)));
+  "realisedPnl": (((DecimalString)) | ((null)));
+  "recordedFees": (((DecimalString)) | ((null)));
+  "recordedDividends": (((DecimalString)) | ((null)));
+  "netContributions": (((DecimalString)) | ((null)));
+  "recordedFeesComplete": (boolean);
+});
+
+export type ValuedHolding = ({
+  "securityId": (OpaqueId);
+  "securityName": (string);
+  "quantity": (PositiveDecimalString);
+  "recordedCost": (((DecimalString)) | ((null)));
+  "listingId": (((OpaqueId)) | ((null)));
+  "allowProviderEstimate": (boolean);
+  "observation": (((PrivateClose)) | ((null)));
+  "value": (((DecimalString)) | ((null)));
+  "unrealisedPnl": (((DecimalString)) | ((null)));
+  "priceStatus": ("LISTING_REQUIRED" | "PRICE_UNAVAILABLE" | "STALE" | "DELAY_UNKNOWN") & (string);
+});
+
 export type Warning = ({
   "code": (OpaqueId);
   "message": (string);
@@ -858,6 +922,8 @@ export type Warning = ({
 
 export interface ContractTypes {
   AccountInput: AccountInput;
+  AccountValuation: AccountValuation;
+  AccountValuationTotal: AccountValuationTotal;
   AcquisitionEnvelope: AcquisitionEnvelope;
   AdjustmentBasis: AdjustmentBasis;
   AsyncJobStatus: AsyncJobStatus;
@@ -922,6 +988,7 @@ export interface ContractTypes {
   PortfolioInput: PortfolioInput;
   PortfolioList: PortfolioList;
   PortfolioSummary: PortfolioSummary;
+  PortfolioValuation: PortfolioValuation;
   PositiveDecimalString: PositiveDecimalString;
   Preferences: Preferences;
   PreferencesUpdate: PreferencesUpdate;
@@ -950,5 +1017,8 @@ export interface ContractTypes {
   SymbolInput: SymbolInput;
   UserProfile: UserProfile;
   UtcInstant: UtcInstant;
+  ValuationListing: ValuationListing;
+  ValuationTotals: ValuationTotals;
+  ValuedHolding: ValuedHolding;
   Warning: Warning;
 }
