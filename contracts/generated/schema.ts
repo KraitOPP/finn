@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.27.0",
+  "contractVersion": "0.28.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "9991f2dc381fd365b761464e60c2362cb98a67461d1f51596f38e756c59b618b",
+  "sourceSha256": "5342c4fbe2bdaab013243407185c3afae3f8f25ef0971e3bcdb852f9489e9204",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -11,6 +11,7 @@ export const contractMetadata = {
     "AcquisitionEnvelope",
     "AdjustmentBasis",
     "AlertCloseEvidence",
+    "AnnouncedEventDate",
     "AsyncJobStatus",
     "AttentionFeedback",
     "AttentionItem",
@@ -27,6 +28,7 @@ export const contractMetadata = {
     "CatalogueSecurity",
     "CatalogueSecurityDetail",
     "CatalogueSecurityPage",
+    "CompanyCalendarPage",
     "CompanyEvent",
     "CompanyEventHistory",
     "CompanyEventInput",
@@ -51,6 +53,10 @@ export const contractMetadata = {
     "DecimalString",
     "Delay",
     "EventSuggestion",
+    "FilingRule",
+    "FilingRuleChange",
+    "FilingRuleList",
+    "FilingRuleSettings",
     "Freshness",
     "HistoryCoverage",
     "HistoryResponse",
@@ -403,6 +409,38 @@ export const contractSchemas = {
       "close",
       "sourceReference",
       "receivedAt"
+    ],
+    "additionalProperties": false
+  },
+  "AnnouncedEventDate": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string",
+        "enum": [
+          "MEETING",
+          "RESULTS",
+          "EX_DATE",
+          "RECORD_DATE",
+          "OTHER"
+        ]
+      },
+      "date": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "certainty": {
+        "type": "string",
+        "enum": [
+          "CONFIRMED",
+          "TENTATIVE",
+          "CANCELLED"
+        ]
+      }
+    },
+    "required": [
+      "type",
+      "date",
+      "certainty"
     ],
     "additionalProperties": false
   },
@@ -1326,10 +1364,78 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "CompanyCalendarPage": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "eventId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "versionId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "companyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "documentId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "documentRevision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "date": {
+              "$ref": "#/components/schemas/AnnouncedEventDate"
+            }
+          },
+          "required": [
+            "eventId",
+            "versionId",
+            "revision",
+            "title",
+            "companyName",
+            "documentId",
+            "documentRevision",
+            "date"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 40
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
   "CompanyEvent": {
     "type": "object",
     "properties": {
       "eventId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "versionId": {
         "$ref": "#/components/schemas/OpaqueId"
       },
       "companyId": {
@@ -1422,10 +1528,18 @@ export const contractSchemas = {
       },
       "reviewedAt": {
         "$ref": "#/components/schemas/UtcInstant"
+      },
+      "dates": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AnnouncedEventDate"
+        },
+        "maxItems": 5
       }
     },
     "required": [
       "eventId",
+      "versionId",
       "companyId",
       "companyName",
       "revision",
@@ -1439,7 +1553,8 @@ export const contractSchemas = {
       "materiality",
       "novelty",
       "confidence",
-      "reviewedAt"
+      "reviewedAt",
+      "dates"
     ],
     "additionalProperties": false
   },
@@ -1555,6 +1670,13 @@ export const contractSchemas = {
       },
       "reviewed": {
         "const": true
+      },
+      "dates": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AnnouncedEventDate"
+        },
+        "maxItems": 5
       }
     },
     "required": [
@@ -1948,7 +2070,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.27.0"
+    "const": "0.28.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -2493,6 +2615,124 @@ export const contractSchemas = {
       "materiality",
       "novelty",
       "confidence"
+    ],
+    "additionalProperties": false
+  },
+  "FilingRule": {
+    "type": "object",
+    "properties": {
+      "ruleId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "settings": {
+        "$ref": "#/components/schemas/FilingRuleSettings"
+      }
+    },
+    "required": [
+      "ruleId",
+      "revision",
+      "enabled",
+      "settings"
+    ],
+    "additionalProperties": false
+  },
+  "FilingRuleChange": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "enabled": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "enabled"
+    ],
+    "additionalProperties": false
+  },
+  "FilingRuleList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FilingRule"
+        },
+        "maxItems": 20
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "FilingRuleSettings": {
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "category": {
+        "type": "string",
+        "enum": [
+          "ANY",
+          "EARNINGS",
+          "CAPITAL",
+          "GOVERNANCE",
+          "CORPORATE_ACTION",
+          "OTHER"
+        ]
+      },
+      "minimumMateriality": {
+        "type": "string",
+        "enum": [
+          "ANY",
+          "MEDIUM",
+          "HIGH"
+        ]
+      },
+      "arrivals": {
+        "type": "boolean"
+      },
+      "dates": {
+        "type": "boolean"
+      },
+      "tentative": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "companyId",
+      "title",
+      "category",
+      "minimumMateriality",
+      "arrivals",
+      "dates",
+      "tentative"
     ],
     "additionalProperties": false
   },
@@ -5344,6 +5584,16 @@ export const contractSchemas = {
           }
         ]
       },
+      "companyEvent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CompanyEvent"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "deliveries": {
         "type": "array",
         "items": {
@@ -5365,6 +5615,7 @@ export const contractSchemas = {
       "reminder",
       "indicator",
       "briefId",
+      "companyEvent",
       "deliveries",
       "attempts"
     ],

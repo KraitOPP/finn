@@ -8,6 +8,7 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { LocalTime } from "../monitoring/LocalTime.tsx";
+import { AnnouncedDates, EditAnnouncedDates } from "./AnnouncedDates.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
 const path = "/api/v1/research/events";
@@ -157,6 +158,7 @@ export function EventHistory({ id }: { id: string }) {
             </select>
           </label>
           <EventLabels event={selected} />
+          <AnnouncedDates dates={selected.dates} />
           <p>
             Reviewed <LocalTime value={selected.reviewedAt} /> · Source:{" "}
             {selected.sourceTitle} (version {selected.documentRevision})
@@ -284,6 +286,7 @@ function EventForm({
               eventId: match?.eventId ?? null,
               expectedRevision: match?.revision ?? null,
               novelty: match ? "FOLLOW_UP" : input.novelty,
+              dates: match?.dates ?? input.dates,
             });
           }}
         >
@@ -376,6 +379,10 @@ function EventForm({
           ))}
         </select>
       </label>
+      <EditAnnouncedDates
+        dates={input.dates ?? []}
+        onChange={(dates) => change("dates", dates)}
+      />
       <label className="check-label">
         <input
           type="checkbox"

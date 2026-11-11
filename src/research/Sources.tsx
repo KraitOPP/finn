@@ -9,6 +9,7 @@ import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
 import { CompanyEvents, EventReview } from "./Events.tsx";
+import { FilingCalendar } from "./FilingCalendar.tsx";
 import { News } from "./News.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
@@ -20,6 +21,7 @@ export function Research() {
       <RouteHeading>Research</RouteHeading>
       <PrimarySources onEvent={() => setGeneration((value) => value + 1)} />
       <CompanyEvents generation={generation} />
+      <FilingCalendar generation={generation} />
       <News />
     </section>
   );

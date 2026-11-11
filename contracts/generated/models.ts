@@ -48,6 +48,12 @@ export type AlertCloseEvidence = ({
   "receivedAt": (UtcInstant);
 });
 
+export type AnnouncedEventDate = ({
+  "type": ("MEETING" | "RESULTS" | "EX_DATE" | "RECORD_DATE" | "OTHER") & (string);
+  "date": (SessionDate);
+  "certainty": ("CONFIRMED" | "TENTATIVE" | "CANCELLED") & (string);
+});
+
 export type AsyncJobStatus = ((({
   "contractVersion": (ContractVersion);
   "requestId": (OpaqueId);
@@ -235,8 +241,23 @@ export type CatalogueSecurityPage = ({
   "hasMore": (boolean);
 });
 
+export type CompanyCalendarPage = ({
+  "items": (Array<({
+  "eventId": (OpaqueId);
+  "versionId": (OpaqueId);
+  "revision": (number);
+  "title": (string);
+  "companyName": (string);
+  "documentId": (OpaqueId);
+  "documentRevision": (number);
+  "date": (AnnouncedEventDate);
+})>);
+  "hasMore": (boolean);
+});
+
 export type CompanyEvent = ({
   "eventId": (OpaqueId);
+  "versionId": (OpaqueId);
   "companyId": (OpaqueId);
   "companyName": (string);
   "revision": (number);
@@ -251,6 +272,7 @@ export type CompanyEvent = ({
   "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
   "confidence": ("REVIEWED");
   "reviewedAt": (UtcInstant);
+  "dates": (Array<(AnnouncedEventDate)>);
 });
 
 export type CompanyEventHistory = ({
@@ -269,6 +291,7 @@ export type CompanyEventInput = ({
   "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
   "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
   "reviewed": (true);
+  "dates"?: (Array<(AnnouncedEventDate)>);
 });
 
 export type CompanyEventPage = ({
@@ -348,7 +371,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.27.0") & (string);
+export type ContractVersion = ("0.28.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -429,6 +452,32 @@ export type EventSuggestion = ({
   "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
   "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
   "confidence": ("TITLE_HINT" | "UNKNOWN") & (string);
+});
+
+export type FilingRule = ({
+  "ruleId": (OpaqueId);
+  "revision": (number);
+  "enabled": (boolean);
+  "settings": (FilingRuleSettings);
+});
+
+export type FilingRuleChange = ({
+  "expectedRevision": (number);
+  "enabled": (boolean);
+});
+
+export type FilingRuleList = ({
+  "items": (Array<(FilingRule)>);
+});
+
+export type FilingRuleSettings = ({
+  "companyId": (((OpaqueId)) | ((null)));
+  "title": (string);
+  "category": ("ANY" | "EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "OTHER") & (string);
+  "minimumMateriality": ("ANY" | "MEDIUM" | "HIGH") & (string);
+  "arrivals": (boolean);
+  "dates": (boolean);
+  "tentative": (boolean);
 });
 
 export type Freshness = ({
@@ -896,6 +945,7 @@ export type NotificationDetail = ({
   "reminder": (((ReminderEvidence)) | ((null)));
   "indicator": (((IndicatorEvaluation)) | ((null)));
   "briefId": (((OpaqueId)) | ((null)));
+  "companyEvent": (((CompanyEvent)) | ((null)));
   "deliveries": (Array<(NotificationDelivery)>);
   "attempts": (Array<(NotificationAttempt)>);
 });
@@ -1428,6 +1478,7 @@ export interface ContractTypes {
   AcquisitionEnvelope: AcquisitionEnvelope;
   AdjustmentBasis: AdjustmentBasis;
   AlertCloseEvidence: AlertCloseEvidence;
+  AnnouncedEventDate: AnnouncedEventDate;
   AsyncJobStatus: AsyncJobStatus;
   AttentionFeedback: AttentionFeedback;
   AttentionItem: AttentionItem;
@@ -1444,6 +1495,7 @@ export interface ContractTypes {
   CatalogueSecurity: CatalogueSecurity;
   CatalogueSecurityDetail: CatalogueSecurityDetail;
   CatalogueSecurityPage: CatalogueSecurityPage;
+  CompanyCalendarPage: CompanyCalendarPage;
   CompanyEvent: CompanyEvent;
   CompanyEventHistory: CompanyEventHistory;
   CompanyEventInput: CompanyEventInput;
@@ -1468,6 +1520,10 @@ export interface ContractTypes {
   DecimalString: DecimalString;
   Delay: Delay;
   EventSuggestion: EventSuggestion;
+  FilingRule: FilingRule;
+  FilingRuleChange: FilingRuleChange;
+  FilingRuleList: FilingRuleList;
+  FilingRuleSettings: FilingRuleSettings;
   Freshness: Freshness;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;

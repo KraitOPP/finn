@@ -8,6 +8,7 @@ import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
 import { Attention } from "../research/Attention.tsx";
+import { CompanyNotificationEvidence } from "../research/CompanyNotificationEvidence.tsx";
 import { Briefs, SavedBrief } from "./Briefs.tsx";
 import { IndicatorEvidence, IndicatorRules } from "./IndicatorRules.tsx";
 import { LocalTime } from "./LocalTime.tsx";
@@ -178,6 +179,9 @@ function NotificationDetails({
               </p>
               <CloseEvidence value={detail.value.price.observation} />
             </>
+          )}
+          {detail.value.companyEvent && (
+            <CompanyNotificationEvidence event={detail.value.companyEvent} />
           )}
           {detail.value.briefId && <SavedBrief id={detail.value.briefId} />}
           {detail.value.indicator && (
