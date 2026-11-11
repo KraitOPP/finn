@@ -74,6 +74,9 @@ class FoundationIntegrationTest {
     @Autowired dev.finn.monitoring.DeliveryWorker deliveryWorker;
     @Autowired dev.finn.monitoring.ReviewReminders reminders;
     @Autowired dev.finn.monitoring.Indicators indicators;
+    @Test void eventReplayRunsInAnIsolatedWorkspace() throws Exception {
+        dev.finn.market.EventReplayChecks.replaysWithoutCrossingRealWorkspaceBoundaries(mvc,deliveryWorker);
+    }
     @Test void companyDatesAndFilingRulesHandleCorrections() throws Exception {
         dev.finn.market.FilingRuleChecks.schedulesDistinctDatesAndSuppressesCorrections(mvc,jdbc);
     }
@@ -150,7 +153,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.28.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.29.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

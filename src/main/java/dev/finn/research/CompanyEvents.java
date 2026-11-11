@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -132,6 +133,18 @@ public class CompanyEvents {
     public Version evidence(UUID owner,UUID versionId) {
         return jdbc.query(SELECT+" WHERE e.owner_id=? AND v.event_version_id=?",
                 CompanyEvents::version,owner,versionId).stream().findFirst().orElse(null);
+    }
+
+    public List<Version> reviewedBetween(UUID owner, OffsetDateTime start, OffsetDateTime end) {
+        return jdbc.query("""
+                WITH chosen AS (
+                    SELECT event_id,max(revision) AS revision FROM finn.company_event_version
+                    WHERE owner_id=? AND reviewed_at>=? AND reviewed_at<? GROUP BY event_id
+                )
+                """+SELECT+"""
+                JOIN chosen ON chosen.event_id=v.event_id AND chosen.revision=v.revision
+                WHERE v.owner_id=? ORDER BY v.reviewed_at DESC,v.event_id LIMIT 51
+                """,CompanyEvents::version,owner,start,end,owner);
     }
 
     private Version byFingerprint(UUID owner,UUID id,String fingerprint) {

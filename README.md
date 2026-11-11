@@ -4,7 +4,7 @@ Java 25 and Spring Boot 4.1.2 backend for an India-first portfolio intelligence 
 
 ## Repository status
 
-The application includes OIDC sign-in, an owner-scoped investment journal, private Groww holdings review and reconciliation, corporate actions, CSV export, watchlists, and traceable current and dated valuations. Public demos are synthetic. Private Yahoo completed-session acquisition is opt-in. Official exchange file imports and open-session streaming remain gated on source verification.
+The application includes OIDC sign-in, an owner-scoped investment journal, private Groww holdings review and reconciliation, corporate actions, CSV export, watchlists, traceable current and dated valuations, completed-close alerts, review reminders, scheduled briefs, and private company sources and event threads. Public demos are synthetic. Private Yahoo completed-session acquisition is opt-in. Official exchange file imports and open-session streaming remain gated on source verification.
 
 ## Run locally
 
@@ -26,7 +26,7 @@ On Linux/macOS export the same variables and create the external directory, then
 
 Setup creates random development credentials outside Git and preserves existing files. PostgreSQL bootstrap, migration, identity-provider and runtime identities are distinct: the application role cannot create tables or read migration history. Restore existing secrets if they are lost; setup does not reset passwords in an existing database. Stop only this project's services with `docker compose stop`; no data removal is part of startup or shutdown.
 
-The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.28.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read/save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision; concurrent changes return 409. Delivery is explicitly unavailable until its own implementation. User-supplied owner IDs are not accepted. The holdings route accepts bounded raw workbook bytes; multipart remains disabled.
+The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.29.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read/save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision; concurrent changes return 409. Delivery is explicitly unavailable until its own implementation. User-supplied owner IDs are not accepted. The holdings route accepts bounded raw workbook bytes; multipart remains disabled.
 
 Run the frontend at exactly `http://127.0.0.1:5173` and use its same-origin proxies. Sign in redirects to the local Keycloak realm at `http://localhost:8180/realms/finn-local`. Development-only synthetic account credentials are generated in the private `secrets/identity/demo-users.json` file under the working directory. Never commit or share that file. Keycloak stores identity records in its own database; the app stores only an issuer/subject link and display name. The packaged JAR is under `FINN_WORKSPACE_ROOT/build/backend`; running it needs Java and configuration but does not need Node.
 
@@ -34,6 +34,9 @@ The Node runner selects the `local` profile, which permits loopback HTTP only. P
 
 API requests receive server-generated `X-Request-ID` references and no-store responses. Error responses contain fixed safe codes, with no request values or exception details. Limits include 64 KiB request bodies (5 MiB reserved for the import route), 32 concurrent API requests, bounded connection/thread/header settings, and separately bounded database connections. These are per-process capacity limits; deployment-wide abuse controls belong at the trusted reverse proxy. Module audit events contain only owner/resource IDs, action and time; the runtime role can append but cannot read, edit or delete that table.
 
+The monitoring workers use saved completed-session observations. A rule's source and freshness settings determine eligibility. In-app delivery follows account preferences. Set `FINN_EMAIL_PREVIEW_ENABLED=true` for a local email preview sink and opt in from Settings. The preview records an attempt in PostgreSQL and sends no message outside the application.
+
+Company research accepts manually reviewed primary HTTPS links and UTF-8 text up to 48 KiB. Secondary news entries store headlines, publisher details and links. Company event reviews retain exact source versions. Filing rules can notify on saved event updates or announced dates. The fictional replay uses a separate synthetic identity and never reads a user's portfolio.
 ## Verification
 
 `node scripts/maven.mjs verify` compiles, tests and packages the application. Integration checks start real PostgreSQL containers, verify migrations and role restrictions, and exercise signed OIDC callbacks against a deterministic test provider. They check state/nonce/PKCE, session rotation, database expiry, CSRF and logout. Docker must be available; missing Docker is a failure, not a silently skipped database test.

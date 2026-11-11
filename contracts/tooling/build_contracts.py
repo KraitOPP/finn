@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.28.0"
+VERSION = "0.29.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -267,6 +267,7 @@ def definitions() -> dict:
             "sessionDate": ref("SessionDate"), "holdingsValue": nullable(ref("DecimalString")), "recordedValue": nullable(ref("DecimalString")),
             "status": enum(["BEFORE_COVERAGE","PRICES_MISSING","CASH_UNKNOWN","RECORDED_VALUE"]),
         }),maxItems=50),
+        "companyEvents": array(ref("CompanyEvent"),maxItems=50),
         "truncated": {"type":"boolean"},
     })
     source_revision = {"type":"integer","minimum":1,"maximum":50}
@@ -357,6 +358,12 @@ def definitions() -> dict:
             "date": ref("AnnouncedEventDate"),
         }),maxItems=40),
         "hasMore": {"type":"boolean"},
+    })
+    d["EventReplay"] = obj({
+        "mode": {"const":"SYNTHETIC_REPLAY"}, "runId": nullable(ref("OpaqueId")), "savedAt": nullable(ref("UtcInstant")),
+        "events": array(obj({"attention": ref("AttentionItem"), "evidence": ref("CompanySourceDetail")}),maxItems=25),
+        "notifications": array(obj({"title": text(maxLength=160), "status": delivery_status}),maxItems=20),
+        "brief": nullable(ref("PortfolioBrief")),
     })
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
@@ -806,6 +813,10 @@ def public_api_document() -> dict:
         "/api/v1/research/calendar":{"get": maintained("listAnnouncedDates","Read current source-backed dates in an owned calendar window","CompanyCalendarPage",[
             parameter("start","query",ref("SessionDate")),parameter("endExclusive","query",ref("SessionDate")),
             parameter("offset","query",{"type":"integer","minimum":0,"maximum":1500})])},
+        "/api/v1/research/replay":{
+            "get": maintained("getSyntheticEventReplay","Read the signed-in user's isolated fictional scenario","EventReplay"),
+            "post": maintained("startSyntheticEventReplay","Run or reopen the fictional scenario in an isolated workspace","EventReplay",[csrf_header]),
+        },
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
