@@ -56,12 +56,12 @@ public final class MarketDatabaseChecks {
     private static String window(){return """
             {"start":"%s","endExclusive":"%s"}
             """.formatted(TODAY.minusDays(8),TODAY);}
-    private static String row(LocalDate date,String close){return """
+    static String row(LocalDate date,String close){return """
             {"sessionDate":"%s","sourceIndex":"%sT00:00:00+05:30","observedAt":null,"interval":"1d",
              "open":"90","high":"110","low":"85","close":"%s","adjustedClose":null,
              "unavailableFields":["adjustedClose"],"volume":"100","priceBasis":"PROVIDER_DEFINED"}
             """.formatted(date,date,close);}
-    private static JsonNode candidate(Security equity,String rows){
+    static JsonNode candidate(Security equity,String rows){
         return JSON.readTree("""
                 {"adapterContractVersion":"0.1.0","provider":"YAHOO_YFINANCE","startedAt":"2020-01-01T00:00:00Z","completedAt":"2020-01-01T00:00:01Z",
                  "rights":{"mode":"RESTRICTED_UNVERIFIED","publicDisplayAllowed":false,"externalAiAllowed":false},

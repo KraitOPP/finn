@@ -69,6 +69,7 @@ class FoundationIntegrationTest {
     @org.springframework.test.context.bean.override.mockito.MockitoSpyBean dev.finn.market.YahooProcess yahoo;
     @Autowired dev.finn.market.MarketPrices prices;
 
+    @Test void datedSnapshotsRetainExactInputsAndGaps() throws Exception { dev.finn.market.SnapshotDatabaseChecks.snapshotsKeepGapsAndImmutableInputs(mvc,prices,jobs,yahoo); }
     @Test void currentValuationKeepsMissingPricesAndFlowsSeparate() throws Exception { dev.finn.market.ValuationDatabaseChecks.valuesAreScopedAndKeepFlowsSeparate(mvc); }
     @Test void privateObservationsAreDurableAcrossProviderFailures() throws Exception {
         dev.finn.market.MarketDatabaseChecks.observationsAreScopedAndDurable(mvc,jdbc,jobs,prices,yahoo);
@@ -110,7 +111,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.14.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.15.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

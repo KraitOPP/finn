@@ -104,7 +104,7 @@ public class Valuations {
                     ORDER BY m.session_date DESC,m.source,m.receipt_order DESC LIMIT 1
                 ) p ON TRUE WHERE v.owner_id=? AND v.account_id=?
                 """.formatted(MarketPrices.SELECT_COLUMNS),row->{
-                    var price=row.getObject("observation_id",UUID.class)==null?null:MarketPrices.observation(row,0);
+                    var price=row.getObject("observation_id",UUID.class)==null?null:MarketPrices.observationAt(row,date);
                     prices.put(row.getObject("security_id",UUID.class),new PriceChoice(row.getObject("selected_listing",UUID.class),row.getBoolean("allow_provider_estimate"),price));
                 },date,revision,revision,date,exactReviewedClose,date,exactReviewedClose,date,exactReviewedClose,MarketPrices.today().minusDays(90),owner,account);
         var holdings=ledger.positions().stream().map(position->holding(position,prices.get(position.securityId()))).toList();

@@ -168,11 +168,14 @@ public class MarketPrices {
     }
 
     static Observation observation(ResultSet row,int index)throws SQLException{
+        return observationAt(row,today());
+    }
+    static Observation observationAt(ResultSet row,LocalDate freshnessReference)throws SQLException{
         LocalDate date=row.getObject("session_date",LocalDate.class);
         return new Observation(row.getObject("observation_id",UUID.class),row.getObject("listing_id",UUID.class),date,row.getString("source"),
                 row.getString("price_basis"),"INR",row.getBigDecimal("close").stripTrailingZeros().toPlainString(),
                 row.getString("source_ref"),row.getObject("received_at",OffsetDateTime.class).toInstant().toString(),
-                date.isBefore(today().minusDays(4))?"STALE":"DELAY_UNKNOWN");
+                date.isBefore(freshnessReference.minusDays(4))?"STALE":"DELAY_UNKNOWN");
     }
 
     void expireYahoo(){jdbc.execute("SELECT finn.expire_yahoo_observations()");}

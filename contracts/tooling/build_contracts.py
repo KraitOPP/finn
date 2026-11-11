@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.14.0"
+VERSION = "0.15.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -132,6 +132,19 @@ def definitions() -> dict:
         "portfolioId": ref("OpaqueId"), "asOf": ref("SessionDate"), "currency": {"type":"string","const":"INR"},
         "accounts": array(ref("AccountValuationTotal"),maxItems=100), "totals": ref("ValuationTotals"),
     })
+    d["ValuationPoint"] = obj({
+        "snapshotId": ref("OpaqueId"), "sessionDate": ref("SessionDate"),
+        "ledgerRevision": {"type":"integer","minimum":0,"maximum":10000}, "calculationVersion": ref("OpaqueId"),
+        "priceBasis": {"type":"string","const":"AS_REPORTED_EXCHANGE"},
+        "status": enum(["BEFORE_COVERAGE","PRICES_MISSING","CASH_UNKNOWN","RECORDED_VALUE"]),
+        "holdingsValue": nullable(ref("DecimalString")), "cashBalance": nullable(ref("DecimalString")),
+        "recordedValue": nullable(ref("DecimalString")), "recordedAt": ref("UtcInstant"),
+    }, "Immutable dated valuation. Missing compatible prices or cash remain null.")
+    d["ValuationSeries"] = obj({
+        "start": ref("SessionDate"), "endExclusive": ref("SessionDate"),
+        "points": array(ref("ValuationPoint"),maxItems=90),
+    })
+    d["ValuationSnapshotDetail"] = obj({"snapshot": ref("ValuationPoint"), "valuation": nullable(ref("AccountValuation"))})
     d["ListingIdentity"] = obj({
         "listingId": ref("OpaqueId"), "securityId": ref("OpaqueId"),
         "companyId": ref("OpaqueId"), "exchange": enum(["NSE", "BSE"]),
@@ -503,6 +516,11 @@ def public_api_document() -> dict:
         market_path+"/history":{"get":maintained("getPrivateCloseHistory","Read the latest retained revision per session and source","PrivateCloseHistory",[*listing_parameter,*dates])},
         market_path+"/reviewed-close":{"post":maintained("recordReviewedClose","Record a user-verified as-reported INR closing price","PrivateClose",listing_parameter,"ReviewCloseInput")},
         market_path+"/refresh":{"post":market_refresh},
+        journal_path+"/valuation/snapshots":{
+            "get":maintained("listValuationSnapshots","Read latest owned snapshot per saved date in a bounded window","ValuationSeries",[*ledger_account,*dates]),
+            "post":maintained("buildValuationSnapshots","Save up to 14 dated values and explicit coverage gaps","ValuationSeries",ledger_account,"PriceFetchWindow"),
+        },
+        journal_path+"/valuation/snapshots/{id}":{"get":maintained("getValuationSnapshot","Read the immutable result and inputs of an owned snapshot","ValuationSnapshotDetail",import_id)},
         journal_path+"/transactions/export":{"post":ledger_export},
         journal_path+"/corporate-actions":{"get":maintained("listCorporateActions","List reviewed corporate actions for the owned account","CorporateActionList",ledger_account),"post":maintained("applyCorporateAction","Record a confirmed source-backed action or an unsupported review","CorporateActionRecord",ledger_account,"CorporateActionApproval")},
         journal_path+"/corporate-actions/preview":{"post":maintained("previewCorporateAction","Preview units, cost and cash effects without posting","CorporateActionEffect",ledger_account,"CorporateActionInput")},
