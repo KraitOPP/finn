@@ -7,6 +7,7 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
+import { Attention } from "../research/Attention.tsx";
 import { Briefs, SavedBrief } from "./Briefs.tsx";
 import { IndicatorEvidence, IndicatorRules } from "./IndicatorRules.tsx";
 import { LocalTime } from "./LocalTime.tsx";
@@ -37,6 +38,7 @@ export function Inbox() {
   return (
     <section className="workspace-section">
       <RouteHeading>Inbox</RouteHeading>
+      <Attention />
       <NotificationList />
       <DeliveryStatus />
       <ReviewCalendar />

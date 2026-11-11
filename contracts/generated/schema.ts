@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.25.0",
+  "contractVersion": "0.26.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "206fc975e1fa5b7f320ca4806dd3a072b784e480b254f9302abe5330f09db2c8",
+  "sourceSha256": "dc298aa8b5da8401bc0b4afec4c8edf878c96477572aad978f492ece7b9cb35d",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -12,6 +12,10 @@ export const contractMetadata = {
     "AdjustmentBasis",
     "AlertCloseEvidence",
     "AsyncJobStatus",
+    "AttentionFeedback",
+    "AttentionItem",
+    "AttentionPage",
+    "AttentionState",
     "BriefIndex",
     "BriefSchedule",
     "BriefScheduleInput",
@@ -727,6 +731,177 @@ export const contractSchemas = {
         "additionalProperties": false
       }
     ]
+  },
+  "AttentionFeedback": {
+    "type": "object",
+    "properties": {
+      "eventRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "action": {
+        "type": "string",
+        "enum": [
+          "READ",
+          "UNREAD",
+          "MUTE",
+          "UNMUTE",
+          "SNOOZE",
+          "UNSNOOZE"
+        ]
+      },
+      "snoozeUntil": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "eventRevision",
+      "action",
+      "snoozeUntil"
+    ],
+    "additionalProperties": false
+  },
+  "AttentionItem": {
+    "type": "object",
+    "properties": {
+      "event": {
+        "$ref": "#/components/schemas/CompanyEvent"
+      },
+      "score": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 75
+      },
+      "state": {
+        "$ref": "#/components/schemas/AttentionState"
+      },
+      "reasons": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "points": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 75
+            }
+          },
+          "required": [
+            "label",
+            "points"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 3
+      },
+      "holdings": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "securityId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "quantity": {
+              "$ref": "#/components/schemas/PositiveDecimalString"
+            }
+          },
+          "required": [
+            "securityId",
+            "name",
+            "quantity"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "event",
+      "score",
+      "state",
+      "reasons",
+      "holdings"
+    ],
+    "additionalProperties": false
+  },
+  "AttentionPage": {
+    "type": "object",
+    "properties": {
+      "coverage": {
+        "type": "string",
+        "enum": [
+          "NO_RECORDS",
+          "PARTIAL",
+          "RECORDED_ACCOUNTS"
+        ]
+      },
+      "rankedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AttentionItem"
+        },
+        "maxItems": 25
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "coverage",
+      "rankedAt",
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
+  "AttentionState": {
+    "type": "object",
+    "properties": {
+      "read": {
+        "type": "boolean"
+      },
+      "muted": {
+        "type": "boolean"
+      },
+      "snoozedUntil": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "read",
+      "muted",
+      "snoozedUntil"
+    ],
+    "additionalProperties": false
   },
   "BriefIndex": {
     "type": "object",
@@ -1661,7 +1836,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.25.0"
+    "const": "0.26.0"
   },
   "CorporateActionApproval": {
     "type": "object",

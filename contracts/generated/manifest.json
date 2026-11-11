@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.25.0",
+  "contractVersion": "0.26.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "206fc975e1fa5b7f320ca4806dd3a072b784e480b254f9302abe5330f09db2c8",
+  "sourceSha256": "dc298aa8b5da8401bc0b4afec4c8edf878c96477572aad978f492ece7b9cb35d",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -11,6 +11,10 @@
     "AdjustmentBasis",
     "AlertCloseEvidence",
     "AsyncJobStatus",
+    "AttentionFeedback",
+    "AttentionItem",
+    "AttentionPage",
+    "AttentionState",
     "BriefIndex",
     "BriefSchedule",
     "BriefScheduleInput",

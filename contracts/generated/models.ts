@@ -116,6 +116,40 @@ export type AsyncJobStatus = ((({
   "failureCode": (null);
 })));
 
+export type AttentionFeedback = ({
+  "eventRevision": (number);
+  "action": ("READ" | "UNREAD" | "MUTE" | "UNMUTE" | "SNOOZE" | "UNSNOOZE") & (string);
+  "snoozeUntil": (((UtcInstant)) | ((null)));
+});
+
+export type AttentionItem = ({
+  "event": (CompanyEvent);
+  "score": (number);
+  "state": (AttentionState);
+  "reasons": (Array<({
+  "label": (string);
+  "points": (number);
+})>);
+  "holdings": (Array<({
+  "securityId": (OpaqueId);
+  "name": (string);
+  "quantity": (PositiveDecimalString);
+})>);
+});
+
+export type AttentionPage = ({
+  "coverage": ("NO_RECORDS" | "PARTIAL" | "RECORDED_ACCOUNTS") & (string);
+  "rankedAt": (UtcInstant);
+  "items": (Array<(AttentionItem)>);
+  "hasMore": (boolean);
+});
+
+export type AttentionState = ({
+  "read": (boolean);
+  "muted": (boolean);
+  "snoozedUntil": (((UtcInstant)) | ((null)));
+});
+
 export type BriefIndex = ({
   "schedule": (((BriefSchedule)) | ((null)));
   "runs": (Array<({
@@ -290,7 +324,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.25.0") & (string);
+export type ContractVersion = ("0.26.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1371,6 +1405,10 @@ export interface ContractTypes {
   AdjustmentBasis: AdjustmentBasis;
   AlertCloseEvidence: AlertCloseEvidence;
   AsyncJobStatus: AsyncJobStatus;
+  AttentionFeedback: AttentionFeedback;
+  AttentionItem: AttentionItem;
+  AttentionPage: AttentionPage;
+  AttentionState: AttentionState;
   BriefIndex: BriefIndex;
   BriefSchedule: BriefSchedule;
   BriefScheduleInput: BriefScheduleInput;
