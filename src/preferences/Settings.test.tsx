@@ -18,7 +18,7 @@ const defaults = {
   deliveryAvailable: true,
 };
 const session = (authenticated = true) => ({
-  contractVersion: "0.30.0",
+  contractVersion: "0.31.0",
   requestId: "fictional-session",
   authenticated,
   user: authenticated

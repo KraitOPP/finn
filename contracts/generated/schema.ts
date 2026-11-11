@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.30.0",
+  "contractVersion": "0.31.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "3ce07a29a9df1dd02820c308e9b80ad5b1a2ea51240381a79d0f9bd7a025a647",
+  "sourceSha256": "015d0f1946064aaeec889b1bf73e87ea058ccd31904317dcf6ac8657811dae26",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -52,12 +52,20 @@ export const contractMetadata = {
     "CsrfInformation",
     "DecimalString",
     "Delay",
+    "DeriveFinancialFact",
     "EventReplay",
     "EventSuggestion",
     "FilingRule",
     "FilingRuleChange",
     "FilingRuleList",
     "FilingRuleSettings",
+    "FinancialComparison",
+    "FinancialDimensions",
+    "FinancialFact",
+    "FinancialFactEdit",
+    "FinancialFactHistory",
+    "FinancialFactPage",
+    "FinancialOperand",
     "Freshness",
     "HistoryCoverage",
     "HistoryResponse",
@@ -149,6 +157,7 @@ export const contractMetadata = {
     "ReminderList",
     "ReminderScheduleChange",
     "ReminderSettings",
+    "ReportedFactInput",
     "ResearchExtraction",
     "ResearchLocation",
     "ResearchLocations",
@@ -2093,7 +2102,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.30.0"
+    "const": "0.31.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -2566,6 +2575,50 @@ export const contractSchemas = {
       }
     ]
   },
+  "DeriveFinancialFact": {
+    "type": "object",
+    "properties": {
+      "existingFactId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "expectedRevision": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "operatingCash": {
+        "$ref": "#/components/schemas/FinancialOperand"
+      },
+      "capitalExpenditure": {
+        "$ref": "#/components/schemas/FinancialOperand"
+      },
+      "reviewed": {
+        "const": true
+      }
+    },
+    "required": [
+      "existingFactId",
+      "expectedRevision",
+      "operatingCash",
+      "capitalExpenditure",
+      "reviewed"
+    ],
+    "additionalProperties": false
+  },
   "EventReplay": {
     "type": "object",
     "properties": {
@@ -2852,6 +2905,315 @@ export const contractSchemas = {
       "arrivals",
       "dates",
       "tentative"
+    ],
+    "additionalProperties": false
+  },
+  "FinancialComparison": {
+    "type": "object",
+    "properties": {
+      "state": {
+        "type": "string",
+        "enum": [
+          "COMPARABLE",
+          "INCOMPARABLE"
+        ]
+      },
+      "reason": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "DIFFERENT_REPORTING_BASIS",
+              "DIFFERENT_OR_OVERLAPPING_PERIODS",
+              "NON_POSITIVE_BASE",
+              "PERCENTAGE_POINTS"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "current": {
+        "$ref": "#/components/schemas/FinancialFact"
+      },
+      "previous": {
+        "$ref": "#/components/schemas/FinancialFact"
+      },
+      "change": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "percentChange": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "state",
+      "reason",
+      "current",
+      "previous",
+      "change",
+      "percentChange"
+    ],
+    "additionalProperties": false
+  },
+  "FinancialDimensions": {
+    "type": "object",
+    "properties": {
+      "metric": {
+        "type": "string",
+        "enum": [
+          "REVENUE",
+          "EBITDA",
+          "PROFIT_AFTER_TAX",
+          "CASH_FROM_OPERATIONS",
+          "CAPITAL_EXPENDITURE",
+          "FREE_CASH_FLOW",
+          "TOTAL_DEBT",
+          "TOTAL_EQUITY",
+          "EPS_BASIC",
+          "OPERATING_MARGIN"
+        ]
+      },
+      "basis": {
+        "type": "string",
+        "enum": [
+          "STANDALONE",
+          "CONSOLIDATED"
+        ]
+      },
+      "periodKind": {
+        "type": "string",
+        "enum": [
+          "QUARTER",
+          "YTD",
+          "FULL_YEAR",
+          "AS_OF"
+        ]
+      },
+      "periodStart": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "periodEnd": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "MONEY",
+          "PER_SHARE",
+          "PERCENT"
+        ]
+      },
+      "currency": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP",
+              "JPY"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "metric",
+      "basis",
+      "periodKind",
+      "periodStart",
+      "periodEnd",
+      "unit",
+      "currency"
+    ],
+    "additionalProperties": false
+  },
+  "FinancialFact": {
+    "type": "object",
+    "properties": {
+      "factId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "dimensions": {
+        "$ref": "#/components/schemas/FinancialDimensions"
+      },
+      "amount": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "normalizedAmount": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "origin": {
+        "type": "string",
+        "enum": [
+          "REPORTED",
+          "DERIVED"
+        ]
+      },
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "sourceTitle": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "documentRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "reviewedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "operands": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FinancialOperand"
+        },
+        "maxItems": 2
+      }
+    },
+    "required": [
+      "factId",
+      "companyId",
+      "revision",
+      "dimensions",
+      "amount",
+      "scale",
+      "normalizedAmount",
+      "origin",
+      "anchorId",
+      "sourceTitle",
+      "documentRevision",
+      "publishedAt",
+      "reviewedAt",
+      "operands"
+    ],
+    "additionalProperties": false
+  },
+  "FinancialFactEdit": {
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "fact": {
+        "$ref": "#/components/schemas/ReportedFactInput"
+      }
+    },
+    "required": [
+      "companyId",
+      "expectedRevision",
+      "fact"
+    ],
+    "additionalProperties": false
+  },
+  "FinancialFactHistory": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FinancialFact"
+        },
+        "maxItems": 50
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "FinancialFactPage": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FinancialFact"
+        },
+        "maxItems": 50
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
+  "FinancialOperand": {
+    "type": "object",
+    "properties": {
+      "factId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      }
+    },
+    "required": [
+      "factId",
+      "revision"
     ],
     "additionalProperties": false
   },
@@ -7348,6 +7710,42 @@ export const contractSchemas = {
       "recurrence",
       "quietStart",
       "quietEnd"
+    ],
+    "additionalProperties": false
+  },
+  "ReportedFactInput": {
+    "type": "object",
+    "properties": {
+      "dimensions": {
+        "$ref": "#/components/schemas/FinancialDimensions"
+      },
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "amount": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "reviewed": {
+        "const": true
+      }
+    },
+    "required": [
+      "dimensions",
+      "anchorId",
+      "amount",
+      "scale",
+      "reviewed"
     ],
     "additionalProperties": false
   },

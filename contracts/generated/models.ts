@@ -374,7 +374,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.30.0") & (string);
+export type ContractVersion = ("0.31.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -448,6 +448,14 @@ export type Delay = ((({
   "basis": ("SOURCE_DECLARED") & (string);
 })));
 
+export type DeriveFinancialFact = ({
+  "existingFactId": (((OpaqueId)) | ((null)));
+  "expectedRevision": (((number)) | ((null)));
+  "operatingCash": (FinancialOperand);
+  "capitalExpenditure": (FinancialOperand);
+  "reviewed": (true);
+});
+
 export type EventReplay = ({
   "mode": ("SYNTHETIC_REPLAY");
   "runId": (((OpaqueId)) | ((null)));
@@ -496,6 +504,62 @@ export type FilingRuleSettings = ({
   "arrivals": (boolean);
   "dates": (boolean);
   "tentative": (boolean);
+});
+
+export type FinancialComparison = ({
+  "state": ("COMPARABLE" | "INCOMPARABLE") & (string);
+  "reason": ((("DIFFERENT_REPORTING_BASIS" | "DIFFERENT_OR_OVERLAPPING_PERIODS" | "NON_POSITIVE_BASE" | "PERCENTAGE_POINTS") & (string)) | ((null)));
+  "current": (FinancialFact);
+  "previous": (FinancialFact);
+  "change": (((DecimalString)) | ((null)));
+  "percentChange": (((DecimalString)) | ((null)));
+});
+
+export type FinancialDimensions = ({
+  "metric": ("REVENUE" | "EBITDA" | "PROFIT_AFTER_TAX" | "CASH_FROM_OPERATIONS" | "CAPITAL_EXPENDITURE" | "FREE_CASH_FLOW" | "TOTAL_DEBT" | "TOTAL_EQUITY" | "EPS_BASIC" | "OPERATING_MARGIN") & (string);
+  "basis": ("STANDALONE" | "CONSOLIDATED") & (string);
+  "periodKind": ("QUARTER" | "YTD" | "FULL_YEAR" | "AS_OF") & (string);
+  "periodStart": (SessionDate);
+  "periodEnd": (SessionDate);
+  "unit": ("MONEY" | "PER_SHARE" | "PERCENT") & (string);
+  "currency": ((("INR" | "USD" | "EUR" | "GBP" | "JPY") & (string)) | ((null)));
+});
+
+export type FinancialFact = ({
+  "factId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "revision": (number);
+  "dimensions": (FinancialDimensions);
+  "amount": (DecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "normalizedAmount": (DecimalString);
+  "origin": ("REPORTED" | "DERIVED") & (string);
+  "anchorId": (OpaqueId);
+  "sourceTitle": (string);
+  "documentRevision": (number);
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "reviewedAt": (UtcInstant);
+  "operands": (Array<(FinancialOperand)>);
+});
+
+export type FinancialFactEdit = ({
+  "companyId": (OpaqueId);
+  "expectedRevision": (number);
+  "fact": (ReportedFactInput);
+});
+
+export type FinancialFactHistory = ({
+  "items": (Array<(FinancialFact)>);
+});
+
+export type FinancialFactPage = ({
+  "items": (Array<(FinancialFact)>);
+  "hasMore": (boolean);
+});
+
+export type FinancialOperand = ({
+  "factId": (OpaqueId);
+  "revision": (number);
 });
 
 export type Freshness = ({
@@ -1292,6 +1356,14 @@ export type ReminderSettings = ({
   "quietEnd": (((string)) | ((null)));
 });
 
+export type ReportedFactInput = ({
+  "dimensions": (FinancialDimensions);
+  "anchorId": (OpaqueId);
+  "amount": (DecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "reviewed": (true);
+});
+
 export type ResearchExtraction = ({
   "state": ("LINK_ONLY" | "NOT_STARTED" | "QUEUED" | "RUNNING" | "READY" | "PARTIAL" | "NO_TEXT" | "UNSUPPORTED" | "FAILED" | "CANCELLED") & (string);
   "reason": (((OpaqueId)) | ((null)));
@@ -1582,12 +1654,20 @@ export interface ContractTypes {
   CsrfInformation: CsrfInformation;
   DecimalString: DecimalString;
   Delay: Delay;
+  DeriveFinancialFact: DeriveFinancialFact;
   EventReplay: EventReplay;
   EventSuggestion: EventSuggestion;
   FilingRule: FilingRule;
   FilingRuleChange: FilingRuleChange;
   FilingRuleList: FilingRuleList;
   FilingRuleSettings: FilingRuleSettings;
+  FinancialComparison: FinancialComparison;
+  FinancialDimensions: FinancialDimensions;
+  FinancialFact: FinancialFact;
+  FinancialFactEdit: FinancialFactEdit;
+  FinancialFactHistory: FinancialFactHistory;
+  FinancialFactPage: FinancialFactPage;
+  FinancialOperand: FinancialOperand;
   Freshness: Freshness;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;
@@ -1679,6 +1759,7 @@ export interface ContractTypes {
   ReminderList: ReminderList;
   ReminderScheduleChange: ReminderScheduleChange;
   ReminderSettings: ReminderSettings;
+  ReportedFactInput: ReportedFactInput;
   ResearchExtraction: ResearchExtraction;
   ResearchLocation: ResearchLocation;
   ResearchLocations: ResearchLocations;
