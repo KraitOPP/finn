@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.12.0",
+  "$id": "urn:finn:contracts:market-data:0.13.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.12.0"
+      "const": "0.13.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -90,6 +90,288 @@
       "required": [
         "code",
         "message"
+      ],
+      "additionalProperties": false
+    },
+    "PrivateClose": {
+      "type": "object",
+      "properties": {
+        "observationId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sessionDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "MANUAL_REVIEWED",
+            "YAHOO_YFINANCE"
+          ]
+        },
+        "priceBasis": {
+          "type": "string",
+          "enum": [
+            "AS_REPORTED_EXCHANGE",
+            "PROVIDER_DEFINED"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "const": "INR"
+        },
+        "close": {
+          "$ref": "#/$defs/PositiveDecimalString"
+        },
+        "sourceReference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "receivedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "freshness": {
+          "type": "string",
+          "enum": [
+            "STALE",
+            "DELAY_UNKNOWN"
+          ]
+        }
+      },
+      "required": [
+        "observationId",
+        "listingId",
+        "sessionDate",
+        "source",
+        "priceBasis",
+        "currency",
+        "close",
+        "sourceReference",
+        "receivedAt",
+        "freshness"
+      ],
+      "additionalProperties": false,
+      "description": "Owner-only completed-session close. Receipt time is not trade time; staleness is a conservative calendar-day label."
+    },
+    "PrivateCloseHistory": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "start": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "endExclusive": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrivateClose"
+          },
+          "maxItems": 180
+        }
+      },
+      "required": [
+        "listingId",
+        "start",
+        "endExclusive",
+        "observations"
+      ],
+      "additionalProperties": false
+    },
+    "MarketFeed": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "yahoo": {
+          "type": "string",
+          "enum": [
+            "DISABLED",
+            "CONFIGURATION_REQUIRED",
+            "REVIEWED_MAPPING_REQUIRED",
+            "PRIVATE_DAILY"
+          ]
+        },
+        "officialFiles": {
+          "type": "string",
+          "enum": [
+            "UNVERIFIED"
+          ]
+        },
+        "streaming": {
+          "type": "string",
+          "enum": [
+            "UNVERIFIED"
+          ]
+        },
+        "latest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrivateClose"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latestJobId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latestJobState": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "QUEUED",
+                "RUNNING",
+                "SUCCEEDED",
+                "PARTIALLY_SUCCEEDED",
+                "FAILED",
+                "CANCELLED"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failureCode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastAttemptAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acceptedRows": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastSuccessAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "knownDelaySeconds": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "listingId",
+        "yahoo",
+        "officialFiles",
+        "streaming",
+        "latest",
+        "latestJobId",
+        "latestJobState",
+        "failureCode",
+        "lastAttemptAt",
+        "acceptedRows",
+        "lastSuccessAt",
+        "knownDelaySeconds"
+      ],
+      "additionalProperties": false
+    },
+    "ReviewCloseInput": {
+      "type": "object",
+      "properties": {
+        "sessionDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "close": {
+          "$ref": "#/$defs/PositiveDecimalString"
+        },
+        "sourceReference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "reviewed": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "sessionDate",
+        "close",
+        "sourceReference",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "PriceFetchWindow": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "endExclusive": {
+          "$ref": "#/$defs/SessionDate"
+        }
+      },
+      "required": [
+        "start",
+        "endExclusive"
+      ],
+      "additionalProperties": false
+    },
+    "PriceFetchQueued": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "start": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "endExclusive": {
+          "$ref": "#/$defs/SessionDate"
+        }
+      },
+      "required": [
+        "jobId",
+        "start",
+        "endExclusive"
       ],
       "additionalProperties": false
     },

@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class JobQueue {
-    public enum Kind { GROWW_HOLDINGS_PREVIEW }
+    public enum Kind { GROWW_HOLDINGS_PREVIEW, YAHOO_DAILY_HISTORY }
     public record Claim(UUID jobId,UUID ownerId,UUID resourceId,UUID leaseToken,int attempts){}
     public record Status(String contractVersion,String requestId,UUID jobId,long revision,String state,String createdAt,
                          String updatedAt,String startedAt,String finishedAt,String failureCode){}

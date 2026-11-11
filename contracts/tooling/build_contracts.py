@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.12.0"
+VERSION = "0.13.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -75,6 +75,33 @@ def definitions() -> dict:
         "AdjustmentBasis": enum(BASES),
         "Warning": obj({"code": ref("OpaqueId"), "message": text(maxLength=512)}),
     }
+    d["PrivateClose"] = obj({
+        "observationId": ref("OpaqueId"), "listingId": ref("OpaqueId"), "sessionDate": ref("SessionDate"),
+        "source": enum(["MANUAL_REVIEWED", "YAHOO_YFINANCE"]),
+        "priceBasis": enum(["AS_REPORTED_EXCHANGE", "PROVIDER_DEFINED"]),
+        "currency": {"type": "string", "const": "INR"}, "close": ref("PositiveDecimalString"),
+        "sourceReference": text(maxLength=240), "receivedAt": ref("UtcInstant"),
+        "freshness": enum(["STALE", "DELAY_UNKNOWN"]),
+    }, "Owner-only completed-session close. Receipt time is not trade time; staleness is a conservative calendar-day label.")
+    d["PrivateCloseHistory"] = obj({
+        "listingId": ref("OpaqueId"), "start": ref("SessionDate"), "endExclusive": ref("SessionDate"),
+        "observations": array(ref("PrivateClose"), maxItems=180),
+    })
+    d["MarketFeed"] = obj({
+        "listingId": ref("OpaqueId"), "yahoo": enum(["DISABLED", "CONFIGURATION_REQUIRED", "REVIEWED_MAPPING_REQUIRED", "PRIVATE_DAILY"]),
+        "officialFiles": enum(["UNVERIFIED"]), "streaming": enum(["UNVERIFIED"]),
+        "latest": nullable(ref("PrivateClose")), "latestJobId": nullable(ref("OpaqueId")),
+        "latestJobState": nullable(enum(["QUEUED","RUNNING","SUCCEEDED","PARTIALLY_SUCCEEDED","FAILED","CANCELLED"])),
+        "failureCode": nullable(ref("OpaqueId")), "lastAttemptAt": nullable(ref("UtcInstant")),
+        "acceptedRows": nullable({"type":"integer", "minimum":0, "maximum":31}),
+        "lastSuccessAt": nullable(ref("UtcInstant")), "knownDelaySeconds": {"type":"null"},
+    })
+    d["ReviewCloseInput"] = obj({
+        "sessionDate": ref("SessionDate"), "close": ref("PositiveDecimalString"), "sourceReference": text(maxLength=240),
+        "reviewed": {"type":"boolean","const":True},
+    })
+    d["PriceFetchWindow"] = obj({"start": ref("SessionDate"), "endExclusive": ref("SessionDate")})
+    d["PriceFetchQueued"] = obj({"jobId": ref("OpaqueId"), "start": ref("SessionDate"), "endExclusive": ref("SessionDate")})
     d["ListingIdentity"] = obj({
         "listingId": ref("OpaqueId"), "securityId": ref("OpaqueId"),
         "companyId": ref("OpaqueId"), "exchange": enum(["NSE", "BSE"]),
@@ -433,7 +460,16 @@ def public_api_document() -> dict:
     original["responses"]["200"]={"description":"Original bytes; private attachment, no-store.","content":{"application/octet-stream":{"schema":{"type":"string","format":"binary"}}}}
     ledger_export=maintained("exportLedgerCsv","Download the owned journal with escaped spreadsheet text","LedgerPage",ledger_account,"LedgerExportInput")
     ledger_export["responses"]["200"]={"description":"Private UTF-8 CSV attachment, no-store. Original and reversal entries are retained with effective markers.","content":{"text/csv":{"schema":{"type":"string","format":"binary"}}}}
+    market_path="/api/v1/market/listings/{listing}"
+    listing_parameter=[parameter("listing","path",text(format="uuid"),True)]
+    dates=[parameter(name,"query",ref("SessionDate"),True) for name in ("start","endExclusive")]
+    market_refresh=maintained("queuePrivateYahooDaily","Queue a bounded completed-session window for the reviewed mapping","PriceFetchQueued",listing_parameter,"PriceFetchWindow")
+    market_refresh["responses"]["202"]=market_refresh["responses"].pop("200")
     paths.update({
+        market_path:{"get":maintained("getListingFeedStatus","Read the owned listing's latest close and acquisition state","MarketFeed",listing_parameter)},
+        market_path+"/history":{"get":maintained("getPrivateCloseHistory","Read the latest retained revision per session and source","PrivateCloseHistory",[*listing_parameter,*dates])},
+        market_path+"/reviewed-close":{"post":maintained("recordReviewedClose","Record a user-verified as-reported INR closing price","PrivateClose",listing_parameter,"ReviewCloseInput")},
+        market_path+"/refresh":{"post":market_refresh},
         journal_path+"/transactions/export":{"post":ledger_export},
         journal_path+"/corporate-actions":{"get":maintained("listCorporateActions","List reviewed corporate actions for the owned account","CorporateActionList",ledger_account),"post":maintained("applyCorporateAction","Record a confirmed source-backed action or an unsupported review","CorporateActionRecord",ledger_account,"CorporateActionApproval")},
         journal_path+"/corporate-actions/preview":{"post":maintained("previewCorporateAction","Preview units, cost and cash effects without posting","CorporateActionEffect",ledger_account,"CorporateActionInput")},

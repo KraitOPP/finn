@@ -66,6 +66,12 @@ class FoundationIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired Flyway flyway;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean dev.finn.market.YahooProcess yahoo;
+    @Autowired dev.finn.market.MarketPrices prices;
+
+    @Test void privateObservationsAreDurableAcrossProviderFailures() throws Exception {
+        dev.finn.market.MarketDatabaseChecks.observationsAreScopedAndDurable(mvc,jdbc,jobs,prices,yahoo);
+    }
     @Autowired dev.finn.jobs.JobQueue jobs;
     @Autowired dev.finn.imports.HoldingsImports imports;
     @Autowired dev.finn.imports.HoldingsImportWorker importWorker;
@@ -103,7 +109,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.12.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.13.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

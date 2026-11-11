@@ -1,6 +1,6 @@
 # Yahoo history acquisition
 
-This is a small production acquisition library for the planned Java integration. It is not a running service, public API, portfolio calculator, or verified live feed. Java will own scheduling, validation against the canonical provider contract, persistence, source selection, and financial calculations.
+This is a small production acquisition library invoked by Java as a bounded subprocess. Java owns scheduling, candidate validation, persistence, source selection, and calculations. The adapter does not provide live prices or execute trades.
 
 The library requires Python 3.13 and the pinned `requirements.txt`. Install dependencies in an external virtual environment. Configure the caller's `PYTHONPATH` to include this directory's `src` until application packaging is introduced. Use `python -B -m unittest discover -s integrations/yfinance/tests` from the backend root, with `TEMP`/`TMP` pointing outside the checkout. Unit tests use fictional observations and make no network calls.
 
@@ -22,3 +22,16 @@ Each listing is requested once by this wrapper. The provider timeout is per unde
 The return envelope is the internal acquisition-candidate format, version `0.1.0`, not the public market-data API contract. Its source policy is `RESTRICTED_UNVERIFIED`, with public display and external AI processing disabled. The private mode is a runtime boundary, not a claim that every intended data use has been licensed.
 
 Actual provider observations and feasibility evidence are kept outside Git. Indian-symbol live streaming must be tested during an open market session. [yfinance documentation](https://ranaroussi.github.io/yfinance/), [history parameters](https://ranaroussi.github.io/yfinance/reference/api/yfinance.download.html).
+
+## Run private daily downloads
+
+Set these variables in the backend process environment after reviewing the Yahoo data terms and confirming your deployment is for private personal use:
+
+- `FINN_MARKET_YAHOO_ENABLED=true`
+- `FINN_MARKET_PYTHON`: absolute path to a Python 3.13 executable in an external virtual environment containing the locked dependencies.
+- `FINN_MARKET_ADAPTER_SOURCE`: absolute path to this integration's `src` directory.
+- `FINN_WORKSPACE_ROOT`: existing external FINN workspace used for cache and scratch files.
+
+Create a reviewed exchange listing with an effective `.NS` or `.BO` mapping in Securities. Open its prices and request a completed-session refresh. One request covers one listing and at most 31 days; UI refresh requests at most the last 14 days. Each user can start eight windows per hour and have three pending. The service admits at most 30 windows per hour and retries temporary failures at most twice. Yahoo price rows expire after 90 calendar days. This is an application policy, not an upstream quota or a claim of entitlement. No real provider prices enter the synthetic demo.
+
+Until official exchange files are verified, a user can record an as-reported exchange close with a reviewed source reference. No server-side request is made to a user-entered source reference.
