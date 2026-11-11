@@ -1,0 +1,46 @@
+
+package dev.finn.research;
+
+import java.util.Locale;
+import java.util.regex.Pattern;
+
+final class EventClassifier {
+    enum Subtype {
+        RESULTS("EARNINGS"), RESULTS_MEETING("EARNINGS"), BUYBACK("CAPITAL"), CAPITAL_RAISE("CAPITAL"),
+        AUDITOR("GOVERNANCE"), GOVERNANCE("GOVERNANCE"), DIVIDEND("CORPORATE_ACTION"),
+        SPLIT_BONUS("CORPORATE_ACTION"), MERGER("CORPORATE_ACTION"), OTHER("OTHER");
+
+        final String category;
+        Subtype(String category) { this.category = category; }
+    }
+    record Hint(String category,String subtype,String stage,String materiality,String novelty,String confidence) {}
+
+    private static final Pattern CAPITAL = Pattern.compile("\\b(fund rais(e|ing)|capital rais(e|ing)|preferential issue|qualified institutional placement|rights issue)\\b");
+    private static final Pattern BUYBACK = Pattern.compile("\\b(buy[ -]?back|share repurchase)\\b");
+    private static final Pattern RESULTS = Pattern.compile("\\b(financial results|quarterly results|annual results|earnings results)\\b");
+
+    private EventClassifier() {}
+
+    static Hint suggest(String title) {
+        String value = title.toLowerCase(Locale.ROOT);
+        boolean meeting = value.contains("meeting") || value.contains("intimation");
+        if (value.contains("auditor")) return hint(Subtype.AUDITOR,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (BUYBACK.matcher(value).find()) return hint(Subtype.BUYBACK,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (CAPITAL.matcher(value).find()) return hint(Subtype.CAPITAL_RAISE,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (RESULTS.matcher(value).find()) {
+            if ((meeting && !value.contains("outcome")) || value.contains("newspaper advertisement"))
+                return hint(Subtype.RESULTS_MEETING,"ANNOUNCED","LOW","ROUTINE");
+            return hint(Subtype.RESULTS,"UNKNOWN","MEDIUM","UNKNOWN");
+        }
+        if (value.contains("dividend")) return hint(Subtype.DIVIDEND,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (value.contains("split") || value.contains("bonus issue")) return hint(Subtype.SPLIT_BONUS,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (value.contains("merger") || value.contains("demerger") || value.contains("amalgamation"))
+            return hint(Subtype.MERGER,"UNKNOWN","HIGH","UNKNOWN");
+        if (value.contains("director") || value.contains("governance")) return hint(Subtype.GOVERNANCE,"UNKNOWN","MEDIUM","UNKNOWN");
+        return hint(Subtype.OTHER,"UNKNOWN","UNKNOWN","UNKNOWN");
+    }
+
+    private static Hint hint(Subtype subtype,String stage,String materiality,String novelty) {
+        return new Hint(subtype.category,subtype.name(),stage,materiality,novelty,subtype==Subtype.OTHER ? "UNKNOWN" : "TITLE_HINT");
+    }
+}

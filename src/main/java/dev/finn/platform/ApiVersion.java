@@ -1,6 +1,6 @@
 package dev.finn.platform;
 
 public final class ApiVersion {
-    public static final String CURRENT="0.24.0";
+    public static final String CURRENT="0.25.0";
     private ApiVersion(){}
 }

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.24.0",
+  "$id": "urn:finn:contracts:market-data:0.25.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.24.0"
+      "const": "0.25.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2513,6 +2513,347 @@
       "required": [
         "expectedRevision",
         "source"
+      ],
+      "additionalProperties": false
+    },
+    "EventSuggestion": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "EARNINGS",
+            "CAPITAL",
+            "GOVERNANCE",
+            "CORPORATE_ACTION",
+            "OTHER"
+          ]
+        },
+        "subtype": {
+          "type": "string",
+          "enum": [
+            "RESULTS",
+            "RESULTS_MEETING",
+            "BUYBACK",
+            "CAPITAL_RAISE",
+            "AUDITOR",
+            "GOVERNANCE",
+            "DIVIDEND",
+            "SPLIT_BONUS",
+            "MERGER",
+            "OTHER"
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "ANNOUNCED",
+            "DECIDED",
+            "COMPLETED",
+            "CANCELLED",
+            "UNKNOWN"
+          ]
+        },
+        "materiality": {
+          "type": "string",
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+            "UNKNOWN"
+          ]
+        },
+        "novelty": {
+          "type": "string",
+          "enum": [
+            "NEW",
+            "FOLLOW_UP",
+            "CORRECTION",
+            "ROUTINE",
+            "UNKNOWN"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "TITLE_HINT",
+            "UNKNOWN"
+          ]
+        }
+      },
+      "required": [
+        "category",
+        "subtype",
+        "stage",
+        "materiality",
+        "novelty",
+        "confidence"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyEventInput": {
+      "type": "object",
+      "properties": {
+        "documentId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "documentRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "eventId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expectedRevision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "groupingKey": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subtype": {
+          "type": "string",
+          "enum": [
+            "RESULTS",
+            "RESULTS_MEETING",
+            "BUYBACK",
+            "CAPITAL_RAISE",
+            "AUDITOR",
+            "GOVERNANCE",
+            "DIVIDEND",
+            "SPLIT_BONUS",
+            "MERGER",
+            "OTHER"
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "ANNOUNCED",
+            "DECIDED",
+            "COMPLETED",
+            "CANCELLED",
+            "UNKNOWN"
+          ]
+        },
+        "materiality": {
+          "type": "string",
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+            "UNKNOWN"
+          ]
+        },
+        "novelty": {
+          "type": "string",
+          "enum": [
+            "NEW",
+            "FOLLOW_UP",
+            "CORRECTION",
+            "ROUTINE",
+            "UNKNOWN"
+          ]
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "documentId",
+        "documentRevision",
+        "eventId",
+        "expectedRevision",
+        "title",
+        "groupingKey",
+        "subtype",
+        "stage",
+        "materiality",
+        "novelty",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyEvent": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "documentId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "documentRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "sourceTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "EARNINGS",
+            "CAPITAL",
+            "GOVERNANCE",
+            "CORPORATE_ACTION",
+            "OTHER"
+          ]
+        },
+        "subtype": {
+          "type": "string",
+          "enum": [
+            "RESULTS",
+            "RESULTS_MEETING",
+            "BUYBACK",
+            "CAPITAL_RAISE",
+            "AUDITOR",
+            "GOVERNANCE",
+            "DIVIDEND",
+            "SPLIT_BONUS",
+            "MERGER",
+            "OTHER"
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "ANNOUNCED",
+            "DECIDED",
+            "COMPLETED",
+            "CANCELLED",
+            "UNKNOWN"
+          ]
+        },
+        "materiality": {
+          "type": "string",
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+            "UNKNOWN"
+          ]
+        },
+        "novelty": {
+          "type": "string",
+          "enum": [
+            "NEW",
+            "FOLLOW_UP",
+            "CORRECTION",
+            "ROUTINE",
+            "UNKNOWN"
+          ]
+        },
+        "confidence": {
+          "const": "REVIEWED"
+        },
+        "reviewedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "eventId",
+        "companyId",
+        "companyName",
+        "revision",
+        "documentId",
+        "documentRevision",
+        "sourceTitle",
+        "title",
+        "category",
+        "subtype",
+        "stage",
+        "materiality",
+        "novelty",
+        "confidence",
+        "reviewedAt"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyEventPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanyEvent"
+          },
+          "maxItems": 40
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyEventHistory": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanyEvent"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "items"
       ],
       "additionalProperties": false
     },

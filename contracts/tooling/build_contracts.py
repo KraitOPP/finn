@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.24.0"
+VERSION = "0.25.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -284,6 +284,26 @@ def definitions() -> dict:
     d["CompanySourceVersions"] = obj({"items": array(ref("CompanySource"),maxItems=50)})
     d["CompanySourceDetail"] = obj({"source": ref("CompanySource"), "attachment": nullable(text(maxLength=49152))})
     d["CompanySourceEdit"] = obj({"expectedRevision": source_revision, "source": ref("CompanySourceInput")})
+    event_category = enum(["EARNINGS","CAPITAL","GOVERNANCE","CORPORATE_ACTION","OTHER"])
+    event_subtype = enum(["RESULTS","RESULTS_MEETING","BUYBACK","CAPITAL_RAISE","AUDITOR","GOVERNANCE","DIVIDEND","SPLIT_BONUS","MERGER","OTHER"])
+    event_revision = {"type":"integer","minimum":1,"maximum":100}
+    classification = {
+        "subtype": event_subtype, "stage": enum(["ANNOUNCED","DECIDED","COMPLETED","CANCELLED","UNKNOWN"]),
+        "materiality": enum(["HIGH","MEDIUM","LOW","UNKNOWN"]), "novelty": enum(["NEW","FOLLOW_UP","CORRECTION","ROUTINE","UNKNOWN"]),
+    }
+    d["EventSuggestion"] = obj({"category": event_category, **classification, "confidence": enum(["TITLE_HINT","UNKNOWN"])})
+    d["CompanyEventInput"] = obj({
+        "documentId": ref("OpaqueId"), "documentRevision": source_revision, "eventId": nullable(ref("OpaqueId")),
+        "expectedRevision": nullable(event_revision), "title": text(maxLength=120), "groupingKey": nullable(text(maxLength=80)),
+        **classification, "reviewed": {"const":True},
+    })
+    d["CompanyEvent"] = obj({
+        "eventId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120), "revision": event_revision,
+        "documentId": ref("OpaqueId"), "documentRevision": source_revision, "sourceTitle": text(maxLength=120), "title": text(maxLength=120),
+        "category": event_category, **classification, "confidence": {"const":"REVIEWED"}, "reviewedAt": ref("UtcInstant"),
+    })
+    d["CompanyEventPage"] = obj({"items": array(ref("CompanyEvent"),maxItems=40), "hasMore": {"type":"boolean"}})
+    d["CompanyEventHistory"] = obj({"items": array(ref("CompanyEvent"),maxItems=100)})
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
         "items": array(obj({"activityId": ref("OpaqueId"), "title": text(maxLength=160), "kind": activity_kind,
@@ -708,6 +728,14 @@ def public_api_document() -> dict:
         "/api/v1/research/sources/{id}":{"post": maintained("reviseCompanySource","Append a private source revision","CompanySource",identifier,"CompanySourceEdit")},
         "/api/v1/research/sources/{id}/versions":{"get": maintained("listSourceVersions","Read all retained versions for an owned source","CompanySourceVersions",identifier)},
         "/api/v1/research/sources/{id}/versions/{revision}":{"get": maintained("getSourceVersion","Read a private source version and its text","CompanySourceDetail",[*identifier,parameter("revision","path",{"type":"integer","minimum":1,"maximum":50},True)])},
+        "/api/v1/research/events":{
+            "get": maintained("listCompanyEvents","List owned reviewed company event threads","CompanyEventPage",[
+                parameter("companyId","query",text(format="uuid")),parameter("offset","query",{"type":"integer","minimum":0,"maximum":300})]),
+            "post": maintained("classifyCompanySource","Review a classification and append it to a company event thread","CompanyEvent",input_name="CompanyEventInput"),
+        },
+        "/api/v1/research/events/suggestion":{"get": maintained("suggestSourceClassification","Suggest a classification from an owned primary source title","EventSuggestion",[
+            parameter("documentId","query",text(format="uuid"),True),parameter("revision","query",{"type":"integer","minimum":1,"maximum":50},True)])},
+        "/api/v1/research/events/{id}/versions":{"get": maintained("getCompanyEventHistory","Read retained thread versions and exact source references","CompanyEventHistory",identifier)},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
