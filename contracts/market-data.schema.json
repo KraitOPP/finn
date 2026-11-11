@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.13.0",
+  "$id": "urn:finn:contracts:market-data:0.14.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.13.0"
+      "const": "0.14.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -372,6 +372,395 @@
         "jobId",
         "start",
         "endExclusive"
+      ],
+      "additionalProperties": false
+    },
+    "ValuationListing": {
+      "type": "object",
+      "properties": {
+        "securityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "listingId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowProviderEstimate": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "securityId",
+        "listingId",
+        "allowProviderEstimate"
+      ],
+      "additionalProperties": false
+    },
+    "ValuedHolding": {
+      "type": "object",
+      "properties": {
+        "securityId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "securityName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "quantity": {
+          "$ref": "#/$defs/PositiveDecimalString"
+        },
+        "recordedCost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "listingId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowProviderEstimate": {
+          "type": "boolean"
+        },
+        "observation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrivateClose"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unrealisedPnl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priceStatus": {
+          "type": "string",
+          "enum": [
+            "LISTING_REQUIRED",
+            "PRICE_UNAVAILABLE",
+            "STALE",
+            "DELAY_UNKNOWN"
+          ]
+        }
+      },
+      "required": [
+        "securityId",
+        "securityName",
+        "quantity",
+        "recordedCost",
+        "listingId",
+        "allowProviderEstimate",
+        "observation",
+        "value",
+        "unrealisedPnl",
+        "priceStatus"
+      ],
+      "additionalProperties": false
+    },
+    "ValuationTotals": {
+      "type": "object",
+      "properties": {
+        "positions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "priced": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "stalePrices": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "providerEstimates": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "knownHoldingsValue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "holdingsValue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "knownUnrealisedPnl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unrealisedPnl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cashBalance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "portfolioValue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "realisedPnl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recordedFees": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recordedDividends": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "netContributions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recordedFeesComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "positions",
+        "priced",
+        "stalePrices",
+        "providerEstimates",
+        "knownHoldingsValue",
+        "holdingsValue",
+        "knownUnrealisedPnl",
+        "unrealisedPnl",
+        "cashBalance",
+        "portfolioValue",
+        "realisedPnl",
+        "recordedFees",
+        "recordedDividends",
+        "netContributions",
+        "recordedFeesComplete"
+      ],
+      "additionalProperties": false,
+      "description": "Totals cover recorded positions and cash only; unknown components stay null. Contributions are not gains."
+    },
+    "AccountValuation": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "asOf": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "ledgerRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "calculationVersion": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "currency": {
+          "type": "string",
+          "const": "INR"
+        },
+        "coverageStart": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "historyStatus": {
+          "type": "string",
+          "enum": [
+            "UNKNOWN",
+            "HOLDINGS_ONLY",
+            "PARTIAL_TRADES"
+          ]
+        },
+        "holdings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ValuedHolding"
+          },
+          "maxItems": 1000
+        },
+        "totals": {
+          "$ref": "#/$defs/ValuationTotals"
+        }
+      },
+      "required": [
+        "accountId",
+        "asOf",
+        "ledgerRevision",
+        "calculationVersion",
+        "currency",
+        "coverageStart",
+        "historyStatus",
+        "holdings",
+        "totals"
+      ],
+      "additionalProperties": false
+    },
+    "AccountValuationTotal": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "ledgerRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "totals": {
+          "$ref": "#/$defs/ValuationTotals"
+        }
+      },
+      "required": [
+        "accountId",
+        "name",
+        "ledgerRevision",
+        "totals"
+      ],
+      "additionalProperties": false
+    },
+    "PortfolioValuation": {
+      "type": "object",
+      "properties": {
+        "portfolioId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "asOf": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "currency": {
+          "type": "string",
+          "const": "INR"
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AccountValuationTotal"
+          },
+          "maxItems": 100
+        },
+        "totals": {
+          "$ref": "#/$defs/ValuationTotals"
+        }
+      },
+      "required": [
+        "portfolioId",
+        "asOf",
+        "currency",
+        "accounts",
+        "totals"
       ],
       "additionalProperties": false
     },

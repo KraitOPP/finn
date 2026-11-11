@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.13.0"
+VERSION = "0.14.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -102,6 +102,36 @@ def definitions() -> dict:
     })
     d["PriceFetchWindow"] = obj({"start": ref("SessionDate"), "endExclusive": ref("SessionDate")})
     d["PriceFetchQueued"] = obj({"jobId": ref("OpaqueId"), "start": ref("SessionDate"), "endExclusive": ref("SessionDate")})
+    d["ValuationListing"] = obj({
+        "securityId": ref("OpaqueId"), "listingId": nullable(ref("OpaqueId")), "allowProviderEstimate": {"type":"boolean"},
+    })
+    d["ValuedHolding"] = obj({
+        "securityId": ref("OpaqueId"), "securityName": text(maxLength=120), "quantity": ref("PositiveDecimalString"),
+        "recordedCost": nullable(ref("DecimalString")), "listingId": nullable(ref("OpaqueId")),
+        "allowProviderEstimate": {"type":"boolean"}, "observation": nullable(ref("PrivateClose")),
+        "value": nullable(ref("DecimalString")), "unrealisedPnl": nullable(ref("DecimalString")),
+        "priceStatus": enum(["LISTING_REQUIRED","PRICE_UNAVAILABLE","STALE","DELAY_UNKNOWN"]),
+    })
+    d["ValuationTotals"] = obj({
+        **{field: {"type":"integer","minimum":0,"maximum":100000} for field in ("positions","priced","stalePrices","providerEstimates")},
+        **{field: nullable(ref("DecimalString")) for field in ("knownHoldingsValue","holdingsValue","knownUnrealisedPnl","unrealisedPnl",
+             "cashBalance","portfolioValue","realisedPnl","recordedFees","recordedDividends","netContributions")},
+        "recordedFeesComplete": {"type":"boolean"},
+    }, "Totals cover recorded positions and cash only; unknown components stay null. Contributions are not gains.")
+    d["AccountValuation"] = obj({
+        "accountId": ref("OpaqueId"), "asOf": ref("SessionDate"), "ledgerRevision":{"type":"integer","minimum":0,"maximum":10000},
+        "calculationVersion": ref("OpaqueId"), "currency": {"type":"string","const":"INR"},
+        "coverageStart": nullable(ref("SessionDate")), "historyStatus": enum(["UNKNOWN","HOLDINGS_ONLY","PARTIAL_TRADES"]),
+        "holdings": array(ref("ValuedHolding")), "totals": ref("ValuationTotals"),
+    })
+    d["AccountValuationTotal"] = obj({
+        "accountId": ref("OpaqueId"), "name": text(maxLength=120), "ledgerRevision": {"type":"integer","minimum":0,"maximum":10000},
+        "totals": ref("ValuationTotals"),
+    })
+    d["PortfolioValuation"] = obj({
+        "portfolioId": ref("OpaqueId"), "asOf": ref("SessionDate"), "currency": {"type":"string","const":"INR"},
+        "accounts": array(ref("AccountValuationTotal"),maxItems=100), "totals": ref("ValuationTotals"),
+    })
     d["ListingIdentity"] = obj({
         "listingId": ref("OpaqueId"), "securityId": ref("OpaqueId"),
         "companyId": ref("OpaqueId"), "exchange": enum(["NSE", "BSE"]),
@@ -466,6 +496,9 @@ def public_api_document() -> dict:
     market_refresh=maintained("queuePrivateYahooDaily","Queue a bounded completed-session window for the reviewed mapping","PriceFetchQueued",listing_parameter,"PriceFetchWindow")
     market_refresh["responses"]["202"]=market_refresh["responses"].pop("200")
     paths.update({
+        "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
+        journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
+        journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
         market_path:{"get":maintained("getListingFeedStatus","Read the owned listing's latest close and acquisition state","MarketFeed",listing_parameter)},
         market_path+"/history":{"get":maintained("getPrivateCloseHistory","Read the latest retained revision per session and source","PrivateCloseHistory",[*listing_parameter,*dates])},
         market_path+"/reviewed-close":{"post":maintained("recordReviewedClose","Record a user-verified as-reported INR closing price","PrivateClose",listing_parameter,"ReviewCloseInput")},
@@ -497,7 +530,7 @@ def public_api_document() -> dict:
     return openapi_refs({
         "openapi": "3.1.1", "jsonSchemaDialect": DIALECT,
         "info": {"title": "FINN initial market data API", "version": VERSION,
-                 "description": "Identity, preferences, manual catalogue, portfolios/accounts, immutable ledger, private holdings previews, reviewed opening acceptance and durable jobs are implemented. Other market operations remain planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
+                 "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."},
         "servers": [{"url": "/", "description": "Same-origin Java API; no running service implied."}],
         "security": [{"sessionCookie": []}],
         "x-finn-status": "PARTIALLY_IMPLEMENTED_REVIEWED_HOLDINGS",
