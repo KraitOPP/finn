@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.31.0",
+  "contractVersion": "0.32.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "015d0f1946064aaeec889b1bf73e87ea058ccd31904317dcf6ac8657811dae26",
+  "sourceSha256": "561c2192dc2031c1c36edc7ef21ed253096c1f40d43a108f6c39871eb3962d01",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -37,6 +37,10 @@ export const contractMetadata = {
     "CompanyNewsCluster",
     "CompanyNewsInput",
     "CompanyNewsPage",
+    "CompanyResearchNote",
+    "CompanyResearchNoteInput",
+    "CompanyResearchOverview",
+    "CompanyResearchResolution",
     "CompanySource",
     "CompanySourceDetail",
     "CompanySourceEdit",
@@ -1852,6 +1856,146 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "CompanyResearchNote": {
+    "type": "object",
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "BUSINESS",
+          "GOVERNANCE",
+          "QUESTION"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "anchorId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "noteId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "resolved": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "kind",
+      "title",
+      "anchorId",
+      "noteId",
+      "resolved"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyResearchNoteInput": {
+    "type": "object",
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "BUSINESS",
+          "GOVERNANCE",
+          "QUESTION"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "anchorId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "kind",
+      "title",
+      "anchorId"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyResearchOverview": {
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "primarySources": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "indexedSources": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "sources": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanySource"
+        },
+        "maxItems": 6
+      },
+      "events": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanyEvent"
+        },
+        "maxItems": 6
+      },
+      "notes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanyResearchNote"
+        },
+        "maxItems": 50
+      }
+    },
+    "required": [
+      "companyId",
+      "companyName",
+      "primarySources",
+      "indexedSources",
+      "sources",
+      "events",
+      "notes"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyResearchResolution": {
+    "type": "object",
+    "properties": {
+      "resolved": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "resolved"
+    ],
+    "additionalProperties": false
+  },
   "CompanySource": {
     "type": "object",
     "properties": {
@@ -2102,7 +2246,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.31.0"
+    "const": "0.32.0"
   },
   "CorporateActionApproval": {
     "type": "object",

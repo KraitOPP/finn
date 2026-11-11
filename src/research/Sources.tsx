@@ -8,11 +8,11 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
+import { CompanyWorkspace } from "./CompanyWorkspace.tsx";
 import { EventReplay } from "./EventReplay.tsx";
 import { CompanyEvents, EventReview } from "./Events.tsx";
 import { EvidencePanel } from "./Evidence.tsx";
 import { FilingCalendar } from "./FilingCalendar.tsx";
-import { FinancialResearch } from "./FinancialFacts.tsx";
 import { News } from "./News.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
@@ -23,7 +23,7 @@ export function Research() {
     <section className="workspace-section">
       <RouteHeading>Research</RouteHeading>
       <PrimarySources onEvent={() => setGeneration((value) => value + 1)} />
-      <FinancialResearch />
+      <CompanyWorkspace generation={generation} />
       <CompanyEvents generation={generation} />
       <FilingCalendar generation={generation} />
       <News />

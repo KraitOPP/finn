@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { QuoteResponse } from "../contracts/generated/models.ts";
 import { quotePresentation } from "../contracts/presentation.ts";
 import { loadDemoQuote } from "./api/demo.ts";
@@ -18,7 +18,6 @@ import {
   usePreferences,
 } from "./preferences/PreferencesProvider.tsx";
 import { Settings } from "./preferences/Settings.tsx";
-import { Research } from "./research/Sources.tsx";
 
 type Snapshot =
   | { state: "loading" }
@@ -33,6 +32,12 @@ const sessionLabel = (value: string | null) =>
         timeZone: "UTC",
       }).format(new Date(`${value}T00:00:00Z`))
     : "Session unavailable";
+
+const Research = lazy(() =>
+  import("./research/Sources.tsx").then((module) => ({
+    default: module.Research,
+  })),
+);
 
 export function App() {
   return (
@@ -251,7 +256,9 @@ function WorkspaceApp() {
             ) : route === "settings" ? (
               <Settings />
             ) : (
-              <Research />
+              <Suspense fallback={<p role="status">Loading research…</p>}>
+                <Research />
+              </Suspense>
             )}
           </PrivateView>
         )}

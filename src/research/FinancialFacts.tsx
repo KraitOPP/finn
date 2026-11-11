@@ -41,35 +41,6 @@ const periods = {
 };
 const currencies = ["INR", "USD", "EUR", "GBP", "JPY"] as const;
 
-export function FinancialResearch() {
-  const companies = useResource(
-    "CatalogueCompanies",
-    "/api/v1/catalog/companies",
-  );
-  const [company, setCompany] = useState("");
-  return (
-    <section className="detail-card">
-      <h2>Company financial facts</h2>
-      <label>
-        Company for financial research{" "}
-        <select
-          value={company}
-          onChange={(event) => setCompany(event.target.value)}
-        >
-          <option value="">Choose a company</option>
-          {companies.value?.map((item) => (
-            <option key={item.companyId} value={item.companyId}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {companies.error && <p role="alert">{companies.error}</p>}
-      {company && <CompanyFacts key={company} company={company} />}
-    </section>
-  );
-}
-
 export function CompanyFacts({ company }: { company: string }) {
   const [offset, setOffset] = useState(0);
   const [editing, setEditing] = useState<FinancialFact | null>(null);
@@ -590,7 +561,7 @@ function FactForm({
   );
 }
 
-function EvidencePicker({
+export function EvidencePicker({
   company,
   onChoose,
 }: {

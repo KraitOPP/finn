@@ -327,6 +327,34 @@ export type CompanyNewsPage = ({
   "hasMore": (boolean);
 });
 
+export type CompanyResearchNote = ({
+  "kind": ("BUSINESS" | "GOVERNANCE" | "QUESTION") & (string);
+  "title": (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+  "noteId": (OpaqueId);
+  "resolved": (boolean);
+});
+
+export type CompanyResearchNoteInput = ({
+  "kind": ("BUSINESS" | "GOVERNANCE" | "QUESTION") & (string);
+  "title": (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+});
+
+export type CompanyResearchOverview = ({
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "primarySources": (number);
+  "indexedSources": (number);
+  "sources": (Array<(CompanySource)>);
+  "events": (Array<(CompanyEvent)>);
+  "notes": (Array<(CompanyResearchNote)>);
+});
+
+export type CompanyResearchResolution = ({
+  "resolved": (boolean);
+});
+
 export type CompanySource = ({
   "documentId": (OpaqueId);
   "companyId": (OpaqueId);
@@ -374,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.31.0") & (string);
+export type ContractVersion = ("0.32.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1639,6 +1667,10 @@ export interface ContractTypes {
   CompanyNewsCluster: CompanyNewsCluster;
   CompanyNewsInput: CompanyNewsInput;
   CompanyNewsPage: CompanyNewsPage;
+  CompanyResearchNote: CompanyResearchNote;
+  CompanyResearchNoteInput: CompanyResearchNoteInput;
+  CompanyResearchOverview: CompanyResearchOverview;
+  CompanyResearchResolution: CompanyResearchResolution;
   CompanySource: CompanySource;
   CompanySourceDetail: CompanySourceDetail;
   CompanySourceEdit: CompanySourceEdit;
