@@ -902,5 +902,18 @@
       }
     ],
     "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-corporate-fractional-ratio-input",
+    "baseCaseId": "corporate-split-command",
+    "changes": [
+      {
+        "path": [
+          "ratioNumerator"
+        ],
+        "value": 1.5
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
   }
 ]

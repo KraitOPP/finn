@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.10.0"
+VERSION = "0.11.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -283,11 +283,19 @@ def definitions() -> dict:
     d["LedgerReverseInput"]=obj({**ledger_key,"reference":ledger_text})
     d["LedgerCorrectInput"]=obj({**ledger_key,"replacement":ref("LedgerEntryInput"),"reference":ledger_text})
     d["LedgerReceipt"]=obj({"commandId":ref("OpaqueId"),"revision":ledger_sequence,"eventIds":array(ref("OpaqueId"),minItems=1,maxItems=2),"replayed":{"type":"boolean"}},"Same owner/account key and normalized inputs return the original command and event IDs. Changed inputs conflict. Reversal plus replacement is atomic.")
-    d["LedgerEventView"]=obj({**ledger_input,"kind":enum([*ledger_types,"REVERSAL"]),"eventId":ref("OpaqueId"),"sequence":ledger_sequence,"securityName":ledger_text,"exchange":nullable(enum(["NSE","BSE"])),"reversalOf":ledger_id,"reversedBy":ledger_id,"replacesEventId":ledger_id,"source":enum(["MANUAL","GROWW_HOLDINGS","REVIEWED_CORPORATE_ACTION"]),"sourceReference":ledger_id,"recordedAt":ref("UtcInstant")})
+    ratio=nullable({"type":"integer","minimum":1,"maximum":1000000})
+    d["LedgerEventView"]=obj({**ledger_input,"kind":enum([*ledger_types,"SPLIT","BONUS","DIVIDEND","REVERSAL"]),"eventId":ref("OpaqueId"),"sequence":ledger_sequence,"securityName":ledger_text,"exchange":nullable(enum(["NSE","BSE"])),"reversalOf":ledger_id,"reversedBy":ledger_id,"replacesEventId":ledger_id,"source":enum(["MANUAL","GROWW_HOLDINGS","REVIEWED_CORPORATE_ACTION"]),"sourceReference":ledger_id,"recordedAt":ref("UtcInstant"),"ratioNumerator":ratio,"ratioDenominator":ratio})
     d["LedgerPage"]=obj({"items":array(ref("LedgerEventView"),maxItems=100),"nextBefore":nullable(ledger_sequence)},"Descending account sequence; before is exclusive. Original and reversing records remain visible.")
     d["LedgerPosition"]=obj({"securityId":ref("OpaqueId"),"securityName":ledger_text,"quantity":ref("IntegerString"),"recordedCost":nullable(ref("NonNegativeDecimalString")),"averageCost":nullable(ref("NonNegativeDecimalString")),"costBasis":enum(["RECORDED_TRADES","REPORTED_OPENING_COST","MIXED_RECORDED_COST","UNKNOWN"])})
     d["LedgerView"]=obj({"revision":ledger_revision,"calculationVersion":{"const":"MOVING_AVERAGE_1"},"currency":{"const":"INR"},"positions":array(ref("LedgerPosition"),maxItems=1000),"cashBalance":nullable(ref("DecimalString")),"recordedCashComponents":ref("DecimalString"),"cashMovementsComplete":{"type":"boolean"},"realisedPnl":nullable(ref("DecimalString")),"knownRealisedPnl":ref("DecimalString"),"recordedFees":ref("NonNegativeDecimalString"),"recordedFeesComplete":{"type":"boolean"},"standaloneFees":ref("NonNegativeDecimalString"),"netContributions":ref("DecimalString"),"cashBaselineDate":ledger_date,"coverageStart":ledger_date,"historyStatus":enum(["UNKNOWN","HOLDINGS_ONLY","PARTIAL_TRADES"]),"warnings":array(ref("OpaqueId"),maxItems=32)},"Tracked positions and accounting effects, not a full broker balance or tax calculation. Cash requires an explicit baseline and known movements. Coverage is partial; never fabricate past returns. Quantity/cost are by security; valuation needs a separate reviewed listing.")
     d["ImportTicket"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"duplicate":{"type":"boolean"}},"Byte-identical uploads reuse the original and its current job within the same owned account.")
+    d["LedgerView"]["properties"]["recordedDividends"]=ref("NonNegativeDecimalString")
+    d["LedgerView"]["required"].append("recordedDividends")
+    d["CorporateActionInput"]=obj({"type":enum(["SPLIT","BONUS","DIVIDEND","SYMBOL_CHANGE","MERGER","DEMERGER","RIGHTS"]),"securityId":ref("OpaqueId"),"listingId":ledger_id,"effectiveDate":ref("SessionDate"),"ratioNumerator":ratio,"ratioDenominator":ratio,"netCash":ledger_decimal,"sourceReference":text(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",maxLength=64),"sourceUrl":nullable(text(format="uri",maxLength=512)),"newSymbol":nullable(text(maxLength=64)),"newProviderSymbol":nullable(text(maxLength=72)),"correctsActionId":ledger_id},"Explicit reviewed source evidence. Split ratio is new total units per old units; bonus ratio is additional units per old units. Dividend is net credited cash. Complex/fractional actions require manual review.")
+    d["CorporateActionEffect"]=obj({"state":enum(["APPLICABLE","NEEDS_REVIEW"]),"reason":ledger_id,"ledgerRevision":ledger_revision,"unitsBefore":ledger_decimal,"unitsAfter":ledger_decimal,"recordedCostBefore":ledger_decimal,"recordedCostAfter":ledger_decimal,"cashDelta":ledger_decimal,"previousSymbol":nullable(text(maxLength=64)),"newSymbol":nullable(text(maxLength=64))})
+    d["CorporateActionApproval"]=obj({"action":ref("CorporateActionInput"),"reviewed":{"const":True},"expectedLedgerRevision":ledger_revision})
+    d["CorporateActionRecord"]=obj({"actionId":ref("OpaqueId"),"securityName":text(maxLength=120),"action":ref("CorporateActionInput"),"effect":ref("CorporateActionEffect"),"state":enum(["APPLIED","NEEDS_REVIEW","REVERSED"]),"ledgerEventId":ledger_id,"ledgerRevision":ledger_revision,"recordedAt":ref("UtcInstant"),"replayed":{"type":"boolean"}})
+    d["CorporateActionList"]=obj({"items":array(ref("CorporateActionRecord"),maxItems=100)},"Most recent reviewed records. Source references are owner/account scoped and immutable.")
     d["HoldingsImportSummary"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"state":enum(["QUEUED","RUNNING","SUCCEEDED","FAILED","PARTIALLY_SUCCEEDED","CANCELLED"]),"createdAt":ref("UtcInstant"),"sizeBytes":{"type":"integer","minimum":1,"maximum":5242880},"failureCode":nullable(text(pattern=r"^[A-Z][A-Z0-9_]{0,63}$",maxLength=64))})
     d["HoldingsImportList"]=obj({"items":array(ref("HoldingsImportSummary"),maxItems=30)})
     d["HoldingsRowIssue"]=obj({"code":ref("OpaqueId"),"column":enum(list("ABCDEFGH")),"blocksCommit":{"type":"boolean"}})
@@ -423,6 +431,8 @@ def public_api_document() -> dict:
     original=maintained("downloadHoldingsOriginal","Download a statically validated original as its owner","ImportTicket",import_id)
     original["responses"]["200"]={"description":"Original bytes; private attachment, no-store.","content":{"application/octet-stream":{"schema":{"type":"string","format":"binary"}}}}
     paths.update({
+        journal_path+"/corporate-actions":{"get":maintained("listCorporateActions","List reviewed corporate actions for the owned account","CorporateActionList",ledger_account),"post":maintained("applyCorporateAction","Record a confirmed source-backed action or an unsupported review","CorporateActionRecord",ledger_account,"CorporateActionApproval")},
+        journal_path+"/corporate-actions/preview":{"post":maintained("previewCorporateAction","Preview units, cost and cash effects without posting","CorporateActionEffect",ledger_account,"CorporateActionInput")},
         import_path:{"get":maintained("listHoldingsImports","List owned holdings imports","HoldingsImportList",ledger_account),"post":upload},
         import_path+"/{id}/preview":{"get":maintained("getHoldingsPreview","Review a completed holdings snapshot preview","HoldingsPreviewPage",[*import_id,parameter("limit","query",{"type":"integer","minimum":1,"maximum":100}),parameter("offset","query",{"type":"integer","minimum":0,"maximum":1000})])},
         import_path+"/{id}/original":{"get":original},

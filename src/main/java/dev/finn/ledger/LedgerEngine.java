@@ -14,7 +14,7 @@ public final class LedgerEngine {
     public record Position(UUID securityId,BigDecimal quantity,BigDecimal recordedCost,BigDecimal averageCost,String costBasis){}
     public record Projection(List<Position> positions,BigDecimal cashBalance,BigDecimal recordedCashComponents,
                              boolean cashMovementsComplete,BigDecimal realisedPnl,BigDecimal knownRealisedPnl,
-                             BigDecimal recordedFees,boolean recordedFeesComplete,BigDecimal standaloneFees,
+                             BigDecimal recordedFees,boolean recordedFeesComplete,BigDecimal standaloneFees,BigDecimal recordedDividends,
                              BigDecimal netContributions,LocalDate cashBaselineDate,LocalDate coverageStart,
                              String historyStatus,List<String> warnings){}
     private static final class Pool {
@@ -32,14 +32,14 @@ public final class LedgerEngine {
             if(original==null||original.kind()==REVERSAL||original.sequence()>=event.sequence()||!original.effectiveDate().equals(event.effectiveDate())||!reversed.add(original.eventId()))throw new LedgerViolation(INVALID_REVERSAL);
         }
         var events=input.stream().filter(event->event.kind()!=REVERSAL&&!reversed.contains(event.eventId()))
-                .sorted(Comparator.comparing(LedgerEvent::effectiveDate).thenComparingLong(LedgerEvent::sequence)).toList();
+                .sorted(Comparator.comparing(LedgerEvent::effectiveDate).thenComparingInt(event->event.kind()==SPLIT||event.kind()==BONUS?0:1).thenComparingLong(LedgerEvent::sequence)).toList();
         var openings=new HashMap<UUID,LocalDate>();LocalDate cashDate=null;
         for(var event:events){
             if(event.kind()==OPENING_POSITION&&openings.putIfAbsent(event.securityId(),event.effectiveDate())!=null)throw new LedgerViolation(DUPLICATE_OPENING_POSITION);
             if(event.kind()==OPENING_CASH){if(cashDate!=null)throw new LedgerViolation(CASH_BASELINE_CONFLICT);cashDate=event.effectiveDate();}
         }
         Map<UUID,Pool> pools=new HashMap<>();
-        BigDecimal cashComponents=BigDecimal.ZERO,baseline=BigDecimal.ZERO,realised=BigDecimal.ZERO,fees=BigDecimal.ZERO,standalone=BigDecimal.ZERO,contributions=BigDecimal.ZERO;
+        BigDecimal cashComponents=BigDecimal.ZERO,baseline=BigDecimal.ZERO,realised=BigDecimal.ZERO,fees=BigDecimal.ZERO,standalone=BigDecimal.ZERO,contributions=BigDecimal.ZERO,dividends=BigDecimal.ZERO;
         boolean cashComplete=true,realisedComplete=true,feesComplete=true,trades=false;
         Set<String> warnings=new TreeSet<>();
         LocalDate start=null;
@@ -50,7 +50,8 @@ public final class LedgerEngine {
                 LocalDate openingDate=openings.get(event.securityId());
                 if(openingDate!=null&&!date.isAfter(openingDate))throw new LedgerViolation(SNAPSHOT_BOUNDARY_CONFLICT);
             }
-            boolean cashMovement=event.kind()==BUY||event.kind()==SELL||event.kind()==DEPOSIT||event.kind()==WITHDRAWAL||event.kind()==FEE;
+            if(event.kind()==SPLIT||event.kind()==BONUS){LocalDate opening=openings.get(event.securityId());if(opening!=null&&!date.isAfter(opening))throw new LedgerViolation(SNAPSHOT_BOUNDARY_CONFLICT);}
+            boolean cashMovement=event.kind()==BUY||event.kind()==SELL||event.kind()==DEPOSIT||event.kind()==WITHDRAWAL||event.kind()==FEE||event.kind()==DIVIDEND;
             if(cashMovement&&cashDate!=null&&!date.isAfter(cashDate))throw new LedgerViolation(CASH_BASELINE_CONFLICT);
             BigDecimal recordedFee=event.fees()==null?BigDecimal.ZERO:event.fees();
             switch(event.kind()){
@@ -81,6 +82,8 @@ public final class LedgerEngine {
                 case DEPOSIT->{cashComponents=cashComponents.add(event.amount());contributions=contributions.add(event.amount());}
                 case WITHDRAWAL->{cashComponents=cashComponents.subtract(event.amount());contributions=contributions.subtract(event.amount());}
                 case FEE->{cashComponents=cashComponents.subtract(event.amount());fees=fees.add(event.amount());standalone=standalone.add(event.amount());}
+                case SPLIT,BONUS->{Pool pool=pools.computeIfAbsent(event.securityId(),key->new Pool());pool.quantity=corporateUnits(pool.quantity,event.ratioNumerator(),event.ratioDenominator(),event.kind()==BONUS);}
+                case DIVIDEND->{cashComponents=cashComponents.add(event.amount());dividends=LedgerRules.bounded(dividends.add(event.amount()));}
                 case OPENING_CASH->baseline=event.amount();
                 case REVERSAL->throw new LedgerViolation(INVALID_REVERSAL);
             }
@@ -103,6 +106,12 @@ public final class LedgerEngine {
         warnings.add("COMPLETE_HISTORICAL_RETURNS_UNAVAILABLE");
         BigDecimal cash=cashDate!=null&&cashComplete?LedgerRules.bounded(baseline.add(cashComponents)):null;
         if(cash!=null&&cash.signum()<0)warnings.add("RECORDED_CASH_NEGATIVE_REVIEW_REQUIRED");
-        return new Projection(positions,cash,cashComponents,cashComplete,realisedComplete?realised:null,realised,fees,feesComplete,standalone,contributions,cashDate,start,history,List.copyOf(warnings));
+        return new Projection(positions,cash,cashComponents,cashComplete,realisedComplete?realised:null,realised,fees,feesComplete,standalone,dividends,contributions,cashDate,start,history,List.copyOf(warnings));
+    }
+    public static BigDecimal corporateUnits(BigDecimal prior,int numerator,int denominator,boolean bonus){
+        if(prior.signum()<=0)throw new LedgerViolation(NO_ELIGIBLE_UNITS);
+        var result=prior.multiply(BigDecimal.valueOf(numerator)).divideAndRemainder(BigDecimal.valueOf(denominator));
+        if(result[1].signum()!=0)throw new LedgerViolation(FRACTIONAL_ACTION_UNSUPPORTED);
+        return LedgerRules.bounded(bonus?prior.add(result[0]):result[0]);
     }
 }

@@ -29,6 +29,10 @@ public final class LedgerRules {
         if(event.reference()!=null&&(event.reference().length()>120||event.reference().codePoints().anyMatch(Character::isISOControl)))throw new LedgerViolation(INVALID_EVENT);
         if(event.listingId()!=null&&event.securityId()==null)throw new LedgerViolation(INVALID_EVENT);
         if(event.source()==LedgerEvent.Source.GROWW_HOLDINGS&&event.kind()!=LedgerEvent.Kind.OPENING_POSITION)throw new LedgerViolation(INVALID_EVENT);
+        boolean unitAction=event.kind()==LedgerEvent.Kind.SPLIT||event.kind()==LedgerEvent.Kind.BONUS;
+        boolean corporate=unitAction||event.kind()==LedgerEvent.Kind.DIVIDEND;
+        if(corporate!=(event.source()==LedgerEvent.Source.REVIEWED_CORPORATE_ACTION))throw new LedgerViolation(INVALID_EVENT);
+        if(!unitAction)absent(event.ratioNumerator(),event.ratioDenominator());
         switch(event.kind()){
             case BUY,SELL->{
                 if(event.securityId()==null)throw new LedgerViolation(INVALID_EVENT);
@@ -44,6 +48,11 @@ public final class LedgerRules {
             }
             case OPENING_CASH->{nonnegative(event.amount());absent(event.securityId(),event.listingId(),event.quantity(),event.price(),event.fees(),event.reversalOf());}
             case DEPOSIT,WITHDRAWAL,FEE->{positive(event.amount());absent(event.securityId(),event.listingId(),event.quantity(),event.price(),event.fees(),event.reversalOf());}
+            case SPLIT,BONUS->{
+                if(event.securityId()==null||event.ratioNumerator()==null||event.ratioDenominator()==null||event.ratioNumerator()<1||event.ratioDenominator()<1||event.ratioNumerator()>1000000||event.ratioDenominator()>1000000)throw new LedgerViolation(INVALID_EVENT);
+                absent(event.quantity(),event.price(),event.amount(),event.fees(),event.reversalOf());
+            }
+            case DIVIDEND->{if(event.securityId()==null)throw new LedgerViolation(INVALID_EVENT);positive(event.amount());absent(event.quantity(),event.price(),event.fees(),event.reversalOf());}
             case REVERSAL->{if(event.reversalOf()==null)throw new LedgerViolation(INVALID_REVERSAL);absent(event.securityId(),event.listingId(),event.quantity(),event.price(),event.amount(),event.fees());}
         }
     }

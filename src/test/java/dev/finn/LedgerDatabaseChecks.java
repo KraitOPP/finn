@@ -90,4 +90,46 @@ final class LedgerDatabaseChecks {
         }
         read(mvc,fixture.accountPath()+"/ledger",fixture.subject()).andExpect(status().isOk()).andExpect(jsonPath("$.positions[0].quantity").value("1")).andExpect(jsonPath("$.revision").value(2));
     }
+    static void reviewedCorporateActions(MockMvc mvc)throws Exception{
+        var fixture=create(mvc,"fictional-corporate-actions");String owner=fixture.subject(),path=fixture.accountPath(),actions=path+"/corporate-actions",security=fixture.security();
+        ok(submit(mvc,path+"/transactions",owner,record(UUID.randomUUID(),event("OPENING_CASH",1,null,null,null,"1000",null))));
+        ok(submit(mvc,path+"/transactions",owner,record(UUID.randomUUID(),event("BUY",2,security,"10","10",null,"0"))));
+        String split=action("SPLIT",security,3,"FICT-SPLIT","\"ratioNumerator\":2,\"ratioDenominator\":1");
+        submit(mvc,actions+"/preview",owner,split).andExpect(status().isOk()).andExpect(jsonPath("$.unitsBefore").value("10")).andExpect(jsonPath("$.unitsAfter").value("20")).andExpect(jsonPath("$.recordedCostAfter").value("100"));
+        submit(mvc,actions+"/preview",owner,split.replace("\"ratioNumerator\":2","\"ratioNumerator\":2.5")).andExpect(status().isUnprocessableContent());
+        var first=ok(submit(mvc,actions,owner,approve(split,2)));
+        assertThat(ok(submit(mvc,actions,owner,approve(split,2))).get("replayed").asBoolean()).isTrue();
+        submit(mvc,actions,owner,approve(split.replace("\"ratioNumerator\":2","\"ratioNumerator\":3"),3)).andExpect(status().isConflict());
+        submit(mvc,actions,owner,approve(split.replace("FICT-SPLIT","OTHER-REFERENCE"),3)).andExpect(status().isConflict());
+        read(mvc,path+"/ledger",owner).andExpect(jsonPath("$.positions[0].quantity").value("20")).andExpect(jsonPath("$.positions[0].averageCost").value("5")).andExpect(jsonPath("$.cashBalance").value("900"));
+        assertThat(first.get("ledgerRevision").asInt()).isEqualTo(3);
+        ok(submit(mvc,actions,owner,approve(action("BONUS",security,4,"FICT-BONUS","\"ratioNumerator\":1,\"ratioDenominator\":2"),3)));
+        String dividend=action("DIVIDEND",security,5,"FICT-CREDIT","\"netCash\":\"12.25\"");
+        var paid=ok(submit(mvc,actions,owner,approve(dividend,4)));
+        assertThat(ok(submit(mvc,actions,owner,approve(dividend,4))).get("replayed").asBoolean()).isTrue();
+        read(mvc,path+"/ledger",owner).andExpect(jsonPath("$.positions[0].quantity").value("30")).andExpect(jsonPath("$.positions[0].recordedCost").value("100"))
+                .andExpect(jsonPath("$.recordedDividends").value("12.25")).andExpect(jsonPath("$.cashBalance").value("912.25")).andExpect(jsonPath("$.netContributions").value("0"));
+        submit(mvc,actions,owner,approve(action("SPLIT",security,6,"FICT-FRACTION","\"ratioNumerator\":1,\"ratioDenominator\":4"),5))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.state").value("NEEDS_REVIEW")).andExpect(jsonPath("$.effect.reason").value("FRACTIONAL_ACTION_UNSUPPORTED"));
+        submit(mvc,actions,owner,approve(action("MERGER",security,6,"FICT-MERGER","\"netCash\":null"),5)).andExpect(status().isOk()).andExpect(jsonPath("$.ledgerEventId").isEmpty());
+        String paidId=paid.get("ledgerEventId").asText();
+        ok(submit(mvc,path+"/transactions/"+paidId+"/reverse",owner,reverse(UUID.randomUUID())));
+        var replacement=ok(submit(mvc,actions,owner,approve(action("DIVIDEND",security,5,"FICT-CREDIT-CORRECTED","\"netCash\":\"13.75\",\"correctsActionId\":\""+paid.get("actionId").asText()+"\""),6)));
+        assertThat(replacement.get("ledgerRevision").asInt()).isEqualTo(7);
+        read(mvc,path+"/transactions",owner).andExpect(jsonPath("$.items[0].replacesEventId").value(paidId));
+        read(mvc,path+"/ledger",owner).andExpect(jsonPath("$.recordedDividends").value("13.75")).andExpect(jsonPath("$.cashBalance").value("913.75"));
+        var listing=ok(submit(mvc,"/api/v1/catalog/securities/"+security+"/listings",owner,"""
+                {"exchange":"NSE","series":"EQ","symbol":"DEMOOLD","providerSymbol":null,"validFrom":"2019-01-01","confirmed":true}
+                """));
+        String listingId=listing.get("listingId").asText();
+        submit(mvc,actions,owner,approve(action("SYMBOL_CHANGE",security,7,"FICT-RENAME","\"listingId\":\""+listingId+"\",\"newSymbol\":\"DEMONEW\""),7))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.ledgerRevision").value(7)).andExpect(jsonPath("$.effect.previousSymbol").value("DEMOOLD"));
+        read(mvc,"/api/v1/catalog/securities/"+security,owner).andExpect(jsonPath("$.listings[0].listingId").value(listingId)).andExpect(jsonPath("$.listings[0].symbol").value("DEMONEW"));
+        read(mvc,actions,"fictional-action-outsider").andExpect(status().isNotFound());
+        submit(mvc,actions+"/preview","fictional-action-outsider",split).andExpect(status().isNotFound());
+    }
+    private static String action(String type,String security,int day,String reference,String details){return """
+            {"type":"%s","securityId":"%s","effectiveDate":"2020-01-%02d","sourceReference":"%s","sourceUrl":"https://example.invalid/fictional-event",%s}
+            """.formatted(type,security,day,reference,details);}
+    private static String approve(String action,long revision){return "{\"action\":"+action+",\"reviewed\":true,\"expectedLedgerRevision\":"+revision+"}";}
 }

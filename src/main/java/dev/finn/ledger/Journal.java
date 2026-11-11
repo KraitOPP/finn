@@ -27,13 +27,13 @@ public class Journal {
     public record EventView(UUID eventId,long sequence,LocalDate effectiveDate,String kind,UUID securityId,String securityName,
                             UUID listingId,String exchange,String quantity,String price,String amount,String fees,
                             UUID reversalOf,UUID reversedBy,UUID replacesEventId,String reference,String source,
-                            UUID sourceReference,String recordedAt){}
+                            UUID sourceReference,String recordedAt,Integer ratioNumerator,Integer ratioDenominator){}
     public record Page(List<EventView> items,Long nextBefore){}
     public record PositionView(UUID securityId,String securityName,String quantity,String recordedCost,String averageCost,String costBasis){}
     public record View(long revision,String calculationVersion,String currency,List<PositionView> positions,
                        String cashBalance,String recordedCashComponents,boolean cashMovementsComplete,String realisedPnl,
                        String knownRealisedPnl,String recordedFees,boolean recordedFeesComplete,String standaloneFees,
-                       String netContributions,LocalDate cashBaselineDate,LocalDate coverageStart,String historyStatus,List<String> warnings){}
+                       String netContributions,LocalDate cashBaselineDate,LocalDate coverageStart,String historyStatus,List<String> warnings,String recordedDividends){}
     private record Stored(LedgerEvent event,UUID sourceReference,UUID replacesEventId,UUID reversedBy,String securityName,String exchange,String recordedAt){}
     private record NewEvent(LedgerEvent event,UUID sourceReference,UUID replacesEventId){}
     private record Existing(UUID commandId,String inputHash,long revision){}
@@ -49,10 +49,10 @@ public class Journal {
     private Stored row(ResultSet row,int index)throws SQLException{
         var event=new LedgerEvent(row.getObject("event_id",UUID.class),row.getLong("sequence"),row.getObject("effective_date",LocalDate.class),LedgerEvent.Kind.valueOf(row.getString("event_type")),
                 row.getObject("security_id",UUID.class),row.getObject("listing_id",UUID.class),row.getBigDecimal("quantity"),row.getBigDecimal("price"),row.getBigDecimal("amount"),row.getBigDecimal("fees"),
-                row.getObject("reversal_of",UUID.class),row.getString("reference"),LedgerEvent.Source.valueOf(row.getString("source")));
+                row.getObject("reversal_of",UUID.class),row.getString("reference"),LedgerEvent.Source.valueOf(row.getString("source")),row.getObject("ratio_numerator",Integer.class),row.getObject("ratio_denominator",Integer.class));
         return new Stored(event,row.getObject("source_reference",UUID.class),row.getObject("replaces_event_id",UUID.class),row.getObject("reversed_by",UUID.class),row.getString("security_name"),row.getString("exchange"),row.getObject("recorded_at",OffsetDateTime.class).toInstant().toString());
     }
-    private EventView view(Stored row){var e=row.event();return new EventView(e.eventId(),e.sequence(),e.effectiveDate(),e.kind().name(),e.securityId(),row.securityName(),e.listingId(),row.exchange(),text(e.quantity()),text(e.price()),text(e.amount()),text(e.fees()),e.reversalOf(),row.reversedBy(),row.replacesEventId(),e.reference(),e.source().name(),row.sourceReference(),row.recordedAt());}
+    private EventView view(Stored row){var e=row.event();return new EventView(e.eventId(),e.sequence(),e.effectiveDate(),e.kind().name(),e.securityId(),row.securityName(),e.listingId(),row.exchange(),text(e.quantity()),text(e.price()),text(e.amount()),text(e.fees()),e.reversalOf(),row.reversedBy(),row.replacesEventId(),e.reference(),e.source().name(),row.sourceReference(),row.recordedAt(),e.ratioNumerator(),e.ratioDenominator());}
     private List<Stored> load(UUID owner,UUID account){return jdbc.query(EVENTS+" ORDER BY e.sequence LIMIT ?",this::row,owner,account,LedgerEngine.MAX_EVENTS+1);}
     @Transactional public View view(UUID portfolio,UUID account){UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);return project(owner,account);}
     public View project(UUID owner,UUID account){
@@ -66,7 +66,7 @@ public class Journal {
         var projection=LedgerEngine.replay(rows.stream().map(Stored::event).toList());
         Map<UUID,String> names=new HashMap<>();for(var row:rows)if(row.event().securityId()!=null)names.put(row.event().securityId(),row.securityName());
         var positions=projection.positions().stream().map(p->new PositionView(p.securityId(),names.get(p.securityId()),text(p.quantity()),text(p.recordedCost()),text(p.averageCost()),p.costBasis())).toList();
-        return new View(revision,LedgerEngine.CALCULATION_VERSION,"INR",positions,text(projection.cashBalance()),text(projection.recordedCashComponents()),projection.cashMovementsComplete(),text(projection.realisedPnl()),text(projection.knownRealisedPnl()),text(projection.recordedFees()),projection.recordedFeesComplete(),text(projection.standaloneFees()),text(projection.netContributions()),projection.cashBaselineDate(),projection.coverageStart(),projection.historyStatus(),projection.warnings());
+        return new View(revision,LedgerEngine.CALCULATION_VERSION,"INR",positions,text(projection.cashBalance()),text(projection.recordedCashComponents()),projection.cashMovementsComplete(),text(projection.realisedPnl()),text(projection.knownRealisedPnl()),text(projection.recordedFees()),projection.recordedFeesComplete(),text(projection.standaloneFees()),text(projection.netContributions()),projection.cashBaselineDate(),projection.coverageStart(),projection.historyStatus(),projection.warnings(),text(projection.recordedDividends()));
     }
     @Transactional public Page page(UUID portfolio,UUID account,int limit,Long before){
         UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);
@@ -111,6 +111,23 @@ public class Journal {
         return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM finn.ledger_event WHERE owner_id=? AND account_id=? AND security_id IS NOT NULL)",Boolean.class,owner,account));
     }
     public long currentRevision(UUID owner,UUID account){return revision(owner,account);}
+    public boolean hasActiveCorporate(UUID owner,UUID account,UUID security,LocalDate date,LedgerEvent.Kind kind){
+        String filter=kind==LedgerEvent.Kind.DIVIDEND?"e.event_type='DIVIDEND'":"e.event_type IN ('SPLIT','BONUS')";
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM finn.ledger_event e WHERE e.owner_id=? AND e.account_id=? AND e.security_id=? AND e.effective_date=? AND
+                NOT EXISTS(SELECT 1 FROM finn.ledger_event r WHERE r.owner_id=e.owner_id AND r.account_id=e.account_id AND r.reversal_of=e.event_id) AND
+                """+filter+")",Boolean.class,owner,account,security,date));
+    }
+    @Transactional public Receipt recordCorporate(UUID owner,UUID portfolio,UUID account,UUID action,LedgerEvent.Kind kind,UUID security,UUID listing,
+                                                 LocalDate date,Integer numerator,Integer denominator,BigDecimal cash,String sourceReference,long expected,UUID replaces){
+        portfolios.requireAccount(owner,portfolio,account,true);
+        if(!Set.of(LedgerEvent.Kind.SPLIT,LedgerEvent.Kind.BONUS,LedgerEvent.Kind.DIVIDEND).contains(kind))throw ApiFailure.invalid();
+        long base=revision(owner,account);if(base!=expected)throw new ApiFailure(409,"CORPORATE_LEDGER_CHANGED");
+        if(hasActiveCorporate(owner,account,security,date,kind))throw new ApiFailure(409,"CORPORATE_ACTION_ALREADY_APPLIED");
+        var event=new LedgerEvent(UUID.randomUUID(),base+1,date,kind,security,listing,null,null,cash,null,null,"Corporate action "+sourceReference,
+                LedgerEvent.Source.REVIEWED_CORPORATE_ACTION,numerator,denominator);
+        return append(owner,portfolio,account,action,hash("CORPORATE_ACTION",action,event,sourceReference),base,List.of(new NewEvent(event,action,replaces)));
+    }
     private Receipt correction(UUID portfolio,UUID account,UUID original,UUID key,LedgerEvent replacement,String note){
         UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);
         note=reference(note);String hash=hash(replacement==null?"REVERSE":"CORRECT",original,replacement,note);
@@ -119,6 +136,7 @@ public class Journal {
         retry=existing(owner,account,key,hash);if(retry!=null)return retry;
         var prior=jdbc.query(EVENTS+" AND e.event_id=?",this::row,owner,account,original).stream().findFirst().orElseThrow(ApiFailure::notFound);
         if(prior.reversedBy()!=null||prior.event().kind()==LedgerEvent.Kind.REVERSAL)throw new LedgerViolation(LedgerViolation.Code.INVALID_REVERSAL);
+        if(replacement!=null&&prior.event().source()==LedgerEvent.Source.REVIEWED_CORPORATE_ACTION)throw new ApiFailure(409,"CORPORATE_CORRECTION_REQUIRES_REVIEW");
         long base=revision(owner,account);
         var reversal=new LedgerEvent(UUID.randomUUID(),base+1,prior.event().effectiveDate(),LedgerEvent.Kind.REVERSAL,null,null,null,null,null,null,original,note,LedgerEvent.Source.MANUAL);
         var events=new ArrayList<NewEvent>();events.add(new NewEvent(reversal,null,null));
@@ -133,9 +151,9 @@ public class Journal {
         UUID command=UUID.randomUUID();long revision=base+additions.size();
         jdbc.update("INSERT INTO finn.ledger_command(command_id,owner_id,portfolio_id,account_id,idempotency_key,input_hash,revision) VALUES (?,?,?,?,?,?,?)",command,owner,portfolio,account,key,hash,revision);
         jdbc.batchUpdate("""
-                INSERT INTO finn.ledger_event(event_id,owner_id,portfolio_id,account_id,command_id,sequence,effective_date,event_type,security_id,listing_id,quantity,price,amount,fees,reversal_of,replaces_event_id,reference,source,source_reference)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                """,additions.stream().map(addition->{var e=addition.event();return new Object[]{e.eventId(),owner,portfolio,account,command,e.sequence(),e.effectiveDate(),e.kind().name(),e.securityId(),e.listingId(),e.quantity(),e.price(),e.amount(),e.fees(),e.reversalOf(),addition.replacesEventId(),e.reference(),e.source().name(),addition.sourceReference()};}).toList());
+                INSERT INTO finn.ledger_event(event_id,owner_id,portfolio_id,account_id,command_id,sequence,effective_date,event_type,security_id,listing_id,quantity,price,amount,fees,reversal_of,replaces_event_id,reference,source,source_reference,ratio_numerator,ratio_denominator)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """,additions.stream().map(addition->{var e=addition.event();return new Object[]{e.eventId(),owner,portfolio,account,command,e.sequence(),e.effectiveDate(),e.kind().name(),e.securityId(),e.listingId(),e.quantity(),e.price(),e.amount(),e.fees(),e.reversalOf(),addition.replacesEventId(),e.reference(),e.source().name(),addition.sourceReference(),e.ratioNumerator(),e.ratioDenominator()};}).toList());
         if(jdbc.update("UPDATE finn.investment_account SET lock_version=?,history_status=?,history_start_date=? WHERE owner_id=? AND account_id=? AND lock_version=?",revision,result.historyStatus(),result.coverageStart(),owner,account,base)!=1)throw ApiFailure.conflict();
         audit.record(AuditTrail.Action.LEDGER_RECORDED,owner,command);
         return new Receipt(command,revision,additions.stream().map(item->item.event().eventId()).toList(),false);
@@ -161,7 +179,7 @@ public class Journal {
         if(input==null||input.kind()==null||!input.kind().isTextual())throw new LedgerViolation(LedgerViolation.Code.INVALID_EVENT);
         LedgerEvent.Kind kind;
         try{kind=LedgerEvent.Kind.valueOf(input.kind().asText());}catch(IllegalArgumentException invalid){throw new LedgerViolation(LedgerViolation.Code.INVALID_EVENT);}
-        if(kind==LedgerEvent.Kind.REVERSAL)throw new LedgerViolation(LedgerViolation.Code.INVALID_EVENT);
+        if(Set.of(LedgerEvent.Kind.REVERSAL,LedgerEvent.Kind.SPLIT,LedgerEvent.Kind.BONUS,LedgerEvent.Kind.DIVIDEND).contains(kind))throw new LedgerViolation(LedgerViolation.Code.INVALID_EVENT);
         var result=new LedgerEvent(UUID.randomUUID(),sequence,input.effectiveDate(),kind,input.securityId(),input.listingId(),decimal(input.quantity()),decimal(input.price()),decimal(input.amount()),decimal(input.fees()),null,reference(input.reference()),LedgerEvent.Source.MANUAL);
         LedgerRules.validate(result);return result;
     }
@@ -170,7 +188,7 @@ public class Journal {
         if(!node.isTextual())throw new LedgerViolation(LedgerViolation.Code.INVALID_EVENT);
         return LedgerRules.decimal(node.asText());
     }
-    private static LedgerEvent withSequence(LedgerEvent event,long sequence){return new LedgerEvent(event.eventId(),sequence,event.effectiveDate(),event.kind(),event.securityId(),event.listingId(),event.quantity(),event.price(),event.amount(),event.fees(),event.reversalOf(),event.reference(),event.source());}
+    private static LedgerEvent withSequence(LedgerEvent event,long sequence){return new LedgerEvent(event.eventId(),sequence,event.effectiveDate(),event.kind(),event.securityId(),event.listingId(),event.quantity(),event.price(),event.amount(),event.fees(),event.reversalOf(),event.reference(),event.source(),event.ratioNumerator(),event.ratioDenominator());}
     private static String hash(String action,UUID target,LedgerEvent event,String note){
         try{
             var digest=MessageDigest.getInstance("SHA-256");
