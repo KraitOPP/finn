@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.21.0",
+  "contractVersion": "0.22.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "a9f472567d14c7c22b59a3e6485dd79015db29c5ecd326ccb17db0a64f2dc30c",
+  "sourceSha256": "cb797fb76545c346c2e364dfd4d6ad06c6227f4b29b706fde4f0addbe02930cf",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -48,6 +48,12 @@
     "HoldingsSourceRow",
     "HoldingsTotals",
     "ImportTicket",
+    "IndicatorCreate",
+    "IndicatorEdit",
+    "IndicatorEvaluation",
+    "IndicatorEvaluations",
+    "IndicatorList",
+    "IndicatorRule",
     "InstrumentPage",
     "InstrumentResult",
     "IntegerString",

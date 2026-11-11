@@ -7,6 +7,7 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
+import { IndicatorEvidence, IndicatorRules } from "./IndicatorRules.tsx";
 import { LocalTime } from "./LocalTime.tsx";
 import { CloseEvidence } from "./PriceEvaluations.tsx";
 import { PriceRules } from "./PriceRules.tsx";
@@ -39,6 +40,7 @@ export function Inbox() {
       <DeliveryStatus />
       <ReviewCalendar />
       <PriceRules />
+      <IndicatorRules />
     </section>
   );
 }
@@ -172,6 +174,9 @@ function NotificationDetails({
               </p>
               <CloseEvidence value={detail.value.price.observation} />
             </>
+          )}
+          {detail.value.indicator && (
+            <IndicatorEvidence value={detail.value.indicator} />
           )}
           {detail.value.reminder && (
             <p>

@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.21.0",
+  "contractVersion": "0.22.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "a9f472567d14c7c22b59a3e6485dd79015db29c5ecd326ccb17db0a64f2dc30c",
+  "sourceSha256": "cb797fb76545c346c2e364dfd4d6ad06c6227f4b29b706fde4f0addbe02930cf",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -49,6 +49,12 @@ export const contractMetadata = {
     "HoldingsSourceRow",
     "HoldingsTotals",
     "ImportTicket",
+    "IndicatorCreate",
+    "IndicatorEdit",
+    "IndicatorEvaluation",
+    "IndicatorEvaluations",
+    "IndicatorList",
+    "IndicatorRule",
     "InstrumentPage",
     "InstrumentResult",
     "IntegerString",
@@ -992,7 +998,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.21.0"
+    "const": "0.22.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -2561,6 +2567,261 @@ export const contractSchemas = {
     "additionalProperties": false,
     "description": "Byte-identical uploads reuse the original and its current job within the same owned account."
   },
+  "IndicatorCreate": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "portfolioId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "VOLUME",
+          "ALLOCATION"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "threshold": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      }
+    },
+    "required": [
+      "listingId",
+      "portfolioId",
+      "kind",
+      "title",
+      "threshold"
+    ],
+    "additionalProperties": false
+  },
+  "IndicatorEdit": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "threshold": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "enabled": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "threshold",
+      "enabled"
+    ],
+    "additionalProperties": false
+  },
+  "IndicatorEvaluation": {
+    "type": "object",
+    "properties": {
+      "evaluationId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "sessionDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "threshold": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "metric": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "baselineStart": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "holdingValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "equityValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PositiveDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "triggered": {
+        "type": "boolean"
+      },
+      "evaluatedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "evaluationId",
+      "revision",
+      "sessionDate",
+      "threshold",
+      "metric",
+      "baselineStart",
+      "holdingValue",
+      "equityValue",
+      "triggered",
+      "evaluatedAt"
+    ],
+    "additionalProperties": false
+  },
+  "IndicatorEvaluations": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/IndicatorEvaluation"
+        },
+        "maxItems": 40
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "IndicatorList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/IndicatorRule"
+        },
+        "maxItems": 50
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "IndicatorRule": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "portfolioId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "VOLUME",
+          "ALLOCATION"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "threshold": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "ruleId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "result": {
+        "type": "string",
+        "enum": [
+          "WAITING",
+          "INSUFFICIENT_COVERAGE",
+          "EVALUATED"
+        ]
+      },
+      "lastSession": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      }
+    },
+    "required": [
+      "listingId",
+      "portfolioId",
+      "kind",
+      "title",
+      "threshold",
+      "ruleId",
+      "revision",
+      "enabled",
+      "result",
+      "lastSession",
+      "symbol",
+      "exchange"
+    ],
+    "additionalProperties": false
+  },
   "InstrumentPage": {
     "type": "object",
     "properties": {
@@ -4038,6 +4299,16 @@ export const contractSchemas = {
           }
         ]
       },
+      "indicator": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/IndicatorEvaluation"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "deliveries": {
         "type": "array",
         "items": {
@@ -4057,6 +4328,7 @@ export const contractSchemas = {
       "notification",
       "price",
       "reminder",
+      "indicator",
       "deliveries",
       "attempts"
     ],

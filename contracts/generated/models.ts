@@ -172,7 +172,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.21.0") & (string);
+export type ContractVersion = ("0.22.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -429,6 +429,56 @@ export type ImportTicket = ({
   "duplicate": (boolean);
 });
 
+export type IndicatorCreate = ({
+  "listingId": (OpaqueId);
+  "portfolioId": (((OpaqueId)) | ((null)));
+  "kind": ("VOLUME" | "ALLOCATION") & (string);
+  "title": (string);
+  "threshold": (PositiveDecimalString);
+});
+
+export type IndicatorEdit = ({
+  "expectedRevision": (number);
+  "threshold": (PositiveDecimalString);
+  "enabled": (boolean);
+});
+
+export type IndicatorEvaluation = ({
+  "evaluationId": (OpaqueId);
+  "revision": (number);
+  "sessionDate": (SessionDate);
+  "threshold": (PositiveDecimalString);
+  "metric": (NonNegativeDecimalString);
+  "baselineStart": (((SessionDate)) | ((null)));
+  "holdingValue": (((NonNegativeDecimalString)) | ((null)));
+  "equityValue": (((PositiveDecimalString)) | ((null)));
+  "triggered": (boolean);
+  "evaluatedAt": (UtcInstant);
+});
+
+export type IndicatorEvaluations = ({
+  "items": (Array<(IndicatorEvaluation)>);
+});
+
+export type IndicatorList = ({
+  "items": (Array<(IndicatorRule)>);
+});
+
+export type IndicatorRule = ({
+  "listingId": (OpaqueId);
+  "portfolioId": (((OpaqueId)) | ((null)));
+  "kind": ("VOLUME" | "ALLOCATION") & (string);
+  "title": (string);
+  "threshold": (PositiveDecimalString);
+  "ruleId": (OpaqueId);
+  "revision": (number);
+  "enabled": (boolean);
+  "result": ("WAITING" | "INSUFFICIENT_COVERAGE" | "EVALUATED") & (string);
+  "lastSession": (((SessionDate)) | ((null)));
+  "symbol": (string);
+  "exchange": ("NSE" | "BSE") & (string);
+});
+
 export type InstrumentPage = ({
   "contractVersion": (ContractVersion);
   "requestId": (OpaqueId);
@@ -659,6 +709,7 @@ export type NotificationDetail = ({
   "notification": (Notification);
   "price": (((PriceEvaluation)) | ((null)));
   "reminder": (((ReminderEvidence)) | ((null)));
+  "indicator": (((IndicatorEvaluation)) | ((null)));
   "deliveries": (Array<(NotificationDelivery)>);
   "attempts": (Array<(NotificationAttempt)>);
 });
@@ -1206,6 +1257,12 @@ export interface ContractTypes {
   HoldingsSourceRow: HoldingsSourceRow;
   HoldingsTotals: HoldingsTotals;
   ImportTicket: ImportTicket;
+  IndicatorCreate: IndicatorCreate;
+  IndicatorEdit: IndicatorEdit;
+  IndicatorEvaluation: IndicatorEvaluation;
+  IndicatorEvaluations: IndicatorEvaluations;
+  IndicatorList: IndicatorList;
+  IndicatorRule: IndicatorRule;
   InstrumentPage: InstrumentPage;
   InstrumentResult: InstrumentResult;
   IntegerString: IntegerString;
