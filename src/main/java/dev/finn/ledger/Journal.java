@@ -75,6 +75,11 @@ public class Journal {
         var items=rows.stream().limit(limit).map(this::view).toList();
         return new Page(items,rows.size()>limit?items.getLast().sequence():null);
     }
+    List<EventView> exportRows(UUID owner,UUID account,long expectedRevision){
+        var rows=load(owner,account);long revision=rows.isEmpty()?0:rows.getLast().event().sequence();
+        if(rows.size()>LedgerEngine.MAX_EVENTS||revision!=expectedRevision)throw new ApiFailure(409,"EXPORT_LEDGER_CHANGED");
+        return rows.stream().map(this::view).toList();
+    }
     @Transactional public Receipt record(UUID portfolio,UUID account,LedgerCommands.Record input){
         UUID owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);
         var event=manual(input.event(),1);String hash=hash("RECORD",null,event,null);

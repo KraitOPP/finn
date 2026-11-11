@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.11.0"
+VERSION = "0.12.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -291,6 +291,7 @@ def definitions() -> dict:
     d["ImportTicket"]=obj({"importId":ref("OpaqueId"),"jobId":ref("OpaqueId"),"duplicate":{"type":"boolean"}},"Byte-identical uploads reuse the original and its current job within the same owned account.")
     d["LedgerView"]["properties"]["recordedDividends"]=ref("NonNegativeDecimalString")
     d["LedgerView"]["required"].append("recordedDividends")
+    d["LedgerExportInput"]=obj({"expectedLedgerRevision":ledger_revision},"Export the reviewed current journal revision only. Readable after archive. No credentials, account identity or source workbook bytes are exported.")
     d["CorporateActionInput"]=obj({"type":enum(["SPLIT","BONUS","DIVIDEND","SYMBOL_CHANGE","MERGER","DEMERGER","RIGHTS"]),"securityId":ref("OpaqueId"),"listingId":ledger_id,"effectiveDate":ref("SessionDate"),"ratioNumerator":ratio,"ratioDenominator":ratio,"netCash":ledger_decimal,"sourceReference":text(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",maxLength=64),"sourceUrl":nullable(text(format="uri",maxLength=512)),"newSymbol":nullable(text(maxLength=64)),"newProviderSymbol":nullable(text(maxLength=72)),"correctsActionId":ledger_id},"Explicit reviewed source evidence. Split ratio is new total units per old units; bonus ratio is additional units per old units. Dividend is net credited cash. Complex/fractional actions require manual review.")
     d["CorporateActionEffect"]=obj({"state":enum(["APPLICABLE","NEEDS_REVIEW"]),"reason":ledger_id,"ledgerRevision":ledger_revision,"unitsBefore":ledger_decimal,"unitsAfter":ledger_decimal,"recordedCostBefore":ledger_decimal,"recordedCostAfter":ledger_decimal,"cashDelta":ledger_decimal,"previousSymbol":nullable(text(maxLength=64)),"newSymbol":nullable(text(maxLength=64))})
     d["CorporateActionApproval"]=obj({"action":ref("CorporateActionInput"),"reviewed":{"const":True},"expectedLedgerRevision":ledger_revision})
@@ -430,7 +431,10 @@ def public_api_document() -> dict:
     upload["responses"].update({"403":response("CSRF rejected.","Problem","application/problem+json"),"413":response("Workbook exceeds the bound.","Problem","application/problem+json"),"415":response("Unsupported upload media type.","Problem","application/problem+json")})
     original=maintained("downloadHoldingsOriginal","Download a statically validated original as its owner","ImportTicket",import_id)
     original["responses"]["200"]={"description":"Original bytes; private attachment, no-store.","content":{"application/octet-stream":{"schema":{"type":"string","format":"binary"}}}}
+    ledger_export=maintained("exportLedgerCsv","Download the owned journal with escaped spreadsheet text","LedgerPage",ledger_account,"LedgerExportInput")
+    ledger_export["responses"]["200"]={"description":"Private UTF-8 CSV attachment, no-store. Original and reversal entries are retained with effective markers.","content":{"text/csv":{"schema":{"type":"string","format":"binary"}}}}
     paths.update({
+        journal_path+"/transactions/export":{"post":ledger_export},
         journal_path+"/corporate-actions":{"get":maintained("listCorporateActions","List reviewed corporate actions for the owned account","CorporateActionList",ledger_account),"post":maintained("applyCorporateAction","Record a confirmed source-backed action or an unsupported review","CorporateActionRecord",ledger_account,"CorporateActionApproval")},
         journal_path+"/corporate-actions/preview":{"post":maintained("previewCorporateAction","Preview units, cost and cash effects without posting","CorporateActionEffect",ledger_account,"CorporateActionInput")},
         import_path:{"get":maintained("listHoldingsImports","List owned holdings imports","HoldingsImportList",ledger_account),"post":upload},

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.11.0",
+  "$id": "urn:finn:contracts:market-data:0.12.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.11.0"
+      "const": "0.12.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2935,6 +2935,21 @@
       ],
       "additionalProperties": false,
       "description": "Byte-identical uploads reuse the original and its current job within the same owned account."
+    },
+    "LedgerExportInput": {
+      "type": "object",
+      "properties": {
+        "expectedLedgerRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      },
+      "required": [
+        "expectedLedgerRevision"
+      ],
+      "additionalProperties": false,
+      "description": "Export the reviewed current journal revision only. Readable after archive. No credentials, account identity or source workbook bytes are exported."
     },
     "CorporateActionInput": {
       "type": "object",

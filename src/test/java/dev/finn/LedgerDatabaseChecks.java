@@ -132,4 +132,20 @@ final class LedgerDatabaseChecks {
             {"type":"%s","securityId":"%s","effectiveDate":"2020-01-%02d","sourceReference":"%s","sourceUrl":"https://example.invalid/fictional-event",%s}
             """.formatted(type,security,day,reference,details);}
     private static String approve(String action,long revision){return "{\"action\":"+action+",\"reviewed\":true,\"expectedLedgerRevision\":"+revision+"}";}
+    static void exportsAreScopedAndSpreadsheetSafe(MockMvc mvc)throws Exception{
+        var fixture=create(mvc,"fictional-export-owner");String path=fixture.accountPath()+"/transactions",owner=fixture.subject();
+        var entry=ok(submit(mvc,path,owner,record(UUID.randomUUID(),event("BUY",1,fixture.security(),"1","10.25",null,"0").replace("\"reference\":null","\"reference\":\"=1+1\""))));
+        String id=entry.get("eventIds").get(0).asText();
+        ok(submit(mvc,path+"/"+id+"/reverse",owner,reverse(UUID.randomUUID())));
+        String body="{\"expectedLedgerRevision\":2}";
+        submit(mvc,path+"/export","fictional-export-outsider",body).andExpect(status().isNotFound());
+        submit(mvc,path+"/export",owner,body.replace("2","1")).andExpect(status().isConflict());
+        var response=submit(mvc,path+"/export",owner,body).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
+                .andExpect(header().string("Content-Disposition",org.hamcrest.Matchers.containsString("finn-ledger.csv"))).andReturn().getResponse();
+        assertThat(response.getContentType()).startsWith("text/csv");
+        String csv=new String(response.getContentAsByteArray(),java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(csv.lines()).hasSize(3);
+        assertThat(csv).contains("\"BUY\",\"false\"","\"REVERSAL\",\"false\"","\"10.25\"","\"'=1+1\"",id).doesNotContain("\"=1+1\"");
+        read(mvc,fixture.accountPath()+"/ledger",owner).andExpect(jsonPath("$.revision").value(2)).andExpect(jsonPath("$.positions.length()").value(0));
+    }
 }
