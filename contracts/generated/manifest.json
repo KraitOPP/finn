@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.26.0",
+  "contractVersion": "0.27.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "dc298aa8b5da8401bc0b4afec4c8edf878c96477572aad978f492ece7b9cb35d",
+  "sourceSha256": "9991f2dc381fd365b761464e60c2362cb98a67461d1f51596f38e756c59b618b",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -31,6 +31,9 @@
     "CompanyEventInput",
     "CompanyEventPage",
     "CompanyInput",
+    "CompanyNewsCluster",
+    "CompanyNewsInput",
+    "CompanyNewsPage",
     "CompanySource",
     "CompanySourceDetail",
     "CompanySourceEdit",

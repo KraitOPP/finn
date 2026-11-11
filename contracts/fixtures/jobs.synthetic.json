@@ -1,6 +1,6 @@
 [
   {
-    "contractVersion": "0.26.0",
+    "contractVersion": "0.27.0",
     "requestId": "synthetic-job-request",
     "jobId": "synthetic-job-queued",
     "revision": 1,
@@ -12,7 +12,7 @@
     "failureCode": null
   },
   {
-    "contractVersion": "0.26.0",
+    "contractVersion": "0.27.0",
     "requestId": "synthetic-job-request",
     "jobId": "synthetic-job-running",
     "revision": 1,
@@ -24,7 +24,7 @@
     "failureCode": null
   },
   {
-    "contractVersion": "0.26.0",
+    "contractVersion": "0.27.0",
     "requestId": "synthetic-job-request",
     "jobId": "synthetic-job-succeeded",
     "revision": 1,
@@ -36,7 +36,7 @@
     "failureCode": null
   },
   {
-    "contractVersion": "0.26.0",
+    "contractVersion": "0.27.0",
     "requestId": "synthetic-job-request",
     "jobId": "synthetic-job-partially_succeeded",
     "revision": 1,
@@ -48,7 +48,7 @@
     "failureCode": "PARTIAL_RESULT"
   },
   {
-    "contractVersion": "0.26.0",
+    "contractVersion": "0.27.0",
     "requestId": "synthetic-job-request",
     "jobId": "synthetic-job-failed",
     "revision": 1,
@@ -60,7 +60,7 @@
     "failureCode": "SOURCE_UNAVAILABLE"
   },
   {
-    "contractVersion": "0.26.0",
+    "contractVersion": "0.27.0",
     "requestId": "synthetic-job-request",
     "jobId": "synthetic-job-cancelled",
     "revision": 1,

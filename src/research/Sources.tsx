@@ -9,6 +9,7 @@ import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
 import { CompanyEvents, EventReview } from "./Events.tsx";
+import { News } from "./News.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
 const path = "/api/v1/research/sources";
@@ -19,6 +20,7 @@ export function Research() {
       <RouteHeading>Research</RouteHeading>
       <PrimarySources onEvent={() => setGeneration((value) => value + 1)} />
       <CompanyEvents generation={generation} />
+      <News />
     </section>
   );
 }

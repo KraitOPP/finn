@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.26.0",
+  "contractVersion": "0.27.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "dc298aa8b5da8401bc0b4afec4c8edf878c96477572aad978f492ece7b9cb35d",
+  "sourceSha256": "9991f2dc381fd365b761464e60c2362cb98a67461d1f51596f38e756c59b618b",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -32,6 +32,9 @@ export const contractMetadata = {
     "CompanyEventInput",
     "CompanyEventPage",
     "CompanyInput",
+    "CompanyNewsCluster",
+    "CompanyNewsInput",
+    "CompanyNewsPage",
     "CompanySource",
     "CompanySourceDetail",
     "CompanySourceEdit",
@@ -1603,6 +1606,115 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "CompanyNewsCluster": {
+    "type": "object",
+    "properties": {
+      "clusterId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "headline": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "date": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "sources": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanySource"
+        },
+        "maxItems": 200
+      }
+    },
+    "required": [
+      "clusterId",
+      "companyId",
+      "companyName",
+      "headline",
+      "date",
+      "sources"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyNewsInput": {
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "headline": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "publisher": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "url": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "rightsConfirmed": {
+        "const": true
+      }
+    },
+    "required": [
+      "companyId",
+      "headline",
+      "publisher",
+      "url",
+      "publishedAt",
+      "rightsConfirmed"
+    ],
+    "additionalProperties": false
+  },
+  "CompanyNewsPage": {
+    "type": "object",
+    "properties": {
+      "coverage": {
+        "const": "MANUAL_LINKS"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanyNewsCluster"
+        },
+        "maxItems": 25
+      },
+      "hasMore": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "coverage",
+      "items",
+      "hasMore"
+    ],
+    "additionalProperties": false
+  },
   "CompanySource": {
     "type": "object",
     "properties": {
@@ -1836,7 +1948,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.26.0"
+    "const": "0.27.0"
   },
   "CorporateActionApproval": {
     "type": "object",

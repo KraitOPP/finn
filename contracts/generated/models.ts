@@ -280,6 +280,30 @@ export type CompanyInput = ({
   "name": (string);
 });
 
+export type CompanyNewsCluster = ({
+  "clusterId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "headline": (string);
+  "date": (SessionDate);
+  "sources": (Array<(CompanySource)>);
+});
+
+export type CompanyNewsInput = ({
+  "companyId": (OpaqueId);
+  "headline": (string);
+  "publisher": (string);
+  "url": (string);
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "rightsConfirmed": (true);
+});
+
+export type CompanyNewsPage = ({
+  "coverage": ("MANUAL_LINKS");
+  "items": (Array<(CompanyNewsCluster)>);
+  "hasMore": (boolean);
+});
+
 export type CompanySource = ({
   "documentId": (OpaqueId);
   "companyId": (OpaqueId);
@@ -324,7 +348,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.26.0") & (string);
+export type ContractVersion = ("0.27.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1425,6 +1449,9 @@ export interface ContractTypes {
   CompanyEventInput: CompanyEventInput;
   CompanyEventPage: CompanyEventPage;
   CompanyInput: CompanyInput;
+  CompanyNewsCluster: CompanyNewsCluster;
+  CompanyNewsInput: CompanyNewsInput;
+  CompanyNewsPage: CompanyNewsPage;
   CompanySource: CompanySource;
   CompanySourceDetail: CompanySourceDetail;
   CompanySourceEdit: CompanySourceEdit;
