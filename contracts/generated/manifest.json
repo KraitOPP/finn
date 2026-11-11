@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.9.0",
+  "contractVersion": "0.10.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "c1934e1df47b93fded8f748c96a2370e0f223180b4ce2dae7af323435554575f",
+  "sourceSha256": "a8ec2de2e246a87d10bf2fd5e4d92782efe72a310394b807e0a7d1a06c839351",
   "schemaNames": [
     "AccountInput",
     "AcquisitionEnvelope",
@@ -31,6 +31,10 @@
     "HoldingsPreviewMetadata",
     "HoldingsPreviewPage",
     "HoldingsPreviewRow",
+    "HoldingsReconciliation",
+    "HoldingsReconciliationInput",
+    "HoldingsReconciliationReceipt",
+    "HoldingsReconciliationRow",
     "HoldingsReviewPlan",
     "HoldingsRowIssue",
     "HoldingsSourceRow",

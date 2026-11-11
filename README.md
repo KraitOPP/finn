@@ -35,6 +35,8 @@ On a Groww source account, choose the supported holdings `.xlsx` for a private p
 
 An eligible first opening requires explicit INR and mapping confirmations and review of any discrepancies. Keep opening cost unknown or use the exact reported row buy values. The saved receipt distinguishes accepted holdings, skipped zero units and a matching duplicate. Changed rows or later reports do not overwrite holdings. Exchange listings can be confirmed separately in Securities.
 
+Compare a later report with recorded holdings on its report date. Missing coverage, unknown cost, unmatched rows and differences remain visible. Acknowledging a comparison saves only a review for the current ledger revision, so later corrections cannot silently inherit an earlier review.
+
 The working-directory guard rejects missing, relative and Git-internal locations. npm caches, Vite/Vitest caches, builds and reports stay under the external directory; only installed dependencies live in untracked `node_modules`. A production build is under `FINN_WORKSPACE_ROOT/build/frontend`. Deploy it with a same-origin `/api` reverse proxy; the development server is not a production host.
 
 ## Verification

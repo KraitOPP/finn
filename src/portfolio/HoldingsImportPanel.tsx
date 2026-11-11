@@ -8,6 +8,7 @@ import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { useDisplayInstant } from "../preferences/PreferencesProvider.tsx";
+import { HoldingsReconciliationPanel } from "./HoldingsReconciliationPanel.tsx";
 import { ReviewOpening, receiptMessage } from "./ReviewOpening.tsx";
 
 const XLSX =
@@ -75,6 +76,7 @@ export function HoldingsImportPanel({
     "importId" | "jobId"
   > | null>(null);
   const [offset, setOffset] = useState(0);
+  const [compare, setCompare] = useState(false);
   const [polls, setPolls] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +116,7 @@ export function HoldingsImportPanel({
   const open = (ticket: Pick<ImportTicket, "importId" | "jobId">) => {
     setSelected(ticket);
     setOffset(0);
+    setCompare(false);
     setPolls(0);
     setError(null);
   };
@@ -336,6 +339,22 @@ export function HoldingsImportPanel({
                     onAccepted?.(receipt);
                   }}
                 />
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    aria-expanded={compare}
+                    onClick={() => setCompare((value) => !value)}
+                  >
+                    {compare ? "Hide comparison" : "Compare with ledger"}
+                  </button>
+                </div>
+                {compare && (
+                  <HoldingsReconciliationPanel
+                    key={selected.importId}
+                    path={`${base}/imports/${selected.importId}/reconciliation`}
+                    archived={archived}
+                  />
+                )}
               </>
             ) : (
               <p role="status">Loading reconciliation and source rows…</p>

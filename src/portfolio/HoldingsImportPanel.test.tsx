@@ -64,6 +64,7 @@ function mount() {
 it("previews raw bytes and posts only after explicit review, with unknown costs by default", async () => {
   let sent = false;
   let accepted = false;
+  let reviewed = false;
   const receipt = {
     importId: preview.importId,
     outcome: "APPLIED",
@@ -81,6 +82,47 @@ it("previews raw bytes and posts only after explicit review, with unknown costs 
     if (url.endsWith("/session")) return reply(session);
     if (url.endsWith("/preferences")) return reply(preferences);
     if (url.includes("/jobs/")) return reply(job("SUCCEEDED", null));
+    if (url.includes("/reconciliation")) {
+      if (options?.method === "POST") {
+        expect(JSON.parse(String(options.body))).toEqual({
+          reviewed: true,
+          expectedLedgerRevision: 2,
+        });
+        reviewed = true;
+        return reply({
+          importId: preview.importId,
+          ledgerRevision: 2,
+          reviewedAt: finished,
+        });
+      }
+      return reply({
+        importId: preview.importId,
+        reportDate: "2020-11-09",
+        ledgerRevision: 2,
+        state: "COMPARABLE",
+        coverageStart: "2020-11-09",
+        historyStatus: "HOLDINGS_ONLY",
+        rowCount: 1,
+        issueCount: 1,
+        rows: [
+          {
+            sourceRow: 12,
+            securityId: "fictional-security",
+            name: "Fictional Alpha Equity",
+            isin: "ZZ0000000016",
+            reportedUnits: "3",
+            recordedUnits: "3",
+            reportedCost: "30.75",
+            recordedCost: null,
+            unitDifference: "0",
+            costDifference: null,
+            issues: ["COST_UNAVAILABLE"],
+          },
+        ],
+        nextOffset: null,
+        reviewedAt: reviewed ? finished : null,
+      });
+    }
     if (url.includes("/preview?"))
       return reply(
         accepted
@@ -193,6 +235,25 @@ it("previews raw bytes and posts only after explicit review, with unknown costs 
         String(url).endsWith("/accept") && init?.method === "POST",
     ),
   ).toHaveLength(1);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Compare with ledger" }),
+  );
+  expect(
+    await screen.findByText("Cost comparison unavailable"),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Save comparison review" }),
+  ).toBeDisabled();
+  await userEvent.click(
+    screen.getByRole("checkbox", {
+      name: /reviewed the differences, currency context/i,
+    }),
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Save comparison review" }),
+  );
+  expect(await screen.findByText(/Comparison reviewed/)).toBeInTheDocument();
+  expect(screen.getByText("Cost comparison unavailable")).toBeInTheDocument();
 });
 
 it("does not offer downloads or retries for a workbook rejected as active content", async () => {

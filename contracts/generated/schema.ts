@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.9.0",
+  "contractVersion": "0.10.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "c1934e1df47b93fded8f748c96a2370e0f223180b4ce2dae7af323435554575f",
+  "sourceSha256": "a8ec2de2e246a87d10bf2fd5e4d92782efe72a310394b807e0a7d1a06c839351",
   "schemaNames": [
     "AccountInput",
     "AcquisitionEnvelope",
@@ -32,6 +32,10 @@ export const contractMetadata = {
     "HoldingsPreviewMetadata",
     "HoldingsPreviewPage",
     "HoldingsPreviewRow",
+    "HoldingsReconciliation",
+    "HoldingsReconciliationInput",
+    "HoldingsReconciliationReceipt",
+    "HoldingsReconciliationRow",
     "HoldingsReviewPlan",
     "HoldingsRowIssue",
     "HoldingsSourceRow",
@@ -800,7 +804,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.9.0"
+    "const": "0.10.0"
   },
   "CsrfInformation": {
     "type": "object",
@@ -1461,6 +1465,274 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "An exact owned ISIN can identify a security; exchange listing is never inferred."
+  },
+  "HoldingsReconciliation": {
+    "type": "object",
+    "properties": {
+      "importId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "reportDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "ledgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "COMPARABLE",
+          "HISTORY_UNAVAILABLE"
+        ]
+      },
+      "coverageStart": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "historyStatus": {
+        "type": "string",
+        "enum": [
+          "UNKNOWN",
+          "HOLDINGS_ONLY",
+          "PARTIAL_TRADES"
+        ]
+      },
+      "rowCount": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2000
+      },
+      "issueCount": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2000
+      },
+      "rows": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HoldingsReconciliationRow"
+        },
+        "maxItems": 100
+      },
+      "nextOffset": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "reviewedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "importId",
+      "reportDate",
+      "ledgerRevision",
+      "state",
+      "coverageStart",
+      "historyStatus",
+      "rowCount",
+      "issueCount",
+      "rows",
+      "nextOffset",
+      "reviewedAt"
+    ],
+    "additionalProperties": false,
+    "description": "Compare immutable ledger entries effective on or before the report date and accepted through this revision. Report minus recorded deltas are not tax-basis equivalence. No mutation or fabricated earlier positions."
+  },
+  "HoldingsReconciliationInput": {
+    "type": "object",
+    "properties": {
+      "reviewed": {
+        "const": true
+      },
+      "expectedLedgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      }
+    },
+    "required": [
+      "reviewed",
+      "expectedLedgerRevision"
+    ],
+    "additionalProperties": false
+  },
+  "HoldingsReconciliationReceipt": {
+    "type": "object",
+    "properties": {
+      "importId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "ledgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "reviewedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "importId",
+      "ledgerRevision",
+      "reviewedAt"
+    ],
+    "additionalProperties": false
+  },
+  "HoldingsReconciliationRow": {
+    "type": "object",
+    "properties": {
+      "sourceRow": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 12,
+            "maximum": 1024
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "securityId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "name": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "isin": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12,
+            "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "reportedUnits": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "recordedUnits": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "reportedCost": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "recordedCost": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "unitDifference": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "costDifference": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "issues": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OpaqueId"
+        },
+        "maxItems": 12
+      }
+    },
+    "required": [
+      "sourceRow",
+      "securityId",
+      "name",
+      "isin",
+      "reportedUnits",
+      "recordedUnits",
+      "reportedCost",
+      "recordedCost",
+      "unitDifference",
+      "costDifference",
+      "issues"
+    ],
+    "additionalProperties": false
   },
   "HoldingsReviewPlan": {
     "type": "object",

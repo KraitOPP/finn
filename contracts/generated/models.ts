@@ -143,7 +143,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.9.0") & (string);
+export type ContractVersion = ("0.10.0") & (string);
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -267,6 +267,45 @@ export type HoldingsPreviewRow = ({
   "source": (HoldingsSourceRow);
   "matchedSecurityId": (((OpaqueId)) | ((null)));
   "mappingStatus": ("UNRESOLVED_SECURITY" | "EXISTING_SECURITY") & (string);
+});
+
+export type HoldingsReconciliation = ({
+  "importId": (OpaqueId);
+  "reportDate": (SessionDate);
+  "ledgerRevision": (number);
+  "state": ("COMPARABLE" | "HISTORY_UNAVAILABLE") & (string);
+  "coverageStart": (((SessionDate)) | ((null)));
+  "historyStatus": ("UNKNOWN" | "HOLDINGS_ONLY" | "PARTIAL_TRADES") & (string);
+  "rowCount": (number);
+  "issueCount": (number);
+  "rows": (Array<(HoldingsReconciliationRow)>);
+  "nextOffset": (((number)) | ((null)));
+  "reviewedAt": (((UtcInstant)) | ((null)));
+});
+
+export type HoldingsReconciliationInput = ({
+  "reviewed": (true);
+  "expectedLedgerRevision": (number);
+});
+
+export type HoldingsReconciliationReceipt = ({
+  "importId": (OpaqueId);
+  "ledgerRevision": (number);
+  "reviewedAt": (UtcInstant);
+});
+
+export type HoldingsReconciliationRow = ({
+  "sourceRow": (((number)) | ((null)));
+  "securityId": (((OpaqueId)) | ((null)));
+  "name": (((string)) | ((null)));
+  "isin": (((string)) | ((null)));
+  "reportedUnits": (((DecimalString)) | ((null)));
+  "recordedUnits": (((DecimalString)) | ((null)));
+  "reportedCost": (((DecimalString)) | ((null)));
+  "recordedCost": (((DecimalString)) | ((null)));
+  "unitDifference": (((DecimalString)) | ((null)));
+  "costDifference": (((DecimalString)) | ((null)));
+  "issues": (Array<(OpaqueId)>);
 });
 
 export type HoldingsReviewPlan = ({
@@ -735,6 +774,10 @@ export interface ContractTypes {
   HoldingsPreviewMetadata: HoldingsPreviewMetadata;
   HoldingsPreviewPage: HoldingsPreviewPage;
   HoldingsPreviewRow: HoldingsPreviewRow;
+  HoldingsReconciliation: HoldingsReconciliation;
+  HoldingsReconciliationInput: HoldingsReconciliationInput;
+  HoldingsReconciliationReceipt: HoldingsReconciliationReceipt;
+  HoldingsReconciliationRow: HoldingsReconciliationRow;
   HoldingsReviewPlan: HoldingsReviewPlan;
   HoldingsRowIssue: HoldingsRowIssue;
   HoldingsSourceRow: HoldingsSourceRow;

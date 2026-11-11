@@ -229,6 +229,11 @@ a {
 .acceptance-card {
   margin-top: 24px;
 }
+.reconciliation-workspace {
+  margin-top: 26px;
+  padding-top: 12px;
+  border-top: 1px solid #c8d5c7;
+}
 .ledger-workspace > h4 {
   margin-top: 32px;
 }
