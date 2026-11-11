@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.26.0",
+  "$id": "urn:finn:contracts:market-data:0.27.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.26.0"
+      "const": "0.27.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3023,6 +3023,115 @@
       "required": [
         "coverage",
         "rankedAt",
+        "items",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyNewsInput": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "headline": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "publisher": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rightsConfirmed": {
+          "const": true
+        }
+      },
+      "required": [
+        "companyId",
+        "headline",
+        "publisher",
+        "url",
+        "publishedAt",
+        "rightsConfirmed"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyNewsCluster": {
+      "type": "object",
+      "properties": {
+        "clusterId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "companyName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "headline": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "date": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanySource"
+          },
+          "maxItems": 200
+        }
+      },
+      "required": [
+        "clusterId",
+        "companyId",
+        "companyName",
+        "headline",
+        "date",
+        "sources"
+      ],
+      "additionalProperties": false
+    },
+    "CompanyNewsPage": {
+      "type": "object",
+      "properties": {
+        "coverage": {
+          "const": "MANUAL_LINKS"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanyNewsCluster"
+          },
+          "maxItems": 25
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "coverage",
         "items",
         "hasMore"
       ],

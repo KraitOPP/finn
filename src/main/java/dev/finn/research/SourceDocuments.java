@@ -58,6 +58,13 @@ class SourceDocuments {
         return new Page(rows.stream().limit(40).toList(),rows.size()>40);
     }
 
+    List<Entry> allCurrent(UUID owner,String kind) {
+        return jdbc.query(SELECT+"""
+                WHERE d.owner_id=? AND d.source_type=? AND d.revision=v.revision
+                ORDER BY coalesce(v.published_at,v.ingested_at) DESC,d.document_id LIMIT 200
+                """, SourceDocuments::entry, owner,kind);
+    }
+
     @Transactional public Versions versions(UUID id) {
         UUID owner = users.requireId();
         latest(owner,id);

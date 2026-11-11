@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.26.0"
+VERSION = "0.27.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -321,6 +321,17 @@ def definitions() -> dict:
     d["AttentionPage"] = obj({
         "coverage": enum(["NO_RECORDS","PARTIAL","RECORDED_ACCOUNTS"]), "rankedAt": ref("UtcInstant"),
         "items": array(ref("AttentionItem"),maxItems=25), "hasMore": {"type":"boolean"},
+    })
+    d["CompanyNewsInput"] = obj({
+        "companyId": ref("OpaqueId"), "headline": text(maxLength=120), "publisher": text(maxLength=120),
+        "url": text(maxLength=1000), "publishedAt": nullable(ref("UtcInstant")), "rightsConfirmed": {"const":True},
+    })
+    d["CompanyNewsCluster"] = obj({
+        "clusterId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120),
+        "headline": text(maxLength=120), "date": ref("SessionDate"), "sources": array(ref("CompanySource"),maxItems=200),
+    })
+    d["CompanyNewsPage"] = obj({
+        "coverage": {"const":"MANUAL_LINKS"}, "items": array(ref("CompanyNewsCluster"),maxItems=25), "hasMore": {"type":"boolean"},
     })
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
@@ -757,6 +768,11 @@ def public_api_document() -> dict:
         "/api/v1/research/attention":{"get": maintained("rankAttentionInbox","Rank owned event threads using reviewed materiality and recorded holdings","AttentionPage",[
             parameter("view","query",enum(["ACTIVE","UNREAD","HIDDEN"])),parameter("offset","query",{"type":"integer","minimum":0,"maximum":300})])},
         "/api/v1/research/attention/{id}":{"post": maintained("saveAttentionFeedback","Set read, mute, or snooze state on an owned event","AttentionState",identifier,"AttentionFeedback")},
+        "/api/v1/research/news":{
+            "get": maintained("listNewsContext","List clusters of owner-recorded news links and source metadata","CompanyNewsPage",[
+                parameter("offset","query",{"type":"integer","minimum":0,"maximum":200})]),
+            "post": maintained("registerNewsLink","Register a headline and link as secondary news context","CompanySource",input_name="CompanyNewsInput"),
+        },
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
