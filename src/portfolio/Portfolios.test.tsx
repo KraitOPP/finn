@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
+import ledger from "../../contracts/fixtures/ledger.synthetic.json";
 import type {
   InvestmentAccount,
   PortfolioSummary,
@@ -8,6 +9,7 @@ import type {
 import { contractMetadata } from "../../contracts/generated/schema.ts";
 import { AuthProvider } from "../auth/AuthProvider.tsx";
 import { PrivateView } from "../Navigation.tsx";
+import { PreferencesProvider } from "../preferences/PreferencesProvider.tsx";
 import { Portfolios } from "./Portfolios.tsx";
 
 it("creates an INR source account and restores an archived portfolio without losing its account", async () => {
@@ -68,6 +70,18 @@ it("creates an INR source account and restores an archived portfolio without los
       };
       return reply(portfolio);
     }
+    if (url.endsWith("/ledger")) return reply(ledger);
+    if (url.endsWith("/transactions"))
+      return reply({ items: [], nextBefore: null });
+    if (url.endsWith("/preferences"))
+      return reply({
+        timeZone: "Asia/Kolkata",
+        currency: "INR",
+        inAppNotifications: true,
+        emailNotifications: false,
+        revision: 0,
+        deliveryAvailable: false,
+      });
     return reply(
       url === "/api/v1/portfolios"
         ? { items: portfolio ? [portfolio] : [] }
@@ -77,9 +91,11 @@ it("creates an INR source account and restores an archived portfolio without los
   vi.stubGlobal("fetch", fetcher);
   render(
     <AuthProvider>
-      <PrivateView>
-        <Portfolios />
-      </PrivateView>
+      <PreferencesProvider>
+        <PrivateView>
+          <Portfolios />
+        </PrivateView>
+      </PreferencesProvider>
     </AuthProvider>,
   );
   expect(

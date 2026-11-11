@@ -218,6 +218,83 @@ a {
   margin-top: 28px;
   border-radius: 12px;
 }
+.ledger-workspace {
+  margin-top: 28px;
+}
+.ledger-workspace > h4 {
+  margin-top: 32px;
+}
+.ledger-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.ledger-totals > div {
+  padding: 14px;
+  background: #edf3eb;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.ledger-totals dt {
+  font-size: 13px;
+  color: #43594e;
+}
+.ledger-totals dd {
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+.data-table {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table caption {
+  text-align: left;
+  font-weight: 650;
+  padding: 12px 0;
+}
+.data-table :is(th, td) {
+  text-align: left;
+  vertical-align: top;
+  padding: 13px 12px;
+  border-bottom: 1px solid #dfe4dc;
+}
+.data-table small {
+  display: block;
+  color: #53635a;
+  line-height: 1.6;
+}
+.journal-actions,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.form-actions {
+  margin-top: 16px;
+}
+.form-actions > input {
+  flex: 1;
+  min-width: 140px;
+}
+.review-card {
+  padding: 22px;
+  border: 1px solid #b6c7b4;
+  border-radius: 12px;
+  background: #f1f5ed;
+  margin: 18px 0;
+}
+.review-card h4,
+.entry-form h4 {
+  margin-top: 0;
+}
+.ledger-workspace > details {
+  margin: 18px 0;
+}
 @media (max-width: 640px) {
   .main-navigation {
     padding: 14px 16px 0;
@@ -433,12 +510,12 @@ h1 {
   border-left: 1px solid #e1e7dc;
   padding-left: 18px;
 }
-dt {
+.price-stat dt {
   font-size: 10px;
   color: #5b6b56;
   margin-bottom: 5px;
 }
-dd {
+.price-stat dd {
   margin: 0;
   font-size: 12px;
   font-weight: 550;

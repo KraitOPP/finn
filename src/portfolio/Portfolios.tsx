@@ -4,6 +4,7 @@ import { ApiError, requestContract } from "../api/request.ts";
 import { useResource } from "../api/useResource.ts";
 import { useAuthentication } from "../auth/AuthProvider.tsx";
 import { RouteHeading } from "../Navigation.tsx";
+import { LedgerPanel } from "./LedgerPanel.tsx";
 
 export function Portfolios() {
   const portfolios = useResource("PortfolioList", "/api/v1/portfolios");
@@ -167,6 +168,7 @@ function PortfolioDetail({
   const detail = useResource("PortfolioDetail", `/api/v1/portfolios/${id}`);
   const command = usePrivateCommand();
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountNotice, setAccountNotice] = useState<string | null>(null);
   if (detail.error)
     return <LoadError message={detail.error} reload={detail.reload} />;
   if (!detail.value) return <p role="status">Loading portfolio accounts…</p>;
@@ -229,7 +231,10 @@ function PortfolioDetail({
               <button
                 type="button"
                 className="text-button"
-                onClick={() => setAccountId(account.accountId)}
+                onClick={() => {
+                  setAccountId(account.accountId);
+                  setAccountNotice(null);
+                }}
                 aria-pressed={accountId === account.accountId}
               >
                 Open account {account.name}
@@ -243,6 +248,7 @@ function PortfolioDetail({
           portfolioId={id}
           onCreated={(account) => {
             setAccountId(account.accountId);
+            setAccountNotice(null);
             detail.reload();
           }}
         />
@@ -254,10 +260,16 @@ function PortfolioDetail({
         >
           <h3>{selected.name}</h3>
           <p>{coverage(selected)}</p>
-          <p>
-            Transaction entry and report review will appear here as the ledger
-            is implemented.
-          </p>
+          {accountNotice && <p role="status">{accountNotice}</p>}
+          <LedgerPanel
+            key={selected.accountId}
+            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+            archived={portfolio.archived}
+            onSaved={(message) => {
+              setAccountNotice(message);
+              detail.reload();
+            }}
+          />
         </section>
       )}
     </section>

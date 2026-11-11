@@ -4,19 +4,41 @@ import type {
   CsrfInformation,
 } from "../../contracts/generated/models.ts";
 
+const safeMessages: Record<string, string> = {
+  UNSUPPORTED_SHORT_POSITION:
+    "This would make the recorded units negative. Review the dates and available units.",
+  SNAPSHOT_BOUNDARY_CONFLICT:
+    "This trade overlaps a closing holdings snapshot. Enter only trades after that snapshot, or review the opening record.",
+  CASH_BASELINE_CONFLICT:
+    "The cash baseline must precede recorded cash movements, with no other active baseline.",
+  DUPLICATE_OPENING_POSITION:
+    "This security already has an opening holding. Review or correct the existing record.",
+  INVALID_REVERSAL:
+    "This record has already been reversed or is unavailable for correction.",
+  IDEMPOTENCY_CONFLICT:
+    "This submission reference was already used for different details. Check your history before recording another entry.",
+  LEDGER_CAPACITY_REACHED:
+    "This account has reached the supported ledger limit.",
+  PORTFOLIO_ARCHIVED: "Restore this portfolio before adding records.",
+  DUPLICATE_RESOURCE:
+    "A matching record already exists. Check your saved records before trying again.",
+};
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     public reference: string | null = null,
+    public code: string | null = null,
   ) {
     super(
-      status === 409
-        ? "This changed since you opened it. Reload and review before saving."
-        : status === 401 || status === 403
-          ? "Your session needs to reconnect. Sign in again if requested."
-          : status === 422 || status === 400
-            ? "Check the entered values and try again."
-            : "We couldn’t complete this request. Try again.",
+      (code && Object.hasOwn(safeMessages, code) ? safeMessages[code] : null) ??
+        (status === 409
+          ? "This changed since you opened it. Reload and review before saving."
+          : status === 401 || status === 403
+            ? "Your session needs to reconnect. Sign in again if requested."
+            : status === 422 || status === 400
+              ? "Check the entered values and try again."
+              : "We couldn’t complete this request. Try again."),
     );
   }
 }
@@ -76,16 +98,19 @@ export async function requestContract<K extends keyof ContractTypes>(
   try {
     body = JSON.parse(new TextDecoder().decode(bytes));
   } catch {
-    throw new ApiError(502);
+    throw new ApiError(response.ok ? 502 : response.status);
   }
   if (!response.ok) {
     let reference: string | null = null;
+    let code: string | null = null;
     try {
-      reference = decodeContract("Problem", body).traceId;
+      const problem = decodeContract("Problem", body);
+      reference = problem.traceId;
+      code = problem.code;
     } catch {
       /* Untrusted error details stay hidden. */
     }
-    throw new ApiError(response.status, reference);
+    throw new ApiError(response.status, reference, code);
   }
   try {
     return decodeContract(name, body);

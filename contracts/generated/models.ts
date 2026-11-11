@@ -143,7 +143,7 @@ export type CompanyInput = ({
   "name": (string);
 });
 
-export type ContractVersion = ("0.6.0") & (string);
+export type ContractVersion = ("0.7.0") & (string);
 
 export type CsrfInformation = ({
   "headerName": ("X-CSRF-TOKEN");
@@ -239,6 +239,97 @@ export type InvestmentAccount = ((({
   "historyStatus": ("HOLDINGS_ONLY" | "PARTIAL_TRADES") & (string);
   "historyStartDate": (SessionDate);
 })));
+
+export type LedgerCorrectInput = ({
+  "idempotencyKey": (string);
+  "replacement": (LedgerEntryInput);
+  "reference": (((string)) | ((null)));
+});
+
+export type LedgerEntryInput = ({
+  "kind": ("BUY" | "SELL" | "FEE" | "DEPOSIT" | "WITHDRAWAL" | "OPENING_POSITION" | "OPENING_CASH") & (string);
+  "effectiveDate": (SessionDate);
+  "securityId": (((OpaqueId)) | ((null)));
+  "listingId": (((OpaqueId)) | ((null)));
+  "quantity": (((string)) | ((null)));
+  "price": (((string)) | ((null)));
+  "amount": (((string)) | ((null)));
+  "fees": (((string)) | ((null)));
+  "reference": (((string)) | ((null)));
+});
+
+export type LedgerEventView = ({
+  "kind": ("BUY" | "SELL" | "FEE" | "DEPOSIT" | "WITHDRAWAL" | "OPENING_POSITION" | "OPENING_CASH" | "REVERSAL") & (string);
+  "effectiveDate": (SessionDate);
+  "securityId": (((OpaqueId)) | ((null)));
+  "listingId": (((OpaqueId)) | ((null)));
+  "quantity": (((string)) | ((null)));
+  "price": (((string)) | ((null)));
+  "amount": (((string)) | ((null)));
+  "fees": (((string)) | ((null)));
+  "reference": (((string)) | ((null)));
+  "eventId": (OpaqueId);
+  "sequence": (number);
+  "securityName": (((string)) | ((null)));
+  "exchange": ((("NSE" | "BSE") & (string)) | ((null)));
+  "reversalOf": (((OpaqueId)) | ((null)));
+  "reversedBy": (((OpaqueId)) | ((null)));
+  "replacesEventId": (((OpaqueId)) | ((null)));
+  "source": ("MANUAL" | "GROWW_HOLDINGS" | "REVIEWED_CORPORATE_ACTION") & (string);
+  "sourceReference": (((OpaqueId)) | ((null)));
+  "recordedAt": (UtcInstant);
+});
+
+export type LedgerPage = ({
+  "items": (Array<(LedgerEventView)>);
+  "nextBefore": (((number)) | ((null)));
+});
+
+export type LedgerPosition = ({
+  "securityId": (OpaqueId);
+  "securityName": (((string)) | ((null)));
+  "quantity": (IntegerString);
+  "recordedCost": (((NonNegativeDecimalString)) | ((null)));
+  "averageCost": (((NonNegativeDecimalString)) | ((null)));
+  "costBasis": ("RECORDED_TRADES" | "REPORTED_OPENING_COST" | "MIXED_RECORDED_COST" | "UNKNOWN") & (string);
+});
+
+export type LedgerReceipt = ({
+  "commandId": (OpaqueId);
+  "revision": (number);
+  "eventIds": (Array<(OpaqueId)>);
+  "replayed": (boolean);
+});
+
+export type LedgerRecordInput = ({
+  "idempotencyKey": (string);
+  "event": (LedgerEntryInput);
+});
+
+export type LedgerReverseInput = ({
+  "idempotencyKey": (string);
+  "reference": (((string)) | ((null)));
+});
+
+export type LedgerView = ({
+  "revision": (number);
+  "calculationVersion": ("MOVING_AVERAGE_1");
+  "currency": ("INR");
+  "positions": (Array<(LedgerPosition)>);
+  "cashBalance": (((DecimalString)) | ((null)));
+  "recordedCashComponents": (DecimalString);
+  "cashMovementsComplete": (boolean);
+  "realisedPnl": (((DecimalString)) | ((null)));
+  "knownRealisedPnl": (DecimalString);
+  "recordedFees": (NonNegativeDecimalString);
+  "recordedFeesComplete": (boolean);
+  "standaloneFees": (NonNegativeDecimalString);
+  "netContributions": (DecimalString);
+  "cashBaselineDate": (((SessionDate)) | ((null)));
+  "coverageStart": (((SessionDate)) | ((null)));
+  "historyStatus": ("UNKNOWN" | "HOLDINGS_ONLY" | "PARTIAL_TRADES") & (string);
+  "warnings": (Array<(OpaqueId)>);
+});
 
 export type ListingIdentity = ({
   "listingId": (OpaqueId);
@@ -528,6 +619,15 @@ export interface ContractTypes {
   InstrumentResult: InstrumentResult;
   IntegerString: IntegerString;
   InvestmentAccount: InvestmentAccount;
+  LedgerCorrectInput: LedgerCorrectInput;
+  LedgerEntryInput: LedgerEntryInput;
+  LedgerEventView: LedgerEventView;
+  LedgerPage: LedgerPage;
+  LedgerPosition: LedgerPosition;
+  LedgerReceipt: LedgerReceipt;
+  LedgerRecordInput: LedgerRecordInput;
+  LedgerReverseInput: LedgerReverseInput;
+  LedgerView: LedgerView;
   ListingIdentity: ListingIdentity;
   ListingInput: ListingInput;
   NonNegativeDecimalString: NonNegativeDecimalString;
