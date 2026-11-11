@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.25.0",
+  "$id": "urn:finn:contracts:market-data:0.26.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.25.0"
+      "const": "0.26.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2854,6 +2854,177 @@
       },
       "required": [
         "items"
+      ],
+      "additionalProperties": false
+    },
+    "AttentionState": {
+      "type": "object",
+      "properties": {
+        "read": {
+          "type": "boolean"
+        },
+        "muted": {
+          "type": "boolean"
+        },
+        "snoozedUntil": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "read",
+        "muted",
+        "snoozedUntil"
+      ],
+      "additionalProperties": false
+    },
+    "AttentionFeedback": {
+      "type": "object",
+      "properties": {
+        "eventRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "READ",
+            "UNREAD",
+            "MUTE",
+            "UNMUTE",
+            "SNOOZE",
+            "UNSNOOZE"
+          ]
+        },
+        "snoozeUntil": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "eventRevision",
+        "action",
+        "snoozeUntil"
+      ],
+      "additionalProperties": false
+    },
+    "AttentionItem": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/$defs/CompanyEvent"
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 75
+        },
+        "state": {
+          "$ref": "#/$defs/AttentionState"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "points": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 75
+              }
+            },
+            "required": [
+              "label",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 3
+        },
+        "holdings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "securityId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "quantity": {
+                "$ref": "#/$defs/PositiveDecimalString"
+              }
+            },
+            "required": [
+              "securityId",
+              "name",
+              "quantity"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "event",
+        "score",
+        "state",
+        "reasons",
+        "holdings"
+      ],
+      "additionalProperties": false
+    },
+    "AttentionPage": {
+      "type": "object",
+      "properties": {
+        "coverage": {
+          "type": "string",
+          "enum": [
+            "NO_RECORDS",
+            "PARTIAL",
+            "RECORDED_ACCOUNTS"
+          ]
+        },
+        "rankedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AttentionItem"
+          },
+          "maxItems": 25
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "coverage",
+        "rankedAt",
+        "items",
+        "hasMore"
       ],
       "additionalProperties": false
     },

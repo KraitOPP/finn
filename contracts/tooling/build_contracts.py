@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.25.0"
+VERSION = "0.26.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -304,6 +304,24 @@ def definitions() -> dict:
     })
     d["CompanyEventPage"] = obj({"items": array(ref("CompanyEvent"),maxItems=40), "hasMore": {"type":"boolean"}})
     d["CompanyEventHistory"] = obj({"items": array(ref("CompanyEvent"),maxItems=100)})
+    attention_view = enum(["ACTIVE","UNREAD","HIDDEN"])
+    d["AttentionState"] = obj({
+        "read": {"type":"boolean"}, "muted": {"type":"boolean"}, "snoozedUntil": nullable(ref("UtcInstant")),
+    })
+    d["AttentionFeedback"] = obj({
+        "eventRevision": event_revision, "action": enum(["READ","UNREAD","MUTE","UNMUTE","SNOOZE","UNSNOOZE"]),
+        "snoozeUntil": nullable(ref("UtcInstant")),
+    })
+    points = {"type":"integer","minimum":0,"maximum":75}
+    d["AttentionItem"] = obj({
+        "event": ref("CompanyEvent"), "score": points, "state": ref("AttentionState"),
+        "reasons": array(obj({"label":text(maxLength=100), "points":points}),maxItems=3),
+        "holdings": array(obj({"securityId":ref("OpaqueId"), "name":text(maxLength=120), "quantity":ref("PositiveDecimalString")}),maxItems=100),
+    })
+    d["AttentionPage"] = obj({
+        "coverage": enum(["NO_RECORDS","PARTIAL","RECORDED_ACCOUNTS"]), "rankedAt": ref("UtcInstant"),
+        "items": array(ref("AttentionItem"),maxItems=25), "hasMore": {"type":"boolean"},
+    })
     d["NotificationDeliveryPage"] = obj({
         "emailPreviewEnabled": {"type":"boolean"},
         "items": array(obj({"activityId": ref("OpaqueId"), "title": text(maxLength=160), "kind": activity_kind,
@@ -736,6 +754,9 @@ def public_api_document() -> dict:
         "/api/v1/research/events/suggestion":{"get": maintained("suggestSourceClassification","Suggest a classification from an owned primary source title","EventSuggestion",[
             parameter("documentId","query",text(format="uuid"),True),parameter("revision","query",{"type":"integer","minimum":1,"maximum":50},True)])},
         "/api/v1/research/events/{id}/versions":{"get": maintained("getCompanyEventHistory","Read retained thread versions and exact source references","CompanyEventHistory",identifier)},
+        "/api/v1/research/attention":{"get": maintained("rankAttentionInbox","Rank owned event threads using reviewed materiality and recorded holdings","AttentionPage",[
+            parameter("view","query",enum(["ACTIVE","UNREAD","HIDDEN"])),parameter("offset","query",{"type":"integer","minimum":0,"maximum":300})])},
+        "/api/v1/research/attention/{id}":{"post": maintained("saveAttentionFeedback","Set read, mute, or snooze state on an owned event","AttentionState",identifier,"AttentionFeedback")},
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
