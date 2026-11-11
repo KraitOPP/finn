@@ -17,9 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 class ResearchReports {
     private static final String POLICY="lexical-excerpts-v1";
     record Report(UUID reportId,UUID companyId,String question,String asOf,String state,String modelName,String policyVersion,
+                  int version,UUID previousReportId,boolean current,
                   List<ResearchEvidence.Location> citations,List<FinancialFacts.Fact> facts,Feedback feedback) {}
     record Feedback(String note,UUID anchorId,String recordedAt) {}
-    record Root(UUID id,UUID owner,UUID company,String question,String asOf,String state,String model,String policy,String jobState) {}
+    record Summary(UUID reportId,String question,String asOf,int version) {}
+    record History(List<Summary> items,boolean hasMore) {}
+    record Root(UUID id,UUID owner,UUID company,String question,String asOf,String state,String model,String policy,String jobState,
+                UUID series,UUID previous,int version,boolean current) {}
 
     private final JdbcTemplate jdbc;
     private final CurrentUser users;
@@ -35,7 +39,28 @@ class ResearchReports {
     }
 
     @Transactional public Report create(UUID company,String question,boolean rankLocally){
+        return create(users.requireId(),company,question,rankLocally,null);
+    }
+
+    @Transactional public Report refresh(UUID id){
         UUID owner=users.requireId();
+        Root previous=root(owner,id);
+        if(!previous.current()||pending(previous))throw ApiFailure.conflict();
+        return create(owner,previous.company(),previous.question(),false,previous);
+    }
+
+    @Transactional public History history(UUID company,int offset){
+        UUID owner=users.requireId();
+        facts.requireCompany(owner,company);
+        var rows=jdbc.query("""
+                SELECT report_id,question,as_of,version FROM finn.research_report
+                WHERE owner_id=? AND company_id=? ORDER BY as_of DESC,report_id LIMIT 21 OFFSET ?
+                """,(row,i)->new Summary(row.getObject("report_id",UUID.class),row.getString("question"),
+                instant(row,"as_of"),row.getInt("version")),owner,company,offset);
+        return new History(rows.stream().limit(20).toList(),rows.size()>20);
+    }
+
+    private Report create(UUID owner,UUID company,String question,boolean rankLocally,Root previous){
         facts.requireCompany(owner,company);
         if(jdbc.queryForObject("SELECT count(*) FROM finn.research_report WHERE owner_id=?",Integer.class,owner)>=500)
             throw ApiFailure.conflict();
@@ -62,9 +87,10 @@ class ResearchReports {
             }
         }
         jdbc.update("""
-                INSERT INTO finn.research_report(report_id,owner_id,company_id,question,policy_version,model_name,job_id,state)
-                VALUES (?,?,?,?,?,?,?,?)
-                """,id,owner,company,question.strip(),POLICY,selectedModel,job,state);
+                INSERT INTO finn.research_report(report_id,owner_id,company_id,question,policy_version,model_name,job_id,state,series_id,previous_report_id,version)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                """,id,owner,company,question.strip(),POLICY,selectedModel,job,state,previous==null?id:previous.series(),
+                previous==null?null:previous.id(),previous==null?1:previous.version()+1);
         for(int i=0;i<candidates.size();i++){
             jdbc.update("INSERT INTO finn.research_report_candidate(owner_id,report_id,anchor_id,candidate_order,selected_order) VALUES (?,?,?,?,?)",
                     owner,id,candidates.get(i).anchorId(),i+1,i<3?i+1:null);
@@ -82,7 +108,7 @@ class ResearchReports {
     @Transactional public Feedback feedback(UUID id,String note,UUID anchor){
         UUID owner=users.requireId();
         Root report=root(owner,id);
-        if(report.state().equals("PENDING")&&!"FAILED".equals(report.jobState()))throw ApiFailure.conflict();
+        if(pending(report))throw ApiFailure.conflict();
         if(anchor!=null&&!evidence.require(owner,anchor).companyId().equals(report.company()))throw ApiFailure.notFound();
         if(jdbc.update("""
                 INSERT INTO finn.research_report_feedback(owner_id,report_id,note,anchor_id) VALUES (?,?,?,?) ON CONFLICT DO NOTHING
@@ -92,11 +118,14 @@ class ResearchReports {
 
     Root root(UUID owner,UUID id){
         return jdbc.query("""
-                SELECT r.*,j.state AS job_state FROM finn.research_report r LEFT JOIN finn.app_job j ON j.owner_id=r.owner_id AND j.job_id=r.job_id
+                SELECT r.*,j.state AS job_state,NOT EXISTS(SELECT 1 FROM finn.research_report newer
+                   WHERE newer.owner_id=r.owner_id AND newer.series_id=r.series_id AND newer.version>r.version) AS is_current
+                FROM finn.research_report r LEFT JOIN finn.app_job j ON j.owner_id=r.owner_id AND j.job_id=r.job_id
                 WHERE r.owner_id=? AND r.report_id=?
                 """,(row,i)->new Root(id,owner,row.getObject("company_id",UUID.class),row.getString("question"),
                 instant(row,"as_of"),row.getString("state"),row.getString("model_name"),row.getString("policy_version"),
-                row.getString("job_state")),owner,id).stream().findFirst().orElseThrow(ApiFailure::notFound);
+                row.getString("job_state"),row.getObject("series_id",UUID.class),row.getObject("previous_report_id",UUID.class),
+                row.getInt("version"),row.getBoolean("is_current")),owner,id).stream().findFirst().orElseThrow(ApiFailure::notFound);
     }
 
     List<ResearchEvidence.Location> candidates(Root report){return locations(report,false);}
@@ -121,8 +150,13 @@ class ResearchReports {
         var reviewed=jdbc.query("""
                 SELECT fact_id,revision FROM finn.research_report_fact WHERE owner_id=? AND report_id=? ORDER BY position
                 """,(row,i)->new FinancialFacts.Operand(row.getObject("fact_id",UUID.class),row.getInt("revision")),report.owner(),report.id());
-        return new Report(report.id(),report.company(),report.question(),report.asOf(),state,report.model(),report.policy(),citations,
+        return new Report(report.id(),report.company(),report.question(),report.asOf(),state,report.model(),report.policy(),
+                report.version(),report.previous(),report.current(),citations,
                 reviewed.stream().map(ref->facts.require(report.owner(),ref.factId(),ref.revision())).toList(),readFeedback(report.owner(),report.id()));
+    }
+
+    private static boolean pending(Root report){
+        return report.state().equals("PENDING")&&!"FAILED".equals(report.jobState());
     }
 
     private List<ResearchEvidence.Location> locations(Root report,boolean selected){

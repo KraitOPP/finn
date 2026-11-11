@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.33.0",
+  "$id": "urn:finn:contracts:market-data:0.34.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.33.0"
+      "const": "0.34.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3340,6 +3340,24 @@
           "minLength": 1,
           "maxLength": 30
         },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "previousReportId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current": {
+          "type": "boolean"
+        },
         "citations": {
           "type": "array",
           "items": {
@@ -3373,9 +3391,92 @@
         "state",
         "modelName",
         "policyVersion",
+        "version",
+        "previousReportId",
+        "current",
         "citations",
         "facts",
         "feedback"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchReportSummary": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "asOf": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        }
+      },
+      "required": [
+        "reportId",
+        "question",
+        "asOf",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchReportHistory": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResearchReportSummary"
+          },
+          "maxItems": 20
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchSearchResult": {
+      "type": "object",
+      "properties": {
+        "documents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanySource"
+          },
+          "maxItems": 20
+        },
+        "passages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResearchLocation"
+          },
+          "maxItems": 20
+        },
+        "moreDocuments": {
+          "type": "boolean"
+        },
+        "morePassages": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "documents",
+        "passages",
+        "moreDocuments",
+        "morePassages"
       ],
       "additionalProperties": false
     },

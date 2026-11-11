@@ -72,6 +72,16 @@ class SourceDocuments {
                 """, SourceDocuments::entry, owner,kind);
     }
 
+    List<Entry> search(UUID owner,UUID company,String terms,EvidenceSearch.Scope scope,int offset){
+        return jdbc.query(SELECT+"""
+                WHERE d.owner_id=? AND d.company_id=? AND (?='ALL' OR d.source_type=?) AND (? OR d.revision=v.revision)
+                  AND to_tsvector('simple',v.title || ' ' || v.source_name) @@ to_tsquery('simple',?)
+                """+EvidenceSearch.DATE_FILTER+"""
+                ORDER BY v.published_at DESC NULLS LAST,v.ingested_at DESC,d.document_id,v.revision DESC LIMIT 21 OFFSET ?
+                """,SourceDocuments::entry,owner,company,scope.kind(),scope.kind(),scope.includeEarlier(),terms,
+                scope.from(),scope.from(),scope.until(),scope.until(),offset);
+    }
+
     @Transactional public Versions versions(UUID id) {
         UUID owner = users.requireId();
         latest(owner,id);

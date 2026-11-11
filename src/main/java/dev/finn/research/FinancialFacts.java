@@ -52,13 +52,6 @@ class FinancialFacts {
         return new Page(rows.stream().limit(50).toList(),rows.size()>50);
     }
 
-    List<Fact> latestFor(UUID owner,UUID company,int limit){
-        return jdbc.query(SELECT+"""
-                WHERE f.owner_id=? AND f.company_id=? AND v.revision=f.revision
-                ORDER BY f.period_end DESC,f.metric,f.fact_id LIMIT ?
-                """,FinancialFacts::row,owner,company,limit);
-    }
-
     List<Fact> reviewedAt(UUID owner,UUID company,UUID anchor){
         return jdbc.query(SELECT+"""
                 WHERE f.owner_id=? AND f.company_id=? AND v.revision=f.revision AND v.anchor_id=?

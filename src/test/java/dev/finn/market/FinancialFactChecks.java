@@ -58,9 +58,33 @@ public final class FinancialFactChecks {
         submit(mvc,reports,owner,"{\"question\":\"Unattesteddividend\",\"rankLocally\":false}")
                 .andExpect(status().isOk()).andExpect(jsonPath("$.state").value("INSUFFICIENT"))
                 .andExpect(jsonPath("$.citations.length()").value(0));
-        submit(mvc,reports,owner,"{\"question\":\"Capex\",\"rankLocally\":true}")
+        var capexReport=ok(submit(mvc,reports,owner,"{\"question\":\"Capex\",\"rankLocally\":true}")
                 .andExpect(status().isOk()).andExpect(jsonPath("$.state").value("MODEL_FALLBACK"))
+                .andExpect(jsonPath("$.citations[0].quote").value("Capex\t30")));
+        String original=root+"/reports/"+capexReport.get("reportId").asText();
+        String search=research+"/search?query=";
+        read(mvc,search+"Capex",other).andExpect(status().isNotFound());
+        read(mvc,search+"Fictional",owner).andExpect(status().isOk()).andExpect(jsonPath("$.documents.length()").value(1));
+        read(mvc,search+"Capex&kind=NEWS",owner).andExpect(status().isOk()).andExpect(jsonPath("$.passages.length()").value(0));
+        read(mvc,search+"Capex&from=2025-01-01",owner).andExpect(status().isOk()).andExpect(jsonPath("$.passages.length()").value(0));
+
+        String doc=root+"/sources/"+anchors.get(4).get("documentId").asText();
+        String revisedSource=source(company,"Fictional revised facts",null,"Capex\t35\nOperating cash\t205")
+                .replace("\"publishedAt\":null","\"publishedAt\":\"2025-07-25T12:30:00Z\"");
+        ok(submit(mvc,doc,owner,"{\"expectedRevision\":1,\"source\":"+revisedSource+"}"));
+        ok(submit(mvc,doc+"/versions/2/extraction",owner,"{}"));
+        worker.processNext();
+        read(mvc,search+"Capex&from=2025-07-25&through=2025-07-25",owner)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.passages[0].documentRevision").value(2));
+        read(mvc,search+"Capex&earlier=true",owner).andExpect(status().isOk()).andExpect(jsonPath("$.passages.length()").value(2));
+        var refreshed=ok(submit(mvc,original+"/refresh",owner,"{}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(2)).andExpect(jsonPath("$.citations[0].quote").value("Capex\t35")));
+        org.junit.jupiter.api.Assertions.assertEquals(capexReport.get("reportId"),refreshed.get("previousReportId"));
+        read(mvc,original,owner).andExpect(status().isOk()).andExpect(jsonPath("$.current").value(false))
                 .andExpect(jsonPath("$.citations[0].quote").value("Capex\t30"));
+        submit(mvc,original+"/refresh",owner,"{}").andExpect(status().isConflict());
+        read(mvc,reports,owner).andExpect(status().isOk()).andExpect(jsonPath("$.items[0].version").value(2));
+        read(mvc,reports,other).andExpect(status().isNotFound());
     }
 
     static tools.jackson.databind.JsonNode anchors(MockMvc mvc,ResearchExtractionWorker worker,String owner,String company)throws Exception{
