@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.43.0"
+VERSION = "0.44.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -163,6 +163,33 @@ def definitions() -> dict:
         "flowValuations":array(ref("PerformanceValuation"),maxItems=366),"externalFlows":array(ref("PerformanceFlow"),maxItems=366),
         "recordedDividends":nullable(ref("NonNegativeDecimalString")),"investmentResult":nullable(ref("DecimalString")),
         "xirr":ref("ReturnMeasure"),"timeWeighted":ref("ReturnMeasure"),"benchmark":{"const":"NO_COMPATIBLE_BENCHMARK"}})
+    health_gaps = ["NO_ACCOUNTS","PORTFOLIO_BUDGET","PRICES_MISSING","STALE_PRICES","MIXED_PRICE_SESSIONS"]
+    health_sector = enum(["BANKING","FINANCIAL_SERVICES","MANUFACTURING","TECHNOLOGY","CONSUMER","ENERGY","OTHER","UNCLASSIFIED"])
+    d["PortfolioHealthHolding"] = obj({"securityId":ref("OpaqueId"),"name":text(minLength=1,maxLength=120),"sector":health_sector,
+        "value":nullable(ref("NonNegativeDecimalString")),"equityWeight":nullable(ref("NonNegativeDecimalString")),
+        "unrealisedContribution":nullable(ref("DecimalString"))})
+    d["PortfolioHealthSector"] = obj({"sector":health_sector,"value":ref("NonNegativeDecimalString"),
+        "equityWeight":nullable(ref("NonNegativeDecimalString"))})
+    health_count = {"type":"integer","minimum":0,"maximum":500}
+    d["PortfolioHealth"] = obj({"portfolioId":ref("OpaqueId"),"asOf":ref("SessionDate"),"priceSession":nullable(ref("SessionDate")),
+        "state":enum(["READY",*health_gaps]),"currency":{"const":"INR"},"unpricedPositions":health_count,
+        "stalePositions":health_count,"providerEstimates":health_count,"equity":nullable(ref("NonNegativeDecimalString")),
+        "cash":nullable(ref("NonNegativeDecimalString")),"largestWeight":nullable(ref("NonNegativeDecimalString")),
+        "topFiveWeight":nullable(ref("NonNegativeDecimalString")),"holdings":array(ref("PortfolioHealthHolding"),maxItems=500),
+        "sectors":array(ref("PortfolioHealthSector"),maxItems=8)})
+    scenario_input = {"listingId":ref("OpaqueId"),"cashAllocation":ref("NonNegativeDecimalString"),"shockPercent":ref("DecimalString")}
+    d["PortfolioScenarioInput"] = obj(scenario_input)
+    d["PortfolioScenario"] = obj({**scenario_input,"portfolioId":ref("OpaqueId"),
+        "state":enum(["SIMULATED",*health_gaps,"CASH_UNKNOWN","INSUFFICIENT_CASH","TARGET_NOT_HELD"]),
+        "priceSession":nullable(ref("SessionDate")),"targetName":text(minLength=1,maxLength=120),
+        **{name:nullable(ref("NonNegativeDecimalString")) for name in ["beforeEquity","afterEquity","beforeCash","afterCash",
+            "beforeTotal","afterTotal","beforeTargetWeight","afterTargetWeight"]},"valueChange":nullable(ref("DecimalString"))})
+    d["PortfolioRiskObservation"] = obj({"date":ref("SessionDate"),"indexValue":ref("NonNegativeDecimalString")})
+    d["PortfolioRisk"] = obj({"portfolioId":ref("OpaqueId"),"start":ref("SessionDate"),"end":ref("SessionDate"),
+        "methodology":{"const":"weekly-linked-risk-v1"},"state":enum(["AVAILABLE","UNAVAILABLE"]),
+        "reason":enum([*performance_coverage,"CALCULATED","WEEKLY_VALUATIONS_MISSING","FLOW_DAY_VALUATION_MISSING","NON_POSITIVE_BASE"]),
+        "maxDrawdownPercent":nullable(ref("NonNegativeDecimalString")),"annualizedVolatilityPercent":nullable(ref("NonNegativeDecimalString")),
+        "observations":array(ref("PortfolioRiskObservation"),maxItems=53)})
     d["WatchlistName"] = obj({"name": text(maxLength=80)})
     d["WatchlistSummary"] = obj({"watchlistId": ref("OpaqueId"), "name": text(maxLength=80)})
     d["WatchlistIndex"] = obj({"items": array(ref("WatchlistSummary"),maxItems=20)})
@@ -1149,6 +1176,13 @@ def public_api_document() -> dict:
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
         "/api/v1/portfolios/{portfolio}/performance":{"post":maintained("calculatePortfolioPerformance",
             "Calculate cash-flow-aware returns from a reviewed window and current exact snapshots","PortfolioPerformance",
+            ledger_account[:1],"PortfolioPerformanceInput")},
+        "/api/v1/portfolios/{portfolio}/health":{"get":maintained("readPortfolioHealth","Read concentration and valuation coverage for owned positions",
+            "PortfolioHealth",ledger_account[:1])},
+        "/api/v1/portfolios/{portfolio}/health/scenario":{"post":maintained("simulatePortfolioScenario",
+            "Calculate a hypothetical cash allocation and security price shock","PortfolioScenario",ledger_account[:1],"PortfolioScenarioInput")},
+        "/api/v1/portfolios/{portfolio}/health/risk":{"post":maintained("calculatePortfolioRisk",
+            "Calculate weekly drawdown and volatility only with all required saved valuations","PortfolioRisk",
             ledger_account[:1],"PortfolioPerformanceInput")},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
