@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.46.0"
+VERSION = "0.47.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -95,6 +95,21 @@ def definitions() -> dict:
         "failureCode": nullable(ref("OpaqueId")), "lastAttemptAt": nullable(ref("UtcInstant")),
         "acceptedRows": nullable({"type":"integer", "minimum":0, "maximum":31}),
         "lastSuccessAt": nullable(ref("UtcInstant")), "knownDelaySeconds": {"type":"null"},
+    })
+    d["ChartRange"] = enum(["D1","D7","M1","Y1","Y5","ALL"])
+    d["ExchangeSession"] = obj({
+        "date": ref("SessionDate"), "kind": enum(["HOLIDAY","SPECIAL","WEEKEND","SCHEDULED","UNKNOWN"]),
+        "label": text(maxLength=120), "sourceUrl": nullable(text(maxLength=400)),
+    })
+    d["MarketChart"] = obj({
+        "range": ref("ChartRange"), "source": enum(["YAHOO_YFINANCE","MANUAL_REVIEWED"]),
+        "interval": enum(["5M","DAILY"]),
+        "points": array(obj({"date": ref("SessionDate"), "time": nullable(ref("UtcInstant")),
+                             "close": ref("PositiveDecimalString")}), maxItems=420),
+        "count": {"type":"integer","minimum":0,"maximum":40000},
+        "changePercent": nullable(ref("DecimalString")), "low": nullable(ref("PositiveDecimalString")),
+        "high": nullable(ref("PositiveDecimalString")), "today": ref("ExchangeSession"),
+        "calendarEvents": array(ref("ExchangeSession"), maxItems=29),
     })
     d["ReviewCloseInput"] = obj({
         "sessionDate": ref("SessionDate"), "close": ref("PositiveDecimalString"), "sourceReference": text(maxLength=240),
@@ -1201,6 +1216,9 @@ def public_api_document() -> dict:
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
         market_path:{"get":maintained("getListingFeedStatus","Read the owned listing's latest close and acquisition state","MarketFeed",listing_parameter)},
+        market_path+"/chart":{"get":maintained("getMarketChart","Read display price history for an owned listing","MarketChart",[
+            *listing_parameter,parameter("range","query",ref("ChartRange"),True),
+            parameter("reviewed","query",{"type":"boolean"},False)])},
         market_path+"/history":{"get":maintained("getPrivateCloseHistory","Read the latest retained revision per session and source","PrivateCloseHistory",[*listing_parameter,*dates])},
         market_path+"/reviewed-close":{"post":maintained("recordReviewedClose","Record a user-verified as-reported INR closing price","PrivateClose",listing_parameter,"ReviewCloseInput")},
         market_path+"/refresh":{"post":market_refresh},

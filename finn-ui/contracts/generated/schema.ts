@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.46.0",
+  "contractVersion": "0.47.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "6d2737ef6d11029b92755eae7c17e4a67015e79e32f7a16bc66fcad2cabd3ade",
+  "sourceSha256": "74fed08814daa18d95a2bd8e923fd8b81cc4328bf1791883c4d5c63570beb5c9",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -28,6 +28,7 @@ export const contractMetadata = {
     "CatalogueSecurity",
     "CatalogueSecurityDetail",
     "CatalogueSecurityPage",
+    "ChartRange",
     "CompanyCalendarPage",
     "CompanyEvent",
     "CompanyEventHistory",
@@ -69,6 +70,7 @@ export const contractMetadata = {
     "DiscoverySnapshot",
     "EventReplay",
     "EventSuggestion",
+    "ExchangeSession",
     "FilingRule",
     "FilingRuleChange",
     "FilingRuleList",
@@ -132,6 +134,7 @@ export const contractMetadata = {
     "ManagementGuidanceEdit",
     "ManagementGuidanceInput",
     "ManagementGuidanceList",
+    "MarketChart",
     "MarketDiagnostics",
     "MarketFeed",
     "NonNegativeDecimalString",
@@ -1472,6 +1475,17 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "ChartRange": {
+    "type": "string",
+    "enum": [
+      "D1",
+      "D7",
+      "M1",
+      "Y1",
+      "Y5",
+      "ALL"
+    ]
+  },
   "CompanyCalendarPage": {
     "type": "object",
     "properties": {
@@ -2335,7 +2349,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.46.0"
+    "const": "0.47.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3302,6 +3316,48 @@ export const contractSchemas = {
       "materiality",
       "novelty",
       "confidence"
+    ],
+    "additionalProperties": false
+  },
+  "ExchangeSession": {
+    "type": "object",
+    "properties": {
+      "date": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "HOLIDAY",
+          "SPECIAL",
+          "WEEKEND",
+          "SCHEDULED",
+          "UNKNOWN"
+        ]
+      },
+      "label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "sourceUrl": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "date",
+      "kind",
+      "label",
+      "sourceUrl"
     ],
     "additionalProperties": false
   },
@@ -6682,6 +6738,117 @@ export const contractSchemas = {
     },
     "required": [
       "items"
+    ],
+    "additionalProperties": false
+  },
+  "MarketChart": {
+    "type": "object",
+    "properties": {
+      "range": {
+        "$ref": "#/components/schemas/ChartRange"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "YAHOO_YFINANCE",
+          "MANUAL_REVIEWED"
+        ]
+      },
+      "interval": {
+        "type": "string",
+        "enum": [
+          "5M",
+          "DAILY"
+        ]
+      },
+      "points": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "$ref": "#/components/schemas/SessionDate"
+            },
+            "time": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UtcInstant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "close": {
+              "$ref": "#/components/schemas/PositiveDecimalString"
+            }
+          },
+          "required": [
+            "date",
+            "time",
+            "close"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 420
+      },
+      "count": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 40000
+      },
+      "changePercent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "low": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PositiveDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "high": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PositiveDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "today": {
+        "$ref": "#/components/schemas/ExchangeSession"
+      },
+      "calendarEvents": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExchangeSession"
+        },
+        "maxItems": 29
+      }
+    },
+    "required": [
+      "range",
+      "source",
+      "interval",
+      "points",
+      "count",
+      "changePercent",
+      "low",
+      "high",
+      "today",
+      "calendarEvents"
     ],
     "additionalProperties": false
   },

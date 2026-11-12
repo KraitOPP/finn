@@ -16,8 +16,13 @@ class MarketController {
     record ReviewClose(@NotNull LocalDate sessionDate,@NotNull JsonNode close,@NotBlank @Size(max=240) String sourceReference,@AssertTrue boolean reviewed){}
     record FetchWindow(@NotNull LocalDate start,@NotNull LocalDate endExclusive){}
     private final MarketPrices prices;
-    MarketController(MarketPrices prices){this.prices=prices;}
+    private final MarketCharts charts;
+    MarketController(MarketPrices prices,MarketCharts charts){this.prices=prices;this.charts=charts;}
     @GetMapping MarketPrices.Feed feed(@PathVariable UUID listing){return prices.feed(listing);}
+    @GetMapping("/chart") MarketCharts.Chart chart(@PathVariable UUID listing,@RequestParam MarketCharts.Range range,
+                                                   @RequestParam(defaultValue="false") boolean reviewed){
+        return charts.chart(listing,range,reviewed);
+    }
     @GetMapping("/history") MarketPrices.PriceHistory history(@PathVariable UUID listing,@RequestParam LocalDate start,@RequestParam LocalDate endExclusive){
         return prices.history(listing,start,endExclusive);
     }

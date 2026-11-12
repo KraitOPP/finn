@@ -10,6 +10,7 @@ type Result<T> = { path: string; revision: number } & (
 export function useResource<K extends keyof ContractTypes>(
   name: K,
   path: string | null,
+  timeoutMs?: number,
 ) {
   const [revision, setRevision] = useState(0);
   const reload = useCallback(() => setRevision((value) => value + 1), []);
@@ -18,7 +19,7 @@ export function useResource<K extends keyof ContractTypes>(
   useEffect(() => {
     const controller = new AbortController();
     if (path)
-      requestContract(name, path, { signal: controller.signal })
+      requestContract(name, path, { signal: controller.signal, timeoutMs })
         .then((value) => {
           if (!controller.signal.aborted)
             setResult({ path, revision, status: "ready", value });
@@ -41,7 +42,7 @@ export function useResource<K extends keyof ContractTypes>(
           });
         });
     return () => controller.abort();
-  }, [name, path, revision, refresh]);
+  }, [name, path, revision, refresh, timeoutMs]);
   const current =
     result?.path === path && result.revision === revision ? result : null;
   return {

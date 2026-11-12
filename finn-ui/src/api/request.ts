@@ -5,6 +5,11 @@ import type {
 } from "../../contracts/generated/models.ts";
 
 const safeMessages: Record<string, string> = {
+  CHART_NOT_CONFIGURED:
+    "Yahoo price history is unavailable. Try saved closes if you have them.",
+  CHART_BUSY: "Price history is busy. Try again in a moment.",
+  CHART_UNAVAILABLE:
+    "Yahoo couldn’t return this range. Try again or select another range.",
   STOCK_IDENTITY_REVIEW_REQUIRED:
     "This ticker is already saved for a different security. Check the existing listing before using it.",
   UNSUPPORTED_SHORT_POSITION:
@@ -113,9 +118,12 @@ export async function requestContract<K extends keyof ContractTypes>(
     raw?: { data: BodyInit; contentType: string };
     csrf?: CsrfInformation;
     signal?: AbortSignal;
+    timeoutMs?: number;
   } = {},
 ): Promise<ContractTypes[K]> {
-  const deadline = AbortSignal.timeout(options.raw ? 24000 : 12000);
+  const deadline = AbortSignal.timeout(
+    options.timeoutMs ?? (options.raw ? 24000 : 12000),
+  );
   const signal = options.signal
     ? AbortSignal.any([options.signal, deadline])
     : deadline;

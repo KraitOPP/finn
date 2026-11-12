@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 
 from .history import HistoryQuery, Listing, YahooHistoryClient
+from .chart import fetch_chart
 
 
 def lookup(query, workspace):
@@ -42,9 +43,10 @@ def main() -> int:
         if len(raw) > 4096 or len(sys.argv) not in (2, 3):
             return 2
         request = json.loads(raw)
-        if len(sys.argv) == 3 and sys.argv[2] == "lookup":
+        if len(sys.argv) == 3 and sys.argv[2] in ("lookup", "chart"):
+            operation = lookup if sys.argv[2] == "lookup" else fetch_chart
             with contextlib.redirect_stdout(sys.stderr):
-                result = lookup(request, Path(sys.argv[1]))
+                result = operation(request, Path(sys.argv[1]))
             print(json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(",", ":")))
             return 0
         if len(sys.argv) != 2:

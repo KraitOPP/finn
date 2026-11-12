@@ -49,6 +49,10 @@ public class YahooProcess {
         return invoke(Map.of("query",query,"exchange",exchange), "lookup", Duration.ofSeconds(9));
     }
 
+    JsonNode chart(Object request) throws IOException, InterruptedException {
+        return invoke(request, "chart", Duration.ofSeconds(18));
+    }
+
     private JsonNode invoke(Object request,String mode,Duration timeout) throws IOException, InterruptedException {
         if (!capability().equals("PRIVATE_DAILY")) throw new IOException("Yahoo configuration unavailable");
         var root=WorkspacePolicy.requireExternalRoot(workspace);
@@ -63,6 +67,7 @@ public class YahooProcess {
         env.put("PYTHONPATH",source); env.put("PYTHONNOUSERSITE","1"); env.put("PYTHONUTF8","1");
         env.put("TMP",scratch.toString()); env.put("TEMP",scratch.toString()); env.put("TMPDIR",scratch.toString());
         byte[] input=json.writeValueAsString(request).getBytes(StandardCharsets.UTF_8);
-        return json.readTree(BoundedWorkerProcess.run(builder,input,MAX_BYTES,timeout));
+        int limit = "chart".equals(mode) ? 4_000_000 : MAX_BYTES;
+        return json.readTree(BoundedWorkerProcess.run(builder,input,limit,timeout));
     }
 }

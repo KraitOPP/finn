@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.46.0",
+  "$id": "urn:finn:contracts:market-data:0.47.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.46.0"
+      "const": "0.47.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -309,6 +309,170 @@
         "acceptedRows",
         "lastSuccessAt",
         "knownDelaySeconds"
+      ],
+      "additionalProperties": false
+    },
+    "ChartRange": {
+      "type": "string",
+      "enum": [
+        "D1",
+        "D7",
+        "M1",
+        "Y1",
+        "Y5",
+        "ALL"
+      ]
+    },
+    "ExchangeSession": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "HOLIDAY",
+            "SPECIAL",
+            "WEEKEND",
+            "SCHEDULED",
+            "UNKNOWN"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "sourceUrl": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "date",
+        "kind",
+        "label",
+        "sourceUrl"
+      ],
+      "additionalProperties": false
+    },
+    "MarketChart": {
+      "type": "object",
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/ChartRange"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "YAHOO_YFINANCE",
+            "MANUAL_REVIEWED"
+          ]
+        },
+        "interval": {
+          "type": "string",
+          "enum": [
+            "5M",
+            "DAILY"
+          ]
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "$ref": "#/$defs/SessionDate"
+              },
+              "time": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/UtcInstant"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "close": {
+                "$ref": "#/$defs/PositiveDecimalString"
+              }
+            },
+            "required": [
+              "date",
+              "time",
+              "close"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 420
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 40000
+        },
+        "changePercent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "low": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "high": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "today": {
+          "$ref": "#/$defs/ExchangeSession"
+        },
+        "calendarEvents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExchangeSession"
+          },
+          "maxItems": 29
+        }
+      },
+      "required": [
+        "range",
+        "source",
+        "interval",
+        "points",
+        "count",
+        "changePercent",
+        "low",
+        "high",
+        "today",
+        "calendarEvents"
       ],
       "additionalProperties": false
     },

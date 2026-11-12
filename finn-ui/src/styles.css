@@ -328,14 +328,19 @@ summary {
 }
 .skip-link {
   position: fixed;
-  top: -80px;
+  top: 12px;
   left: 20px;
   background: #fff;
   padding: 12px;
   z-index: 3;
 }
-.skip-link:focus {
-  top: 12px;
+.skip-link:not(:focus) {
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
 }
 .topbar {
   height: 94px;

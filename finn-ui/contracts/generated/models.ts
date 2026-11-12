@@ -241,6 +241,8 @@ export type CatalogueSecurityPage = ({
   "hasMore": (boolean);
 });
 
+export type ChartRange = ("D1" | "D7" | "M1" | "Y1" | "Y5" | "ALL") & (string);
+
 export type CompanyCalendarPage = ({
   "items": (Array<({
   "eventId": (OpaqueId);
@@ -402,7 +404,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.46.0") & (string);
+export type ContractVersion = ("0.47.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -566,6 +568,13 @@ export type EventSuggestion = ({
   "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
   "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
   "confidence": ("TITLE_HINT" | "UNKNOWN") & (string);
+});
+
+export type ExchangeSession = ({
+  "date": (SessionDate);
+  "kind": ("HOLIDAY" | "SPECIAL" | "WEEKEND" | "SCHEDULED" | "UNKNOWN") & (string);
+  "label": (string);
+  "sourceUrl": (((string)) | ((null)));
 });
 
 export type FilingRule = ({
@@ -1132,6 +1141,23 @@ export type ManagementGuidanceInput = ({
 
 export type ManagementGuidanceList = ({
   "items": (Array<(ManagementGuidance)>);
+});
+
+export type MarketChart = ({
+  "range": (ChartRange);
+  "source": ("YAHOO_YFINANCE" | "MANUAL_REVIEWED") & (string);
+  "interval": ("5M" | "DAILY") & (string);
+  "points": (Array<({
+  "date": (SessionDate);
+  "time": (((UtcInstant)) | ((null)));
+  "close": (PositiveDecimalString);
+})>);
+  "count": (number);
+  "changePercent": (((DecimalString)) | ((null)));
+  "low": (((PositiveDecimalString)) | ((null)));
+  "high": (((PositiveDecimalString)) | ((null)));
+  "today": (ExchangeSession);
+  "calendarEvents": (Array<(ExchangeSession)>);
 });
 
 export type MarketDiagnostics = ({
@@ -2257,6 +2283,7 @@ export interface ContractTypes {
   CatalogueSecurity: CatalogueSecurity;
   CatalogueSecurityDetail: CatalogueSecurityDetail;
   CatalogueSecurityPage: CatalogueSecurityPage;
+  ChartRange: ChartRange;
   CompanyCalendarPage: CompanyCalendarPage;
   CompanyEvent: CompanyEvent;
   CompanyEventHistory: CompanyEventHistory;
@@ -2298,6 +2325,7 @@ export interface ContractTypes {
   DiscoverySnapshot: DiscoverySnapshot;
   EventReplay: EventReplay;
   EventSuggestion: EventSuggestion;
+  ExchangeSession: ExchangeSession;
   FilingRule: FilingRule;
   FilingRuleChange: FilingRuleChange;
   FilingRuleList: FilingRuleList;
@@ -2361,6 +2389,7 @@ export interface ContractTypes {
   ManagementGuidanceEdit: ManagementGuidanceEdit;
   ManagementGuidanceInput: ManagementGuidanceInput;
   ManagementGuidanceList: ManagementGuidanceList;
+  MarketChart: MarketChart;
   MarketDiagnostics: MarketDiagnostics;
   MarketFeed: MarketFeed;
   NonNegativeDecimalString: NonNegativeDecimalString;

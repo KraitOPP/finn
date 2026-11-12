@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.46.0",
+    "version": "0.47.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -12439,6 +12439,115 @@
         }
       }
     },
+    "/api/v1/market/listings/{listing}/chart": {
+      "get": {
+        "operationId": "getMarketChart",
+        "summary": "Read display price history for an owned listing",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "listing",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChartRange"
+            }
+          },
+          {
+            "name": "reviewed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketChart"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/market/listings/{listing}/history": {
       "get": {
         "operationId": "getPrivateCloseHistory",
@@ -17775,7 +17884,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.46.0"
+        "const": "0.47.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -18077,6 +18186,170 @@
           "acceptedRows",
           "lastSuccessAt",
           "knownDelaySeconds"
+        ],
+        "additionalProperties": false
+      },
+      "ChartRange": {
+        "type": "string",
+        "enum": [
+          "D1",
+          "D7",
+          "M1",
+          "Y1",
+          "Y5",
+          "ALL"
+        ]
+      },
+      "ExchangeSession": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "HOLIDAY",
+              "SPECIAL",
+              "WEEKEND",
+              "SCHEDULED",
+              "UNKNOWN"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "kind",
+          "label",
+          "sourceUrl"
+        ],
+        "additionalProperties": false
+      },
+      "MarketChart": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "$ref": "#/components/schemas/ChartRange"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "YAHOO_YFINANCE",
+              "MANUAL_REVIEWED"
+            ]
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "5M",
+              "DAILY"
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "$ref": "#/components/schemas/SessionDate"
+                },
+                "time": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/UtcInstant"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "close": {
+                  "$ref": "#/components/schemas/PositiveDecimalString"
+                }
+              },
+              "required": [
+                "date",
+                "time",
+                "close"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 420
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40000
+          },
+          "changePercent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "low": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "high": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "today": {
+            "$ref": "#/components/schemas/ExchangeSession"
+          },
+          "calendarEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExchangeSession"
+            },
+            "maxItems": 29
+          }
+        },
+        "required": [
+          "range",
+          "source",
+          "interval",
+          "points",
+          "count",
+          "changePercent",
+          "low",
+          "high",
+          "today",
+          "calendarEvents"
         ],
         "additionalProperties": false
       },
