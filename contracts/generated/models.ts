@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.38.0") & (string);
+export type ContractVersion = ("0.39.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1107,7 +1107,7 @@ export type NonNegativeDecimalString = (string);
 
 export type Notification = ({
   "activityId": (OpaqueId);
-  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT") & (string);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW") & (string);
   "subjectId": (OpaqueId);
   "title": (string);
   "createdAt": (UtcInstant);
@@ -1135,7 +1135,7 @@ export type NotificationDeliveryPage = ({
   "items": (Array<({
   "activityId": (OpaqueId);
   "title": (string);
-  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT") & (string);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW") & (string);
   "delivery": (NotificationDelivery);
 })>);
 });
@@ -1147,6 +1147,7 @@ export type NotificationDetail = ({
   "indicator": (((IndicatorEvaluation)) | ((null)));
   "briefId": (((OpaqueId)) | ((null)));
   "companyEvent": (((CompanyEvent)) | ((null)));
+  "thesisReview": (((ThesisReviewLink)) | ((null)));
   "deliveries": (Array<(NotificationDelivery)>);
   "attempts": (Array<(NotificationAttempt)>);
 });
@@ -1173,7 +1174,7 @@ export type PortfolioBrief = ({
   "timeZone": (string);
   "items": (Array<({
   "activityId": (OpaqueId);
-  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT") & (string);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW") & (string);
   "title": (string);
   "createdAt": (UtcInstant);
 })>);
@@ -1713,9 +1714,73 @@ export type ThesisConditions = ({
   "items": (Array<(ThesisCondition)>);
 });
 
+export type ThesisReview = ({
+  "reviewId": (OpaqueId);
+  "thesis": (InvestmentThesis);
+  "event": (CompanyEvent);
+  "relation": ("CONTEXT" | "SUPPORTS" | "CHALLENGES") & (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+  "condition": (((ThesisConditionCheck)) | ((null)));
+  "guidance": (((ThesisReviewGuidance)) | ((null)));
+  "decision": (((ThesisReviewDecision)) | ((null)));
+  "createdAt": (UtcInstant);
+});
+
+export type ThesisReviewDecision = ({
+  "action": ("REAFFIRM" | "REVISE" | "PAUSE" | "CLOSE" | "DISMISS") & (string);
+  "note": (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+  "decidedAt": (UtcInstant);
+});
+
+export type ThesisReviewDecisionInput = ({
+  "action": ("REAFFIRM" | "REVISE" | "PAUSE" | "CLOSE" | "DISMISS") & (string);
+  "note": (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+});
+
+export type ThesisReviewGuidance = ({
+  "statement": (ManagementGuidance);
+  "outcome": (GuidanceDelivery);
+});
+
+export type ThesisReviewGuidanceRef = ({
+  "id": (OpaqueId);
+  "revision": (number);
+});
+
+export type ThesisReviewIndex = ({
+  "suggestions": (Array<(CompanyEvent)>);
+  "items": (Array<(ThesisReviewSummary)>);
+  "hasMore": (boolean);
+});
+
+export type ThesisReviewInput = ({
+  "expectedRevision": (number);
+  "eventVersionId": (OpaqueId);
+  "relation": ("CONTEXT" | "SUPPORTS" | "CHALLENGES") & (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+  "conditionCheckId": (((OpaqueId)) | ((null)));
+  "guidance": (((ThesisReviewGuidanceRef)) | ((null)));
+});
+
+export type ThesisReviewLink = ({
+  "companyId": (OpaqueId);
+  "thesisId": (OpaqueId);
+  "reviewId": (OpaqueId);
+});
+
 export type ThesisReviewSchedule = ({
   "scheduledLocal": (string);
   "timeZone": (string);
+});
+
+export type ThesisReviewSummary = ({
+  "reviewId": (OpaqueId);
+  "thesisRevision": (number);
+  "eventTitle": (string);
+  "createdAt": (UtcInstant);
+  "decided": (boolean);
 });
 
 export type UserProfile = ({
@@ -2019,7 +2084,16 @@ export interface ContractTypes {
   ThesisConditionDefinition: ThesisConditionDefinition;
   ThesisConditionInput: ThesisConditionInput;
   ThesisConditions: ThesisConditions;
+  ThesisReview: ThesisReview;
+  ThesisReviewDecision: ThesisReviewDecision;
+  ThesisReviewDecisionInput: ThesisReviewDecisionInput;
+  ThesisReviewGuidance: ThesisReviewGuidance;
+  ThesisReviewGuidanceRef: ThesisReviewGuidanceRef;
+  ThesisReviewIndex: ThesisReviewIndex;
+  ThesisReviewInput: ThesisReviewInput;
+  ThesisReviewLink: ThesisReviewLink;
   ThesisReviewSchedule: ThesisReviewSchedule;
+  ThesisReviewSummary: ThesisReviewSummary;
   UserProfile: UserProfile;
   UtcInstant: UtcInstant;
   ValuationListing: ValuationListing;

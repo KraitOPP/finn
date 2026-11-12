@@ -5,7 +5,6 @@ import { loadDemoQuote } from "./api/demo.ts";
 import { AuthControls, SessionNotice } from "./auth/AuthControls.tsx";
 import { Securities } from "./instruments/Securities.tsx";
 import { Watchlists } from "./market/Watchlists.tsx";
-import { Inbox } from "./monitoring/Inbox.tsx";
 import {
   Navigation,
   PendingView,
@@ -36,6 +35,11 @@ const sessionLabel = (value: string | null) =>
 const Research = lazy(() =>
   import("./research/Sources.tsx").then((module) => ({
     default: module.Research,
+  })),
+);
+const Inbox = lazy(() =>
+  import("./monitoring/Inbox.tsx").then((module) => ({
+    default: module.Inbox,
   })),
 );
 
@@ -252,7 +256,9 @@ function WorkspaceApp() {
             ) : route === "watchlists" ? (
               <Watchlists />
             ) : route === "inbox" ? (
-              <Inbox />
+              <Suspense fallback={<p role="status">Loading Inbox…</p>}>
+                <Inbox />
+              </Suspense>
             ) : route === "settings" ? (
               <Settings />
             ) : (

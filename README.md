@@ -49,6 +49,8 @@ Use Research to save and version primary sources, review and group company event
 
 In Company workspace, choose a company to review business and governance highlights, financial statements, cash flow, and open questions. Extract evidence from a saved PDF or text source, then use the cited lines when reviewing a figure. Search by keyword, publication date, source type, and version. Saved research reports retain their citations and reviewed values across source updates. Local model ranking appears when enabled by the backend.
 
+Use **Investment theses** to save a rationale, risks, milestones, and a review reminder. Check thresholds against reviewed figures. Use **Management guidance** to confirm a source statement and compare it with reported results as of a selected date. Create a review task from a reviewed event to link the evidence to the original thesis and record your decision.
+
 ## Verification
 
 `npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors, sign-in/out controls, CSRF form fields, expired-session clearing and rejection of private/incompatible demo responses.

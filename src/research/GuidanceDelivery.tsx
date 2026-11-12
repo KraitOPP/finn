@@ -63,7 +63,7 @@ export function DeliveryComparison({ item }: { item: ManagementGuidance }) {
   );
 }
 
-function DeliveryResult({ result }: { result: GuidanceDelivery }) {
+export function DeliveryResult({ result }: { result: GuidanceDelivery }) {
   return (
     <div>
       <p>

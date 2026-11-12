@@ -11,6 +11,7 @@ import { usePreferences } from "../preferences/PreferencesProvider.tsx";
 import { AnchorEvidence } from "./Evidence.tsx";
 import { EvidencePicker } from "./FinancialFacts.tsx";
 import { ThesisConditions } from "./ThesisConditions.tsx";
+import { ThesisReviews } from "./ThesisReviews.tsx";
 
 const root = "/api/v1/research";
 const decisions = {
@@ -21,9 +22,19 @@ const decisions = {
   CLOSE: "Close",
 } as const;
 
-export function ThesisNotebook({ company }: { company: string }) {
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState("");
+export function ThesisNotebook({
+  company,
+  initialThesis,
+  event,
+  review,
+}: {
+  company: string;
+  initialThesis?: string;
+  event?: string;
+  review?: string;
+}) {
+  const [open, setOpen] = useState(Boolean(initialThesis || event));
+  const [selected, setSelected] = useState(initialThesis ?? "");
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState("");
   const path = `${root}/companies/${company}/theses`;
@@ -36,7 +47,10 @@ export function ThesisNotebook({ company }: { company: string }) {
     data.reload();
   }
   return (
-    <details onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <details
+      open={open}
+      onToggle={(toggle) => setOpen(toggle.currentTarget.open)}
+    >
       <summary>Investment theses</summary>
       {notice && <p role="status">{notice}</p>}
       {data.error && <p role="alert">{data.error}</p>}
@@ -87,6 +101,8 @@ export function ThesisNotebook({ company }: { company: string }) {
               <ThesisDetails
                 key={thesis.thesisId}
                 thesis={thesis}
+                event={event}
+                review={thesis.thesisId === initialThesis ? review : undefined}
                 onEdit={() => setEditing(true)}
               />
             )
@@ -100,9 +116,13 @@ export function ThesisNotebook({ company }: { company: string }) {
 function ThesisDetails({
   thesis,
   onEdit,
+  event,
+  review,
 }: {
   thesis: InvestmentThesis;
   onEdit: () => void;
+  event?: string;
+  review?: string;
 }) {
   const [history, setHistory] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -115,6 +135,7 @@ function ThesisDetails({
     <div className="settings-card">
       <ThesisVersion thesis={thesis} />
       <ThesisConditions key={thesis.revision} thesis={thesis} />
+      <ThesisReviews thesis={thesis} event={event} review={review} />
       {thesis.reminderId && (
         <p>
           <a href="#/inbox">Manage review reminders in Inbox</a>

@@ -24,6 +24,7 @@ const kinds = {
   VOLUME_RULE: "Volume alert",
   ALLOCATION_RULE: "Allocation alert",
   COMPANY_EVENT: "Company event",
+  THESIS_REVIEW: "Thesis review",
 };
 const statuses = {
   PENDING: "Pending",
@@ -181,7 +182,25 @@ function NotificationDetails({
             </>
           )}
           {detail.value.companyEvent && (
-            <CompanyNotificationEvidence event={detail.value.companyEvent} />
+            <>
+              <CompanyNotificationEvidence event={detail.value.companyEvent} />
+              <p>
+                <a
+                  href={`#/research?company=${detail.value.companyEvent.companyId}&event=${detail.value.companyEvent.versionId}`}
+                >
+                  Review this event against a thesis
+                </a>
+              </p>
+            </>
+          )}
+          {detail.value.thesisReview && (
+            <p>
+              <a
+                href={`#/research?company=${detail.value.thesisReview.companyId}&thesis=${detail.value.thesisReview.thesisId}&review=${detail.value.thesisReview.reviewId}`}
+              >
+                Open the saved thesis review
+              </a>
+            </p>
           )}
           {detail.value.briefId && <SavedBrief id={detail.value.briefId} />}
           {detail.value.indicator && (

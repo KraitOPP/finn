@@ -20,22 +20,33 @@ const labels = {
   QUESTION: "Research questions",
 } as const;
 
+type ResearchTarget = { thesis?: string; review?: string; event?: string };
+
 export function CompanyWorkspace({ generation }: { generation: number }) {
   const companies = useResource(
     "CatalogueCompanies",
     "/api/v1/catalog/companies",
   );
   const [selected, setCompany] = useState<string | null>(null);
-  const security = new URLSearchParams(window.location.hash.split("?")[1]).get(
-    "security",
-  );
+  const params = new URLSearchParams(window.location.hash.split("?")[1]);
+  function id(key: string) {
+    const value = params.get(key);
+    return value && /^[0-9a-f-]{36}$/i.test(value) ? value : undefined;
+  }
+  const security = id("security");
+  const linkedCompany = id("company");
+  const target: ResearchTarget =
+    selected === null
+      ? { thesis: id("thesis"), review: id("review"), event: id("event") }
+      : {};
   const holding = useResource(
     "CatalogueSecurityDetail",
-    selected === null && security && /^[a-f0-9-]{36}$/i.test(security)
+    selected === null && security && !linkedCompany
       ? `/api/v1/catalog/securities/${security}`
       : null,
   );
-  const company = selected ?? holding.value?.security.companyId ?? "";
+  const company =
+    selected ?? linkedCompany ?? holding.value?.security.companyId ?? "";
   return (
     <section className="detail-card">
       <h2>Company workspace</h2>
@@ -56,7 +67,12 @@ export function CompanyWorkspace({ generation }: { generation: number }) {
       {companies.error && <p role="alert">{companies.error}</p>}
       {holding.error && <p role="alert">{holding.error}</p>}
       {company && (
-        <Overview key={company} company={company} generation={generation} />
+        <Overview
+          key={company}
+          company={company}
+          generation={generation}
+          target={target}
+        />
       )}
     </section>
   );
@@ -65,9 +81,11 @@ export function CompanyWorkspace({ generation }: { generation: number }) {
 function Overview({
   company,
   generation,
+  target,
 }: {
   company: string;
   generation: number;
+  target: ResearchTarget;
 }) {
   const path = `/api/v1/research/companies/${company}`;
   const data = useResource(
@@ -87,7 +105,12 @@ function Overview({
   return (
     <div>
       <h3>{companyName}</h3>
-      <ThesisNotebook company={company} />
+      <ThesisNotebook
+        company={company}
+        initialThesis={target.thesis}
+        event={target.event}
+        review={target.review}
+      />
       <GuidancePanel company={company} />
       <p>
         {indexedSources} of {primarySources} current primary sources have
