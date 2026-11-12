@@ -40,6 +40,43 @@ public final class DiscoveryChecks {
         return ok(submit(mvc,ROOT+"/companies/"+company+"/facts",owner,amount(dimensions,anchor,value,scale))).path("factId").asText();
     }
 
+    static String screen(String sector,String metric,String amount,String scale){
+        return """
+                {"name":"Fictional saved screen","sector":"%s","period":%s,
+                 "filters":[{"metric":"%s","comparator":"GTE","amount":"%s","scale":"%s"}]}
+                """.formatted(sector,PERIOD,metric,amount,scale);
+    }
+
+    public static void savesAndReplaysScreenInputs(MockMvc mvc,ResearchExtractionWorker worker)throws Exception{
+        String owner="fictional-screen-owner",other="fictional-screen-other",company=company(mvc,owner);
+        String listing=listing(mvc,owner,company,"FICTIONALSC");
+        ok(submit(mvc,UNIVERSE,owner,member(listing,"MANUFACTURING",true,null)));
+        String gap=company(mvc,owner);
+        ok(submit(mvc,UNIVERSE,owner,member(listing(mvc,owner,gap,"FICTIONALGAP"),"MANUFACTURING",true,null)));
+        saveFact(mvc,worker,owner,company,"REVENUE","1250","MILLION","Fictional screened result");
+        String screens=DISCOVERY+"/screens";
+        submit(mvc,screens,owner,screen("BANKING","REVENUE","120","CRORE")).andExpect(status().isUnprocessableContent());
+        String input=screen("MANUFACTURING","REVENUE","120","CRORE");
+        String id=ok(submit(mvc,screens,owner,input)).path("screenId").asText();
+        String path=screens+"/"+id;
+        String key=java.util.UUID.randomUUID().toString();
+        String request="{\"revision\":1,\"requestId\":\""+key+"\"}";
+        var first=ok(submit(mvc,path+"/runs",owner,request));
+        org.assertj.core.api.Assertions.assertThat(first.path("results").valueStream().map(row->row.path("state").asText()).toList())
+                .containsExactlyInAnyOrder("MATCH","UNKNOWN");
+        var watchlist=ok(submit(mvc,"/api/v1/watchlists",owner,"{\"name\":\"Fictional screened candidates\"}"));
+        submit(mvc,"/api/v1/watchlists/"+watchlist.path("watchlistId").asText()+"/items",owner,
+                "{\"listingId\":\""+listing+"\",\"tracked\":true}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].listingId").value(listing));
+        ok(submit(mvc,UNIVERSE,owner,member(listing,"TECHNOLOGY",true,1)));
+        ok(submit(mvc,path,owner,"{\"expectedRevision\":1,\"screen\":"+input.replace("\"120\"","\"130\"")+"}"));
+        String saved=DISCOVERY+"/screen-runs/"+first.path("runId").asText();
+        org.assertj.core.api.Assertions.assertThat(ok(read(mvc,saved,owner))).isEqualTo(first);
+        org.assertj.core.api.Assertions.assertThat(ok(submit(mvc,path+"/runs",owner,request))).isEqualTo(first);
+        submit(mvc,path+"/runs",owner,request.replace("\"revision\":1","\"revision\":2")).andExpect(status().isConflict());
+        read(mvc,saved,other).andExpect(status().isNotFound());
+    }
+
     public static void usesOnlyPrivateReviewedUniverseAndComparableFacts(MockMvc mvc,ResearchExtractionWorker worker)throws Exception{
         String owner="fictional-discovery-owner",other="fictional-discovery-other";
         String company=company(mvc,owner),listing=listing(mvc,owner,company,"FICTIONAL9");

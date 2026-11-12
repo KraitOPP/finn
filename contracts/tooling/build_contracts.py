@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.40.0"
+VERSION = "0.41.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -374,6 +374,23 @@ def definitions() -> dict:
     d["DiscoveryCompany"] = obj({"member":ref("DiscoveryMember"),"readings":array(ref("DiscoveryReading"),maxItems=6)})
     d["DiscoverySnapshot"] = obj({"source":{"const":"MANUAL_CURRENT"},"capturedAt":ref("UtcInstant"),"period":ref("DiscoveryPeriod"),
         "companies":array(ref("DiscoveryCompany"),maxItems=30)})
+    d["StockScreenFilter"] = obj({"metric":ref("DiscoveryMetric"),"comparator":enum(["GTE","LTE"]),
+        "amount":ref("DecimalString"),"scale":fact_scale})
+    d["StockScreenInput"] = obj({"name":text(minLength=1,maxLength=80),"sector":ref("DiscoverySector"),"period":ref("DiscoveryPeriod"),
+        "filters":array(ref("StockScreenFilter"),minItems=1,maxItems=6)})
+    d["StockScreenEdit"] = obj({"expectedRevision":thesis_revision,"screen":ref("StockScreenInput")})
+    d["StockScreen"] = obj({"screenId":ref("OpaqueId"),"revision":thesis_revision,"definition":ref("StockScreenInput"),"savedAt":ref("UtcInstant")})
+    d["StockScreenIndex"] = obj({"items":array(ref("StockScreen"),maxItems=100)})
+    d["StockScreenRunInput"] = obj({"revision":thesis_revision,"requestId":ref("OpaqueId")})
+    screen_run_summary = {"runId":ref("OpaqueId"),"revision":thesis_revision,"createdAt":ref("UtcInstant")}
+    d["StockScreenRunSummary"] = obj(screen_run_summary)
+    d["StockScreenHistory"] = obj({"items":array(ref("StockScreenRunSummary"),maxItems=100)})
+    d["StockScreenCheck"] = obj({"filter":ref("StockScreenFilter"),"state":enum(["PASS","FAIL","UNKNOWN"]),
+        "reason":fact_evaluation_reason,"fact":nullable(ref("FinancialFact"))})
+    d["StockScreenResult"] = obj({"member":ref("DiscoveryMember"),"state":enum(["MATCH","EXCLUDED","UNKNOWN","OUTSIDE_SECTOR"]),
+        "checks":array(ref("StockScreenCheck"),maxItems=6)})
+    d["StockScreenRun"] = obj({"runId":ref("OpaqueId"),"screen":ref("StockScreen"),"methodology":{"const":"absolute-thresholds-v1"},
+        "inputs":ref("DiscoverySnapshot"),"results":array(ref("StockScreenResult"),maxItems=30),"createdAt":ref("UtcInstant")})
     d["ThesisConditionCheck"] = obj({"checkId":ref("OpaqueId"),"thesisRevision":thesis_revision,
         "state":enum(["MATCHED","VIOLATED","UNKNOWN","REVIEW_NEEDED"]),"reason":fact_evaluation_reason,
         "fact":nullable(ref("FinancialFact")),"evaluatedAt":ref("UtcInstant")})
@@ -971,6 +988,17 @@ def public_api_document() -> dict:
         "/api/v1/discovery/universe/coverage":{"get":maintained("inspectDiscoveryCoverage","Inspect current reviewed inputs for a reporting period",
             "DiscoverySnapshot",[parameter("kind","query",enum(["QUARTER","FULL_YEAR"]),True),parameter("start","query",ref("SessionDate"),True),
                 parameter("end","query",ref("SessionDate"),True)])},
+        "/api/v1/discovery/screens":{
+            "get":maintained("listStockScreens","Read the latest saved screen versions","StockScreenIndex"),
+            "post":maintained("createStockScreen","Save a sector-scoped screen","StockScreen",input_name="StockScreenInput"),
+        },
+        "/api/v1/discovery/screens/{id}":{"post":maintained("editStockScreen","Save a new immutable screen version","StockScreen",identifier,"StockScreenEdit")},
+        "/api/v1/discovery/screens/{id}/versions":{"get":maintained("readStockScreenVersions","Read historical screen definitions","StockScreenIndex",identifier)},
+        "/api/v1/discovery/screens/{id}/runs":{
+            "get":maintained("listStockScreenRuns","Read saved run history","StockScreenHistory",identifier),
+            "post":maintained("runStockScreen","Capture current reviewed inputs and run a screen version","StockScreenRun",identifier,"StockScreenRunInput"),
+        },
+        "/api/v1/discovery/screen-runs/{id}":{"get":maintained("readStockScreenRun","Replay a run from retained inputs","StockScreenRun",identifier)},
         "/api/v1/research/companies/{company}/theses":{
             "get":maintained("listInvestmentTheses","Read the latest thesis versions for a company","InvestmentTheses",company_parameter),
             "post":maintained("createInvestmentThesis","Save original reasoning and an optional review reminder","InvestmentThesis",
