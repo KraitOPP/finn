@@ -22,7 +22,11 @@ export function AuthControls() {
           <span className="account-name" title={session.user.displayName}>
             {session.user.displayName}
           </span>
-          <form method="post" action="/api/v1/logout">
+          <form
+            method="post"
+            action="/api/v1/logout"
+            onSubmit={authentication.signalSignOut}
+          >
             <input
               type="hidden"
               name={session.csrf.parameterName}

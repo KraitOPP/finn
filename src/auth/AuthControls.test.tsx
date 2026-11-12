@@ -1,10 +1,11 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
+import { PrivateView } from "../Navigation.tsx";
 import { AuthControls, SessionNotice } from "./AuthControls.tsx";
-import { AuthProvider } from "./AuthProvider.tsx";
+import { AuthProvider, sessionChannelName } from "./AuthProvider.tsx";
 
 const payload = (authenticated: boolean) => ({
-  contractVersion: "0.44.0",
+  contractVersion: "0.45.0",
   requestId: "synthetic-auth-request",
   authenticated,
   user: authenticated
@@ -23,7 +24,10 @@ const reply = (authenticated: boolean) =>
   new Response(JSON.stringify(payload(authenticated)), {
     headers: { "content-type": "application/json" },
   });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 it("renders the sign-in link without exposing provider configuration", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply(false)));
@@ -81,4 +85,37 @@ it("removes the account controls when the server reports session expiry", async 
     screen.queryByRole("button", { name: "Sign out" }),
   ).not.toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent("Your session ended");
+});
+
+it("clears private content immediately when another tab signs out", async () => {
+  const channels: TestChannel[] = [];
+  class TestChannel {
+    onmessage: ((event: MessageEvent) => void) | null = null;
+    constructor(readonly name: string) {
+      channels.push(this);
+    }
+    close() {}
+  }
+  vi.stubGlobal("BroadcastChannel", TestChannel);
+  const fetcher = vi.fn().mockResolvedValue(reply(true));
+  vi.stubGlobal("fetch", fetcher);
+  render(
+    <AuthProvider>
+      <PrivateView>
+        <p>Fictional private position</p>
+      </PrivateView>
+    </AuthProvider>,
+  );
+  expect(
+    await screen.findByText("Fictional private position"),
+  ).toBeInTheDocument();
+  expect(channels[0].name).toBe(sessionChannelName);
+  act(() =>
+    channels[0].onmessage?.(
+      new MessageEvent("message", { data: "signing-out" }),
+    ),
+  );
+  expect(screen.queryByText("Fictional private position")).toBeNull();
+  expect(screen.getByRole("button", { name: "Reconnect" })).toBeInTheDocument();
+  expect(fetcher).toHaveBeenCalledTimes(1);
 });

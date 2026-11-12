@@ -14,7 +14,11 @@ type State =
   | { status: "loading"; session: null; expired: boolean }
   | { status: "unavailable"; session: null; expired: boolean }
   | { status: "ready"; session: SessionResponse; expired: boolean };
-type Authentication = State & { refresh: () => void };
+type Authentication = State & {
+  refresh: () => void;
+  signalSignOut: () => void;
+};
+export const sessionChannelName = "finn-session-v1";
 const AuthContext = createContext<Authentication | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -26,7 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const controller = useRef<AbortController | null>(null);
   const previouslyAuthenticated = useRef(false);
   const lastActivity = useRef(Date.now());
+  const signOutChannel = useRef<BroadcastChannel | null>(null);
+  const signedOutElsewhere = useRef(false);
   const refresh = useCallback(() => {
+    signedOutElsewhere.current = false;
     controller.current?.abort();
     const current = new AbortController();
     controller.current = current;
@@ -45,6 +52,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => {
     refresh();
+    const channel =
+      typeof BroadcastChannel === "undefined"
+        ? null
+        : new BroadcastChannel(sessionChannelName);
+    signOutChannel.current = channel;
+    if (channel)
+      channel.onmessage = (message) => {
+        if (message.data !== "signing-out") return;
+        signedOutElsewhere.current = true;
+        controller.current?.abort();
+        setState({ status: "unavailable", session: null, expired: true });
+      };
     const activity = () => {
       lastActivity.current = Date.now();
     };
@@ -53,24 +72,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh();
     };
     const interval = window.setInterval(() => {
+      if (signedOutElsewhere.current) return;
       const idle = Date.now() - lastActivity.current;
       if (idle >= 30 * 60000 && previouslyAuthenticated.current) {
         setState({ status: "unavailable", session: null, expired: true });
       } else if (idle < 120000) refresh();
     }, 60000);
+    const restored = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setState({ status: "loading", session: null, expired: false });
+      refresh();
+    };
     window.addEventListener("focus", focus);
     window.addEventListener("pointerdown", activity, { passive: true });
     window.addEventListener("keydown", activity);
+    window.addEventListener("pageshow", restored);
     return () => {
       window.clearInterval(interval);
       window.removeEventListener("focus", focus);
       window.removeEventListener("pointerdown", activity);
       window.removeEventListener("keydown", activity);
+      window.removeEventListener("pageshow", restored);
+      channel?.close();
+      signOutChannel.current = null;
       controller.current?.abort();
     };
   }, [refresh]);
   return (
-    <AuthContext.Provider value={{ ...state, refresh }}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        refresh,
+        signalSignOut: () => signOutChannel.current?.postMessage("signing-out"),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

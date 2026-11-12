@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.44.0",
+  "contractVersion": "0.45.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "d9df8b3ba4e861a6b433ecb01f93f6347be939a81bd00d8f8e99f58e8c80d1d2",
+  "sourceSha256": "113a46e066f09f194f65f331bdeb853e015553e96c66b4f423f43408bae6d955",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -204,6 +204,7 @@
     "ResearchExtraction",
     "ResearchLocation",
     "ResearchLocations",
+    "ResearchPdfDiscard",
     "ResearchPdfUpload",
     "ResearchReport",
     "ResearchReportCapabilities",
@@ -222,6 +223,8 @@
     "SessionDate",
     "SessionResponse",
     "SourceTimes",
+    "StagedResearchPdf",
+    "StagedResearchPdfs",
     "StockScreen",
     "StockScreenCheck",
     "StockScreenEdit",

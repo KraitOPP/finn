@@ -15,6 +15,7 @@ import { EvidencePanel } from "./Evidence.tsx";
 import { FilingCalendar } from "./FilingCalendar.tsx";
 import { News } from "./News.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
+import { StagedPdfs } from "./StagedPdfs.tsx";
 
 const path = "/api/v1/research/sources";
 export function Research() {
@@ -45,6 +46,7 @@ function PrimarySources({ onEvent }: { onEvent: () => void }) {
   return (
     <section className="detail-card">
       <h2>Primary sources</h2>
+      <StagedPdfs />
       <p>
         Add a company’s filing or announcement as a reviewed HTTPS link, a text
         attachment, or both.

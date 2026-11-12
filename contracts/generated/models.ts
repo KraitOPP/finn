@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.44.0") & (string);
+export type ContractVersion = ("0.45.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1749,6 +1749,11 @@ export type ResearchLocations = ({
   "hasMore": (boolean);
 });
 
+export type ResearchPdfDiscard = ({
+  "fileId": (OpaqueId);
+  "discarded": (true);
+});
+
 export type ResearchPdfUpload = ({
   "fileId": (OpaqueId);
   "checksum": (string);
@@ -1896,6 +1901,16 @@ export type SourceTimes = ({
   "ingestedAt": (((UtcInstant)) | ((null)));
   "acceptedAt": (((UtcInstant)) | ((null)));
   "unknownTimeReasons": (Array<("OBSERVATION_TIME_NOT_PROVIDED" | "PUBLICATION_TIME_NOT_PROVIDED" | "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED" | "NOT_YET_INGESTED" | "NOT_YET_ACCEPTED") & (string)>);
+});
+
+export type StagedResearchPdf = ({
+  "fileId": (OpaqueId);
+  "checksum": (string);
+  "stagedAt": (UtcInstant);
+});
+
+export type StagedResearchPdfs = ({
+  "items": (Array<(StagedResearchPdf)>);
 });
 
 export type StockScreen = ({
@@ -2394,6 +2409,7 @@ export interface ContractTypes {
   ResearchExtraction: ResearchExtraction;
   ResearchLocation: ResearchLocation;
   ResearchLocations: ResearchLocations;
+  ResearchPdfDiscard: ResearchPdfDiscard;
   ResearchPdfUpload: ResearchPdfUpload;
   ResearchReport: ResearchReport;
   ResearchReportCapabilities: ResearchReportCapabilities;
@@ -2412,6 +2428,8 @@ export interface ContractTypes {
   SessionDate: SessionDate;
   SessionResponse: SessionResponse;
   SourceTimes: SourceTimes;
+  StagedResearchPdf: StagedResearchPdf;
+  StagedResearchPdfs: StagedResearchPdfs;
   StockScreen: StockScreen;
   StockScreenCheck: StockScreenCheck;
   StockScreenEdit: StockScreenEdit;

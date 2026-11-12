@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.44.0",
+  "contractVersion": "0.45.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "d9df8b3ba4e861a6b433ecb01f93f6347be939a81bd00d8f8e99f58e8c80d1d2",
+  "sourceSha256": "113a46e066f09f194f65f331bdeb853e015553e96c66b4f423f43408bae6d955",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -205,6 +205,7 @@ export const contractMetadata = {
     "ResearchExtraction",
     "ResearchLocation",
     "ResearchLocations",
+    "ResearchPdfDiscard",
     "ResearchPdfUpload",
     "ResearchReport",
     "ResearchReportCapabilities",
@@ -223,6 +224,8 @@ export const contractMetadata = {
     "SessionDate",
     "SessionResponse",
     "SourceTimes",
+    "StagedResearchPdf",
+    "StagedResearchPdfs",
     "StockScreen",
     "StockScreenCheck",
     "StockScreenEdit",
@@ -2321,7 +2324,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.44.0"
+    "const": "0.45.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -10001,6 +10004,22 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "ResearchPdfDiscard": {
+    "type": "object",
+    "properties": {
+      "fileId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "discarded": {
+        "const": true
+      }
+    },
+    "required": [
+      "fileId",
+      "discarded"
+    ],
+    "additionalProperties": false
+  },
   "ResearchPdfUpload": {
     "type": "object",
     "properties": {
@@ -10826,6 +10845,45 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Source and FINN processing times are distinct. Null timestamps require matching unknownTimeReasons; checked by semantic validation."
+  },
+  "StagedResearchPdf": {
+    "type": "object",
+    "properties": {
+      "fileId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "checksum": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "stagedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "fileId",
+      "checksum",
+      "stagedAt"
+    ],
+    "additionalProperties": false
+  },
+  "StagedResearchPdfs": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StagedResearchPdf"
+        },
+        "maxItems": 30
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
   },
   "StockScreen": {
     "type": "object",
