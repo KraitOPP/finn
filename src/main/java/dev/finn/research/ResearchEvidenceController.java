@@ -21,6 +21,9 @@ class ResearchEvidenceController {
     @PostMapping(path="/pdf",consumes=MediaType.APPLICATION_PDF_VALUE)
     ResearchPdfs.FileRef upload(@RequestBody byte[] pdf){return pdfs.stage(pdf);}
 
+    @GetMapping("/pdf/staged") ResearchPdfs.Staging staged(){return pdfs.staged();}
+    @PostMapping("/pdf/{file}/discard") ResearchPdfs.Discard discard(@PathVariable UUID file){return pdfs.discard(file);}
+
     @GetMapping(VERSION+"/pdf")
     ResponseEntity<byte[]> download(@PathVariable UUID id,@PathVariable @Min(1) @Max(50) int revision) {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM)

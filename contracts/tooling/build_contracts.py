@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.44.0"
+VERSION = "0.45.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -335,6 +335,9 @@ def definitions() -> dict:
     d["CompanySourceDetail"] = obj({"source": ref("CompanySource"), "attachment": nullable(text(maxLength=49152))})
     d["CompanySourceEdit"] = obj({"expectedRevision": source_revision, "source": ref("CompanySourceInput")})
     d["ResearchPdfUpload"] = obj({"fileId":ref("OpaqueId"),"checksum":text(pattern=r"^[0-9a-f]{64}$",maxLength=64)})
+    d["StagedResearchPdf"] = obj({**d["ResearchPdfUpload"]["properties"],"stagedAt":ref("UtcInstant")})
+    d["StagedResearchPdfs"] = obj({"items":array(ref("StagedResearchPdf"),maxItems=30)})
+    d["ResearchPdfDiscard"] = obj({"fileId":ref("OpaqueId"),"discarded":{"const":True}})
     evidence_page = {"type":"integer","minimum":1,"maximum":20}
     evidence_line = {"type":"integer","minimum":1,"maximum":600}
     evidence_page_state = enum(["TEXT","TRUNCATED","NO_TEXT","UNREADABLE"])
@@ -1030,6 +1033,9 @@ def public_api_document() -> dict:
         "/api/v1/research/sources/{id}/versions":{"get": maintained("listSourceVersions","Read all retained versions for an owned source","CompanySourceVersions",identifier)},
         "/api/v1/research/sources/{id}/versions/{revision}":{"get": maintained("getSourceVersion","Read a private source version and its text","CompanySourceDetail",[*identifier,parameter("revision","path",{"type":"integer","minimum":1,"maximum":50},True)])},
         "/api/v1/research/pdf":{"post":pdf_upload},
+        "/api/v1/research/pdf/staged":{"get":maintained("listStagedResearchPdfs","Read owned unused uploads","StagedResearchPdfs")},
+        "/api/v1/research/pdf/{file}/discard":{"post":maintained("discardStagedResearchPdf","Remove an unused owned upload",
+            "ResearchPdfDiscard",[parameter("file","path",ref("OpaqueId"),True),csrf_header])},
         source_version_path+"/pdf":{"get":pdf_download},
         source_version_path+"/extraction":{
             "get":maintained("getResearchExtraction","Inspect text and page coverage for this source version","ResearchExtraction",source_version_params),

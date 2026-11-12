@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.44.0",
+  "$id": "urn:finn:contracts:market-data:0.45.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.44.0"
+      "const": "0.45.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3351,6 +3351,61 @@
       "required": [
         "fileId",
         "checksum"
+      ],
+      "additionalProperties": false
+    },
+    "StagedResearchPdf": {
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "checksum": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "stagedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "fileId",
+        "checksum",
+        "stagedAt"
+      ],
+      "additionalProperties": false
+    },
+    "StagedResearchPdfs": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StagedResearchPdf"
+          },
+          "maxItems": 30
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "ResearchPdfDiscard": {
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "discarded": {
+          "const": true
+        }
+      },
+      "required": [
+        "fileId",
+        "discarded"
       ],
       "additionalProperties": false
     },
