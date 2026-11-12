@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.39.0"
+VERSION = "0.40.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -357,6 +357,23 @@ def definitions() -> dict:
         "thesisRevision":thesis_revision,"retired":{"type":"boolean"}})
     fact_evaluation_reason = enum(["PERIOD_OPEN","FACT_MISSING","DIMENSIONS_MISMATCH","PUBLICATION_UNKNOWN","PUBLISHED_AFTER_CUTOFF",
         "PERIOD_PUBLICATION_INVALID","SOURCE_REVISED","DERIVATION_REVIEW_REQUIRED","COMPARABLE_FACT"])
+    d["DiscoverySector"] = enum(["BANKING","FINANCIAL_SERVICES","MANUFACTURING","TECHNOLOGY","CONSUMER","ENERGY","OTHER"])
+    d["DiscoveryMetric"] = enum(["REVENUE","PROFIT_AFTER_TAX","EPS_BASIC","OPERATING_MARGIN","FREE_CASH_FLOW","TOTAL_EQUITY"])
+    d["DiscoveryPeriod"] = obj({"kind":enum(["QUARTER","FULL_YEAR"]),"start":ref("SessionDate"),"end":ref("SessionDate")})
+    discovery_member = {"listingId":ref("OpaqueId"),"sector":ref("DiscoverySector"),"active":{"type":"boolean"}}
+    d["DiscoveryMemberInput"] = obj({**discovery_member,"expectedRevision":nullable(thesis_revision)})
+    d["DiscoveryMember"] = obj({**discovery_member,"companyId":ref("OpaqueId"),"name":text(maxLength=120),
+        "exchange":enum(["NSE","BSE"]),"symbol":text(maxLength=64),"revision":thesis_revision,
+        "registeredAt":ref("UtcInstant"),"reviewedAt":ref("UtcInstant")})
+    d["DiscoveryMetricSupport"] = obj({"metric":ref("DiscoveryMetric"),"unit":enum(["MONEY","PER_SHARE","PERCENT"]),
+        "sectors":array(ref("DiscoverySector"),maxItems=7)})
+    d["DiscoveryDirectory"] = obj({"source":{"const":"MANUAL_CURRENT"},"members":array(ref("DiscoveryMember"),maxItems=30),
+        "metrics":array(ref("DiscoveryMetricSupport"),maxItems=6)})
+    d["DiscoveryReading"] = obj({"metric":ref("DiscoveryMetric"),"reason":enum([*fact_evaluation_reason["enum"],"SECTOR_INELIGIBLE"]),
+        "fact":nullable(ref("FinancialFact"))})
+    d["DiscoveryCompany"] = obj({"member":ref("DiscoveryMember"),"readings":array(ref("DiscoveryReading"),maxItems=6)})
+    d["DiscoverySnapshot"] = obj({"source":{"const":"MANUAL_CURRENT"},"capturedAt":ref("UtcInstant"),"period":ref("DiscoveryPeriod"),
+        "companies":array(ref("DiscoveryCompany"),maxItems=30)})
     d["ThesisConditionCheck"] = obj({"checkId":ref("OpaqueId"),"thesisRevision":thesis_revision,
         "state":enum(["MATCHED","VIOLATED","UNKNOWN","REVIEW_NEEDED"]),"reason":fact_evaluation_reason,
         "fact":nullable(ref("FinancialFact")),"evaluatedAt":ref("UtcInstant")})
@@ -947,6 +964,13 @@ def public_api_document() -> dict:
             parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/companies/{company}/overview":{"get":maintained(
             "getCompanyResearchOverview","Read company evidence coverage and reviewed highlights","CompanyResearchOverview",company_parameter)},
+        "/api/v1/discovery/universe":{
+            "get":maintained("readDiscoveryDirectory","Read manually reviewed companies and sector metric support","DiscoveryDirectory"),
+            "post":maintained("saveDiscoveryMember","Review the sector and listing for a company","DiscoveryMember",input_name="DiscoveryMemberInput"),
+        },
+        "/api/v1/discovery/universe/coverage":{"get":maintained("inspectDiscoveryCoverage","Inspect current reviewed inputs for a reporting period",
+            "DiscoverySnapshot",[parameter("kind","query",enum(["QUARTER","FULL_YEAR"]),True),parameter("start","query",ref("SessionDate"),True),
+                parameter("end","query",ref("SessionDate"),True)])},
         "/api/v1/research/companies/{company}/theses":{
             "get":maintained("listInvestmentTheses","Read the latest thesis versions for a company","InvestmentTheses",company_parameter),
             "post":maintained("createInvestmentThesis","Save original reasoning and an optional review reminder","InvestmentThesis",

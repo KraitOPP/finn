@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.39.0",
+    "version": "0.40.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -4529,6 +4529,317 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CompanyResearchOverview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/universe": {
+      "get": {
+        "operationId": "readDiscoveryDirectory",
+        "summary": "Read manually reviewed companies and sector metric support",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryDirectory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "saveDiscoveryMember",
+        "summary": "Review the sector and listing for a company",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoveryMemberInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/universe/coverage": {
+      "get": {
+        "operationId": "inspectDiscoveryCoverage",
+        "summary": "Inspect current reviewed inputs for a reporting period",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "QUARTER",
+                "FULL_YEAR"
+              ]
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SessionDate"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SessionDate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverySnapshot"
                 }
               }
             }
@@ -15498,7 +15809,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.39.0"
+        "const": "0.40.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -19056,6 +19367,288 @@
           "conditionId",
           "thesisRevision",
           "retired"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoverySector": {
+        "type": "string",
+        "enum": [
+          "BANKING",
+          "FINANCIAL_SERVICES",
+          "MANUFACTURING",
+          "TECHNOLOGY",
+          "CONSUMER",
+          "ENERGY",
+          "OTHER"
+        ]
+      },
+      "DiscoveryMetric": {
+        "type": "string",
+        "enum": [
+          "REVENUE",
+          "PROFIT_AFTER_TAX",
+          "EPS_BASIC",
+          "OPERATING_MARGIN",
+          "FREE_CASH_FLOW",
+          "TOTAL_EQUITY"
+        ]
+      },
+      "DiscoveryPeriod": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "QUARTER",
+              "FULL_YEAR"
+            ]
+          },
+          "start": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "end": {
+            "$ref": "#/components/schemas/SessionDate"
+          }
+        },
+        "required": [
+          "kind",
+          "start",
+          "end"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoveryMemberInput": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/DiscoverySector"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "expectedRevision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "listingId",
+          "sector",
+          "active",
+          "expectedRevision"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoveryMember": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/DiscoverySector"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "companyId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "exchange": {
+            "type": "string",
+            "enum": [
+              "NSE",
+              "BSE"
+            ]
+          },
+          "symbol": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "registeredAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "reviewedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "listingId",
+          "sector",
+          "active",
+          "companyId",
+          "name",
+          "exchange",
+          "symbol",
+          "revision",
+          "registeredAt",
+          "reviewedAt"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoveryMetricSupport": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "$ref": "#/components/schemas/DiscoveryMetric"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "MONEY",
+              "PER_SHARE",
+              "PERCENT"
+            ]
+          },
+          "sectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverySector"
+            },
+            "maxItems": 7
+          }
+        },
+        "required": [
+          "metric",
+          "unit",
+          "sectors"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoveryDirectory": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "MANUAL_CURRENT"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryMember"
+            },
+            "maxItems": 30
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryMetricSupport"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "source",
+          "members",
+          "metrics"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoveryReading": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "$ref": "#/components/schemas/DiscoveryMetric"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "PERIOD_OPEN",
+              "FACT_MISSING",
+              "DIMENSIONS_MISMATCH",
+              "PUBLICATION_UNKNOWN",
+              "PUBLISHED_AFTER_CUTOFF",
+              "PERIOD_PUBLICATION_INVALID",
+              "SOURCE_REVISED",
+              "DERIVATION_REVIEW_REQUIRED",
+              "COMPARABLE_FACT",
+              "SECTOR_INELIGIBLE"
+            ]
+          },
+          "fact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "metric",
+          "reason",
+          "fact"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoveryCompany": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "$ref": "#/components/schemas/DiscoveryMember"
+          },
+          "readings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryReading"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "member",
+          "readings"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoverySnapshot": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "MANUAL_CURRENT"
+          },
+          "capturedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "period": {
+            "$ref": "#/components/schemas/DiscoveryPeriod"
+          },
+          "companies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryCompany"
+            },
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "source",
+          "capturedAt",
+          "period",
+          "companies"
         ],
         "additionalProperties": false
       },

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.39.0",
+  "$id": "urn:finn:contracts:market-data:0.40.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.39.0"
+      "const": "0.40.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3565,6 +3565,288 @@
         "conditionId",
         "thesisRevision",
         "retired"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoverySector": {
+      "type": "string",
+      "enum": [
+        "BANKING",
+        "FINANCIAL_SERVICES",
+        "MANUFACTURING",
+        "TECHNOLOGY",
+        "CONSUMER",
+        "ENERGY",
+        "OTHER"
+      ]
+    },
+    "DiscoveryMetric": {
+      "type": "string",
+      "enum": [
+        "REVENUE",
+        "PROFIT_AFTER_TAX",
+        "EPS_BASIC",
+        "OPERATING_MARGIN",
+        "FREE_CASH_FLOW",
+        "TOTAL_EQUITY"
+      ]
+    },
+    "DiscoveryPeriod": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "QUARTER",
+            "FULL_YEAR"
+          ]
+        },
+        "start": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "end": {
+          "$ref": "#/$defs/SessionDate"
+        }
+      },
+      "required": [
+        "kind",
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoveryMemberInput": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sector": {
+          "$ref": "#/$defs/DiscoverySector"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "expectedRevision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "listingId",
+        "sector",
+        "active",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoveryMember": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sector": {
+          "$ref": "#/$defs/DiscoverySector"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "registeredAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "reviewedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "listingId",
+        "sector",
+        "active",
+        "companyId",
+        "name",
+        "exchange",
+        "symbol",
+        "revision",
+        "registeredAt",
+        "reviewedAt"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoveryMetricSupport": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "$ref": "#/$defs/DiscoveryMetric"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "MONEY",
+            "PER_SHARE",
+            "PERCENT"
+          ]
+        },
+        "sectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DiscoverySector"
+          },
+          "maxItems": 7
+        }
+      },
+      "required": [
+        "metric",
+        "unit",
+        "sectors"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoveryDirectory": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "const": "MANUAL_CURRENT"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DiscoveryMember"
+          },
+          "maxItems": 30
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DiscoveryMetricSupport"
+          },
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "source",
+        "members",
+        "metrics"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoveryReading": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "$ref": "#/$defs/DiscoveryMetric"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "PERIOD_OPEN",
+            "FACT_MISSING",
+            "DIMENSIONS_MISMATCH",
+            "PUBLICATION_UNKNOWN",
+            "PUBLISHED_AFTER_CUTOFF",
+            "PERIOD_PUBLICATION_INVALID",
+            "SOURCE_REVISED",
+            "DERIVATION_REVIEW_REQUIRED",
+            "COMPARABLE_FACT",
+            "SECTOR_INELIGIBLE"
+          ]
+        },
+        "fact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinancialFact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "metric",
+        "reason",
+        "fact"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoveryCompany": {
+      "type": "object",
+      "properties": {
+        "member": {
+          "$ref": "#/$defs/DiscoveryMember"
+        },
+        "readings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DiscoveryReading"
+          },
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "member",
+        "readings"
+      ],
+      "additionalProperties": false
+    },
+    "DiscoverySnapshot": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "const": "MANUAL_CURRENT"
+        },
+        "capturedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "period": {
+          "$ref": "#/$defs/DiscoveryPeriod"
+        },
+        "companies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DiscoveryCompany"
+          },
+          "maxItems": 30
+        }
+      },
+      "required": [
+        "source",
+        "capturedAt",
+        "period",
+        "companies"
       ],
       "additionalProperties": false
     },
