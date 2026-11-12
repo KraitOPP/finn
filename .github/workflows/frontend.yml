@@ -12,6 +12,9 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: finn-ui
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -26,7 +29,7 @@ jobs:
       - name: Install locked dependencies
         run: node scripts/install.mjs
       - name: Verify reviewed contract snapshot
-        run: node contracts/generate.mjs --check
+        run: node contracts/generate.mjs --source=../fin-service/contracts/public-api/openapi.json --check
       - name: Lint, typecheck, test and build
         run: npm run check
       - name: Build standalone fictional walkthrough
