@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.43.0") & (string);
+export type ContractVersion = ("0.44.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1331,6 +1331,38 @@ export type PortfolioDetail = ({
   "accounts": (Array<(InvestmentAccount)>);
 });
 
+export type PortfolioHealth = ({
+  "portfolioId": (OpaqueId);
+  "asOf": (SessionDate);
+  "priceSession": (((SessionDate)) | ((null)));
+  "state": ("READY" | "NO_ACCOUNTS" | "PORTFOLIO_BUDGET" | "PRICES_MISSING" | "STALE_PRICES" | "MIXED_PRICE_SESSIONS") & (string);
+  "currency": ("INR");
+  "unpricedPositions": (number);
+  "stalePositions": (number);
+  "providerEstimates": (number);
+  "equity": (((NonNegativeDecimalString)) | ((null)));
+  "cash": (((NonNegativeDecimalString)) | ((null)));
+  "largestWeight": (((NonNegativeDecimalString)) | ((null)));
+  "topFiveWeight": (((NonNegativeDecimalString)) | ((null)));
+  "holdings": (Array<(PortfolioHealthHolding)>);
+  "sectors": (Array<(PortfolioHealthSector)>);
+});
+
+export type PortfolioHealthHolding = ({
+  "securityId": (OpaqueId);
+  "name": (string);
+  "sector": ("BANKING" | "FINANCIAL_SERVICES" | "MANUFACTURING" | "TECHNOLOGY" | "CONSUMER" | "ENERGY" | "OTHER" | "UNCLASSIFIED") & (string);
+  "value": (((NonNegativeDecimalString)) | ((null)));
+  "equityWeight": (((NonNegativeDecimalString)) | ((null)));
+  "unrealisedContribution": (((DecimalString)) | ((null)));
+});
+
+export type PortfolioHealthSector = ({
+  "sector": ("BANKING" | "FINANCIAL_SERVICES" | "MANUFACTURING" | "TECHNOLOGY" | "CONSUMER" | "ENERGY" | "OTHER" | "UNCLASSIFIED") & (string);
+  "value": (NonNegativeDecimalString);
+  "equityWeight": (((NonNegativeDecimalString)) | ((null)));
+});
+
 export type PortfolioInput = ({
   "name": (string);
 });
@@ -1361,6 +1393,48 @@ export type PortfolioPerformanceInput = ({
   "start": (SessionDate);
   "end": (SessionDate);
   "reviewed": (boolean);
+});
+
+export type PortfolioRisk = ({
+  "portfolioId": (OpaqueId);
+  "start": (SessionDate);
+  "end": (SessionDate);
+  "methodology": ("weekly-linked-risk-v1");
+  "state": ("AVAILABLE" | "UNAVAILABLE") & (string);
+  "reason": ("HISTORY_UNREVIEWED" | "NO_ACCOUNTS" | "PORTFOLIO_BUDGET" | "CASH_HISTORY_INCOMPLETE" | "NEGATIVE_CASH_BALANCE" | "NEW_OPENING_BALANCE" | "ENDPOINT_VALUATIONS_MISSING" | "REVIEWED_WINDOW" | "CALCULATED" | "WEEKLY_VALUATIONS_MISSING" | "FLOW_DAY_VALUATION_MISSING" | "NON_POSITIVE_BASE") & (string);
+  "maxDrawdownPercent": (((NonNegativeDecimalString)) | ((null)));
+  "annualizedVolatilityPercent": (((NonNegativeDecimalString)) | ((null)));
+  "observations": (Array<(PortfolioRiskObservation)>);
+});
+
+export type PortfolioRiskObservation = ({
+  "date": (SessionDate);
+  "indexValue": (NonNegativeDecimalString);
+});
+
+export type PortfolioScenario = ({
+  "listingId": (OpaqueId);
+  "cashAllocation": (NonNegativeDecimalString);
+  "shockPercent": (DecimalString);
+  "portfolioId": (OpaqueId);
+  "state": ("SIMULATED" | "NO_ACCOUNTS" | "PORTFOLIO_BUDGET" | "PRICES_MISSING" | "STALE_PRICES" | "MIXED_PRICE_SESSIONS" | "CASH_UNKNOWN" | "INSUFFICIENT_CASH" | "TARGET_NOT_HELD") & (string);
+  "priceSession": (((SessionDate)) | ((null)));
+  "targetName": (string);
+  "beforeEquity": (((NonNegativeDecimalString)) | ((null)));
+  "afterEquity": (((NonNegativeDecimalString)) | ((null)));
+  "beforeCash": (((NonNegativeDecimalString)) | ((null)));
+  "afterCash": (((NonNegativeDecimalString)) | ((null)));
+  "beforeTotal": (((NonNegativeDecimalString)) | ((null)));
+  "afterTotal": (((NonNegativeDecimalString)) | ((null)));
+  "beforeTargetWeight": (((NonNegativeDecimalString)) | ((null)));
+  "afterTargetWeight": (((NonNegativeDecimalString)) | ((null)));
+  "valueChange": (((DecimalString)) | ((null)));
+});
+
+export type PortfolioScenarioInput = ({
+  "listingId": (OpaqueId);
+  "cashAllocation": (NonNegativeDecimalString);
+  "shockPercent": (DecimalString);
 });
 
 export type PortfolioSummary = ({
@@ -2272,10 +2346,17 @@ export interface ContractTypes {
   PortfolioArchiveInput: PortfolioArchiveInput;
   PortfolioBrief: PortfolioBrief;
   PortfolioDetail: PortfolioDetail;
+  PortfolioHealth: PortfolioHealth;
+  PortfolioHealthHolding: PortfolioHealthHolding;
+  PortfolioHealthSector: PortfolioHealthSector;
   PortfolioInput: PortfolioInput;
   PortfolioList: PortfolioList;
   PortfolioPerformance: PortfolioPerformance;
   PortfolioPerformanceInput: PortfolioPerformanceInput;
+  PortfolioRisk: PortfolioRisk;
+  PortfolioRiskObservation: PortfolioRiskObservation;
+  PortfolioScenario: PortfolioScenario;
+  PortfolioScenarioInput: PortfolioScenarioInput;
   PortfolioSummary: PortfolioSummary;
   PortfolioValuation: PortfolioValuation;
   PositiveDecimalString: PositiveDecimalString;

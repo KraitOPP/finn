@@ -258,6 +258,10 @@ function PeerRow({ row }: { row: PeerRankingRow }) {
         <a href={`#/research?company=${row.member.companyId}`}>
           Open company research and thesis
         </a>
+        {" · "}
+        <a href={`#/portfolio?candidate=${row.member.listingId}`}>
+          Model portfolio effect
+        </a>
       </p>
       <ul>
         {row.contributions.map((item) => (

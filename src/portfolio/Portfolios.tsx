@@ -4,6 +4,7 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { PerformancePanel } from "../market/PerformancePanel.tsx";
+import { PortfolioHealthPanel } from "../market/PortfolioHealthPanel.tsx";
 import { ValuationHistory } from "../market/ValuationHistory.tsx";
 import {
   AccountValuationPanel,
@@ -18,6 +19,16 @@ import { receiptMessage } from "./ReviewOpening.tsx";
 export function Portfolios() {
   const portfolios = useResource("PortfolioList", "/api/v1/portfolios");
   const [selected, setSelected] = useState<string | null>(null);
+  const rawCandidate = new URLSearchParams(
+    window.location.hash.split("?")[1],
+  ).get("candidate");
+  const candidate =
+    rawCandidate &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      rawCandidate,
+    )
+      ? rawCandidate
+      : undefined;
   return (
     <section className="workspace-section">
       <RouteHeading>Portfolio</RouteHeading>
@@ -25,6 +36,7 @@ export function Portfolios() {
         Keep holdings and records organised by portfolio and source account.{" "}
         <a href="#/instruments">Review your securities</a>.
       </p>
+      {candidate && <p>Open a portfolio to model the selected candidate.</p>}
       {portfolios.error ? (
         <LoadError message={portfolios.error} reload={portfolios.reload} />
       ) : !portfolios.value ? (
@@ -67,6 +79,7 @@ export function Portfolios() {
         <PortfolioDetail
           key={selected}
           id={selected}
+          candidate={candidate}
           onChanged={portfolios.reload}
         />
       )}
@@ -135,9 +148,11 @@ function CreatePortfolio({ onCreated }: { onCreated: (id: string) => void }) {
 }
 function PortfolioDetail({
   id,
+  candidate,
   onChanged,
 }: {
   id: string;
+  candidate?: string;
   onChanged: () => void;
 }) {
   const detail = useResource("PortfolioDetail", `/api/v1/portfolios/${id}`);
@@ -192,6 +207,7 @@ function PortfolioDetail({
       )}
       <PortfolioValuationPanel id={id} />
       <PerformancePanel portfolio={id} />
+      <PortfolioHealthPanel portfolio={id} candidate={candidate} />
       <h3>Source accounts</h3>
       {accounts.length === 0 ? (
         <p>No accounts yet. Add the source of your portfolio records.</p>

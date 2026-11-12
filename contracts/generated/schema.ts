@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.43.0",
+  "contractVersion": "0.44.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "cbe32ebb420254192b0afbde738b669a8e7f2bfe5829114c6d9ddbf77cbdff8b",
+  "sourceSha256": "d9df8b3ba4e861a6b433ecb01f93f6347be939a81bd00d8f8e99f58e8c80d1d2",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -157,10 +157,17 @@ export const contractMetadata = {
     "PortfolioArchiveInput",
     "PortfolioBrief",
     "PortfolioDetail",
+    "PortfolioHealth",
+    "PortfolioHealthHolding",
+    "PortfolioHealthSector",
     "PortfolioInput",
     "PortfolioList",
     "PortfolioPerformance",
     "PortfolioPerformanceInput",
+    "PortfolioRisk",
+    "PortfolioRiskObservation",
+    "PortfolioScenario",
+    "PortfolioScenarioInput",
     "PortfolioSummary",
     "PortfolioValuation",
     "PositiveDecimalString",
@@ -2314,7 +2321,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.43.0"
+    "const": "0.44.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -7747,6 +7754,229 @@ export const contractSchemas = {
     "additionalProperties": false,
     "description": "Archive blocks financial writes and preserves readable account/ledger history. Restore is supported; no deletion is exposed."
   },
+  "PortfolioHealth": {
+    "type": "object",
+    "properties": {
+      "portfolioId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "asOf": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "priceSession": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "READY",
+          "NO_ACCOUNTS",
+          "PORTFOLIO_BUDGET",
+          "PRICES_MISSING",
+          "STALE_PRICES",
+          "MIXED_PRICE_SESSIONS"
+        ]
+      },
+      "currency": {
+        "const": "INR"
+      },
+      "unpricedPositions": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 500
+      },
+      "stalePositions": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 500
+      },
+      "providerEstimates": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 500
+      },
+      "equity": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "cash": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "largestWeight": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "topFiveWeight": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "holdings": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PortfolioHealthHolding"
+        },
+        "maxItems": 500
+      },
+      "sectors": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PortfolioHealthSector"
+        },
+        "maxItems": 8
+      }
+    },
+    "required": [
+      "portfolioId",
+      "asOf",
+      "priceSession",
+      "state",
+      "currency",
+      "unpricedPositions",
+      "stalePositions",
+      "providerEstimates",
+      "equity",
+      "cash",
+      "largestWeight",
+      "topFiveWeight",
+      "holdings",
+      "sectors"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioHealthHolding": {
+    "type": "object",
+    "properties": {
+      "securityId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "sector": {
+        "type": "string",
+        "enum": [
+          "BANKING",
+          "FINANCIAL_SERVICES",
+          "MANUFACTURING",
+          "TECHNOLOGY",
+          "CONSUMER",
+          "ENERGY",
+          "OTHER",
+          "UNCLASSIFIED"
+        ]
+      },
+      "value": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "equityWeight": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "unrealisedContribution": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "securityId",
+      "name",
+      "sector",
+      "value",
+      "equityWeight",
+      "unrealisedContribution"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioHealthSector": {
+    "type": "object",
+    "properties": {
+      "sector": {
+        "type": "string",
+        "enum": [
+          "BANKING",
+          "FINANCIAL_SERVICES",
+          "MANUFACTURING",
+          "TECHNOLOGY",
+          "CONSUMER",
+          "ENERGY",
+          "OTHER",
+          "UNCLASSIFIED"
+        ]
+      },
+      "value": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "equityWeight": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "sector",
+      "value",
+      "equityWeight"
+    ],
+    "additionalProperties": false
+  },
   "PortfolioInput": {
     "type": "object",
     "properties": {
@@ -7909,6 +8139,277 @@ export const contractSchemas = {
       "start",
       "end",
       "reviewed"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioRisk": {
+    "type": "object",
+    "properties": {
+      "portfolioId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "start": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "end": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "methodology": {
+        "const": "weekly-linked-risk-v1"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "UNAVAILABLE"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "HISTORY_UNREVIEWED",
+          "NO_ACCOUNTS",
+          "PORTFOLIO_BUDGET",
+          "CASH_HISTORY_INCOMPLETE",
+          "NEGATIVE_CASH_BALANCE",
+          "NEW_OPENING_BALANCE",
+          "ENDPOINT_VALUATIONS_MISSING",
+          "REVIEWED_WINDOW",
+          "CALCULATED",
+          "WEEKLY_VALUATIONS_MISSING",
+          "FLOW_DAY_VALUATION_MISSING",
+          "NON_POSITIVE_BASE"
+        ]
+      },
+      "maxDrawdownPercent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "annualizedVolatilityPercent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "observations": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PortfolioRiskObservation"
+        },
+        "maxItems": 53
+      }
+    },
+    "required": [
+      "portfolioId",
+      "start",
+      "end",
+      "methodology",
+      "state",
+      "reason",
+      "maxDrawdownPercent",
+      "annualizedVolatilityPercent",
+      "observations"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioRiskObservation": {
+    "type": "object",
+    "properties": {
+      "date": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "indexValue": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      }
+    },
+    "required": [
+      "date",
+      "indexValue"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioScenario": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "cashAllocation": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "shockPercent": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "portfolioId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "SIMULATED",
+          "NO_ACCOUNTS",
+          "PORTFOLIO_BUDGET",
+          "PRICES_MISSING",
+          "STALE_PRICES",
+          "MIXED_PRICE_SESSIONS",
+          "CASH_UNKNOWN",
+          "INSUFFICIENT_CASH",
+          "TARGET_NOT_HELD"
+        ]
+      },
+      "priceSession": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "targetName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "beforeEquity": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "afterEquity": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "beforeCash": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "afterCash": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "beforeTotal": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "afterTotal": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "beforeTargetWeight": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "afterTargetWeight": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "valueChange": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "listingId",
+      "cashAllocation",
+      "shockPercent",
+      "portfolioId",
+      "state",
+      "priceSession",
+      "targetName",
+      "beforeEquity",
+      "afterEquity",
+      "beforeCash",
+      "afterCash",
+      "beforeTotal",
+      "afterTotal",
+      "beforeTargetWeight",
+      "afterTargetWeight",
+      "valueChange"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioScenarioInput": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "cashAllocation": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "shockPercent": {
+        "$ref": "#/components/schemas/DecimalString"
+      }
+    },
+    "required": [
+      "listingId",
+      "cashAllocation",
+      "shockPercent"
     ],
     "additionalProperties": false
   },

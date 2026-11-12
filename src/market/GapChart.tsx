@@ -3,9 +3,11 @@ type Point = { date: string; amount: string | null };
 export function GapChart({
   points,
   label,
+  unitPrefix = "₹",
 }: {
   points: Point[];
   label: string;
+  unitPrefix?: string;
 }) {
   const values = points.flatMap((point) => {
     const value = Number(point.amount);
@@ -57,7 +59,8 @@ export function GapChart({
       {plotted.map(({ date, amount, x, y }) => (
         <circle key={date} cx={x} cy={y} r="3" fill="currentColor">
           <title>
-            {date}: ₹{amount}
+            {date}: {unitPrefix}
+            {amount}
           </title>
         </circle>
       ))}

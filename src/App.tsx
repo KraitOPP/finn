@@ -11,7 +11,6 @@ import {
   PrivateView,
   useRoute,
 } from "./Navigation.tsx";
-import { Portfolios } from "./portfolio/Portfolios.tsx";
 import {
   PreferencesProvider,
   usePreferences,
@@ -40,6 +39,11 @@ const Research = lazy(() =>
 const Discovery = lazy(() =>
   import("./research/Discovery.tsx").then((module) => ({
     default: module.Discovery,
+  })),
+);
+const Portfolios = lazy(() =>
+  import("./portfolio/Portfolios.tsx").then((module) => ({
+    default: module.Portfolios,
   })),
 );
 const Inbox = lazy(() =>
@@ -255,7 +259,9 @@ function WorkspaceApp() {
         ) : (
           <PrivateView key={route}>
             {route === "portfolio" ? (
-              <Portfolios />
+              <Suspense fallback={<p role="status">Loading Portfolio…</p>}>
+                <Portfolios />
+              </Suspense>
             ) : route === "instruments" ? (
               <Securities />
             ) : route === "watchlists" ? (

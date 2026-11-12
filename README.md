@@ -51,6 +51,8 @@ In Company workspace, choose a company to review business and governance highlig
 
 Use **Investment theses** to save a rationale, risks, milestones, and a review reminder. Check thresholds against reviewed figures. Use **Management guidance** to confirm a source statement and compare it with reported results as of a selected date. Create a review task from a reviewed event to link the evidence to the original thesis and record your decision.
 
+Use **Discover** to register reviewed listings, inspect fundamental coverage, run saved screens, save matches to watchlists, and compare peers with adjustable weights. Open company research or model the candidate in a portfolio. **Portfolio** shows conditional XIRR, time-weighted return, concentration, weekly drawdown and volatility, and hypothetical allocation or price shocks.
+
 ## Verification
 
 `npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors, sign-in/out controls, CSRF form fields, expired-session clearing and rejection of private/incompatible demo responses.

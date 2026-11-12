@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.43.0",
+    "version": "0.44.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -11550,6 +11550,365 @@
         }
       }
     },
+    "/api/v1/portfolios/{portfolio}/health": {
+      "get": {
+        "operationId": "readPortfolioHealth",
+        "summary": "Read concentration and valuation coverage for owned positions",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "portfolio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioHealth"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{portfolio}/health/scenario": {
+      "post": {
+        "operationId": "simulatePortfolioScenario",
+        "summary": "Calculate a hypothetical cash allocation and security price shock",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "portfolio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioScenario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioScenarioInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{portfolio}/health/risk": {
+      "post": {
+        "operationId": "calculatePortfolioRisk",
+        "summary": "Calculate weekly drawdown and volatility only with all required saved valuations",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "portfolio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioRisk"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioPerformanceInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/portfolios/{portfolio}/accounts/{account}/valuation": {
       "get": {
         "operationId": "valueAccount",
@@ -17003,7 +17362,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.43.0"
+        "const": "0.44.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -18139,6 +18498,500 @@
           "xirr",
           "timeWeighted",
           "benchmark"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioHealthHolding": {
+        "type": "object",
+        "properties": {
+          "securityId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "sector": {
+            "type": "string",
+            "enum": [
+              "BANKING",
+              "FINANCIAL_SERVICES",
+              "MANUFACTURING",
+              "TECHNOLOGY",
+              "CONSUMER",
+              "ENERGY",
+              "OTHER",
+              "UNCLASSIFIED"
+            ]
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "equityWeight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unrealisedContribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "securityId",
+          "name",
+          "sector",
+          "value",
+          "equityWeight",
+          "unrealisedContribution"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioHealthSector": {
+        "type": "object",
+        "properties": {
+          "sector": {
+            "type": "string",
+            "enum": [
+              "BANKING",
+              "FINANCIAL_SERVICES",
+              "MANUFACTURING",
+              "TECHNOLOGY",
+              "CONSUMER",
+              "ENERGY",
+              "OTHER",
+              "UNCLASSIFIED"
+            ]
+          },
+          "value": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "equityWeight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "sector",
+          "value",
+          "equityWeight"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioHealth": {
+        "type": "object",
+        "properties": {
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "asOf": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "priceSession": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "READY",
+              "NO_ACCOUNTS",
+              "PORTFOLIO_BUDGET",
+              "PRICES_MISSING",
+              "STALE_PRICES",
+              "MIXED_PRICE_SESSIONS"
+            ]
+          },
+          "currency": {
+            "const": "INR"
+          },
+          "unpricedPositions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500
+          },
+          "stalePositions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500
+          },
+          "providerEstimates": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500
+          },
+          "equity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "largestWeight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "topFiveWeight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "holdings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHealthHolding"
+            },
+            "maxItems": 500
+          },
+          "sectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHealthSector"
+            },
+            "maxItems": 8
+          }
+        },
+        "required": [
+          "portfolioId",
+          "asOf",
+          "priceSession",
+          "state",
+          "currency",
+          "unpricedPositions",
+          "stalePositions",
+          "providerEstimates",
+          "equity",
+          "cash",
+          "largestWeight",
+          "topFiveWeight",
+          "holdings",
+          "sectors"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioScenarioInput": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "cashAllocation": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "shockPercent": {
+            "$ref": "#/components/schemas/DecimalString"
+          }
+        },
+        "required": [
+          "listingId",
+          "cashAllocation",
+          "shockPercent"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioScenario": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "cashAllocation": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "shockPercent": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "SIMULATED",
+              "NO_ACCOUNTS",
+              "PORTFOLIO_BUDGET",
+              "PRICES_MISSING",
+              "STALE_PRICES",
+              "MIXED_PRICE_SESSIONS",
+              "CASH_UNKNOWN",
+              "INSUFFICIENT_CASH",
+              "TARGET_NOT_HELD"
+            ]
+          },
+          "priceSession": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "beforeEquity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "afterEquity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "beforeCash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "afterCash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "beforeTotal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "afterTotal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "beforeTargetWeight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "afterTargetWeight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "valueChange": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "listingId",
+          "cashAllocation",
+          "shockPercent",
+          "portfolioId",
+          "state",
+          "priceSession",
+          "targetName",
+          "beforeEquity",
+          "afterEquity",
+          "beforeCash",
+          "afterCash",
+          "beforeTotal",
+          "afterTotal",
+          "beforeTargetWeight",
+          "afterTargetWeight",
+          "valueChange"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioRiskObservation": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "indexValue": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          }
+        },
+        "required": [
+          "date",
+          "indexValue"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioRisk": {
+        "type": "object",
+        "properties": {
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "start": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "end": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "methodology": {
+            "const": "weekly-linked-risk-v1"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "HISTORY_UNREVIEWED",
+              "NO_ACCOUNTS",
+              "PORTFOLIO_BUDGET",
+              "CASH_HISTORY_INCOMPLETE",
+              "NEGATIVE_CASH_BALANCE",
+              "NEW_OPENING_BALANCE",
+              "ENDPOINT_VALUATIONS_MISSING",
+              "REVIEWED_WINDOW",
+              "CALCULATED",
+              "WEEKLY_VALUATIONS_MISSING",
+              "FLOW_DAY_VALUATION_MISSING",
+              "NON_POSITIVE_BASE"
+            ]
+          },
+          "maxDrawdownPercent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "annualizedVolatilityPercent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioRiskObservation"
+            },
+            "maxItems": 53
+          }
+        },
+        "required": [
+          "portfolioId",
+          "start",
+          "end",
+          "methodology",
+          "state",
+          "reason",
+          "maxDrawdownPercent",
+          "annualizedVolatilityPercent",
+          "observations"
         ],
         "additionalProperties": false
       },
