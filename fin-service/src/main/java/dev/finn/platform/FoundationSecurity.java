@@ -12,10 +12,18 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.session.jdbc.PostgreSqlJdbcIndexedSessionRepositoryCustomizer;
 
 @Configuration(proxyBeanMethods = false)
 class FoundationSecurity {
+    @Bean
+    PostgreSqlJdbcIndexedSessionRepositoryCustomizer sessionAttributeWrites() {
+        return new PostgreSqlJdbcIndexedSessionRepositoryCustomizer();
+    }
+
     @Bean
     SecurityFilterChain foundationChain(HttpSecurity http, ClientRegistrationRepository registrations, IdentitySettings settings) throws Exception {
         var authorization = new DefaultOAuth2AuthorizationRequestResolver(registrations, "/oauth2/authorization");
@@ -23,6 +31,9 @@ class FoundationSecurity {
         var logout = new OidcClientInitiatedLogoutSuccessHandler(registrations);
         logout.setPostLogoutRedirectUri(settings.publicOrigin() + "/");
         logout.setDefaultTargetUrl(settings.publicOrigin() + "/");
+        var csrfTokens = new HttpSessionCsrfTokenRepository();
+        var signedIn = new SimpleUrlAuthenticationSuccessHandler(settings.publicOrigin() + "/");
+        signedIn.setAlwaysUseDefaultTargetUrl(true);
         http.addFilterBefore(new RequestGuardrails(), SecurityContextHolderFilter.class)
             .authorizeHttpRequests(requests -> requests
                 .requestMatchers(HttpMethod.GET, "/api/v1/session", "/api/v1/demo/quote", "/actuator/health",
@@ -33,9 +44,14 @@ class FoundationSecurity {
             .httpBasic(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .requestCache(AbstractHttpConfigurer::disable)
+            .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))
             .oauth2Login(login -> login
                     .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(authorization))
-                    .defaultSuccessUrl(settings.publicOrigin() + "/", true)
+                    .successHandler((request,response,authentication) -> {
+                        // Persist the rotated token before the frontend can issue concurrent session reads.
+                        csrfTokens.loadDeferredToken(request,response).get();
+                        signedIn.onAuthenticationSuccess(request,response,authentication);
+                    })
                     .failureHandler((request, response, error) -> response.sendRedirect(settings.publicOrigin() + "/?signin=failed")))
             .logout(configuration -> configuration.logoutUrl("/api/v1/logout").invalidateHttpSession(true)
                     .clearAuthentication(true).logoutSuccessHandler(logout))

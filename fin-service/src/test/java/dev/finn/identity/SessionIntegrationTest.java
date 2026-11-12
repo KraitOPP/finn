@@ -92,8 +92,16 @@ class SessionIntegrationTest {
         assertThat(session().get("authenticated").asBoolean()).isFalse();
         String before = cookie();
         assertThat(login().statusCode()).isEqualTo(302);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM finn.spring_session s
+                JOIN finn.spring_session_attributes a ON a.session_primary_id=s.primary_id
+                WHERE s.session_id=? AND a.attribute_name LIKE '%.CSRF_TOKEN'
+                """,Integer.class,cookie())).isEqualTo(1);
+        var sessionRequest = HttpRequest.newBuilder(url("/api/v1/session")).GET().build();
+        var concurrent = browser.sendAsync(sessionRequest,HttpResponse.BodyHandlers.ofString());
         JsonNode authenticated = session();
         assertThat(authenticated.get("authenticated").asBoolean()).isTrue();
+        assertThat(concurrent.get().statusCode()).isEqualTo(200);
         assertThat(IDENTITY.proofKeyValid).isTrue();
         assertThat(cookie()).isNotEqualTo(before);
         assertThat(get("/api/v1/me").statusCode()).isEqualTo(200);
