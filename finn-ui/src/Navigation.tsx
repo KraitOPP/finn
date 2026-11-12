@@ -1,3 +1,4 @@
+import Button from "@mui/material/Button";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useAuthentication } from "./auth/AuthProvider.tsx";
 
@@ -42,23 +43,25 @@ export function Navigation({ route }: { route: Route | null }) {
   const [more, setMore] = useState(false);
   function link([value, label]: (typeof destinations)[number]) {
     return (
-      <a
+      <Button
         key={value}
         href={`#/${value}`}
         aria-current={route === value ? "page" : undefined}
+        sx={{ minWidth: 0 }}
         onClick={() => setMore(false)}
       >
         {label}
-      </a>
+      </Button>
     );
   }
   return (
     <nav className="main-navigation" aria-label="Workspace">
       {primary.map(link)}
-      <button
+      <Button
         type="button"
         aria-expanded={more}
         aria-controls="workspace-more"
+        sx={{ minWidth: 0 }}
         className={
           secondary.some(([value]) => value === route)
             ? "nav-current"
@@ -67,7 +70,7 @@ export function Navigation({ route }: { route: Route | null }) {
         onClick={() => setMore(!more)}
       >
         More
-      </button>
+      </Button>
       <div id="workspace-more" className="secondary-navigation" hidden={!more}>
         {secondary.map(link)}
       </div>

@@ -1,3 +1,4 @@
+import Button from "@mui/material/Button";
 import { useAuthentication } from "./AuthProvider.tsx";
 
 export function AuthControls() {
@@ -32,15 +33,19 @@ export function AuthControls() {
               name={session.csrf.parameterName}
               value={session.csrf.token}
             />
-            <button type="submit" className="sign-in-button">
+            <Button type="submit" className="sign-in-button" variant="outlined">
               Sign out
-            </button>
+            </Button>
           </form>
         </>
       ) : (
-        <a className="sign-in-button" href="/oauth2/authorization/finn">
+        <Button
+          className="sign-in-button"
+          href="/oauth2/authorization/finn"
+          variant="outlined"
+        >
           Sign in <span aria-hidden="true">↗</span>
-        </a>
+        </Button>
       )}
     </div>
   );

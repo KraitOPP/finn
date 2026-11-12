@@ -1,3 +1,4 @@
+import Button from "@mui/material/Button";
 import { type FormEvent, useState } from "react";
 import type { InvestmentAccount } from "../../contracts/generated/models.ts";
 import { requestContract } from "../api/request.ts";
@@ -132,13 +133,9 @@ function CreatePortfolio({ onCreated }: { onCreated: (id: string) => void }) {
           Currency: INR. Up to 100 portfolios, including archived records.
         </p>
         {command.error && <p role="alert">{command.error}</p>}
-        <button
-          type="submit"
-          className="primary-button"
-          disabled={command.busy}
-        >
+        <Button type="submit" variant="contained" disabled={command.busy}>
           {command.busy ? "Creating…" : "Create portfolio"}
-        </button>
+        </Button>
       </form>
     </details>
   );
@@ -369,13 +366,9 @@ function CreateAccount({
           accepted.
         </p>
         {command.error && <p role="alert">{command.error}</p>}
-        <button
-          type="submit"
-          className="primary-button"
-          disabled={command.busy}
-        >
+        <Button type="submit" variant="contained" disabled={command.busy}>
           {command.busy ? "Creating…" : "Add account"}
-        </button>
+        </Button>
       </form>
     </details>
   );

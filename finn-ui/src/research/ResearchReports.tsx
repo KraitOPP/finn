@@ -1,3 +1,10 @@
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import { useEffect, useState } from "react";
 import type { ResearchReport } from "../../contracts/generated/models.ts";
 import { requestContract } from "../api/request.ts";
@@ -49,7 +56,12 @@ export function ResearchReports({ company }: { company: string }) {
     history.reload();
   }
   return (
-    <section className="research-assistant" aria-label="Research assistant">
+    <Paper
+      component="section"
+      variant="outlined"
+      className="research-assistant"
+      aria-label="Research assistant"
+    >
       <h4>Research assistant</h4>
       <form
         onSubmit={async (event) => {
@@ -68,52 +80,59 @@ export function ResearchReports({ company }: { company: string }) {
           if (report) saved(report);
         }}
       >
-        <label>
-          Ask about this company
-          <input
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            required
-            maxLength={320}
-            placeholder="For example, what changed in quarterly revenue?"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() =>
-            setQuestion(
-              "Revenue profit cash debt governance business operations",
-            )
-          }
-        >
-          Use overview topics
-        </button>
+        <TextField
+          label="Ask about this company"
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
+          fullWidth
+          required
+          slotProps={{ htmlInput: { maxLength: 320 } }}
+          placeholder="What changed in quarterly revenue?"
+        />
         {localAvailable ? (
-          <label>
-            <input
-              type="checkbox"
-              checked={rankLocally}
-              onChange={(event) => setRankLocally(event.target.checked)}
-            />
-            Use the local AI model to rank matching evidence
-          </label>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={rankLocally}
+                onChange={(event) => setRankLocally(event.target.checked)}
+              />
+            }
+            label="Use the local AI model to rank matching evidence"
+          />
         ) : (
           <p className="muted-copy">
             Source search is available. AI answers need a configured model.
           </p>
         )}
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={command.busy || !question.trim()}
+        <Stack
+          direction="row"
+          useFlexGap
+          spacing={1}
+          sx={{ flexWrap: "wrap", my: 1 }}
         >
-          {command.busy
-            ? "Searching…"
-            : rankLocally
-              ? "Ask AI"
-              : "Search sources"}
-        </button>
-        {command.error && <p role="alert">{command.error}</p>}
+          <Button
+            variant="contained"
+            type="submit"
+            disabled={command.busy || !question.trim()}
+          >
+            {command.busy
+              ? "Searching…"
+              : rankLocally
+                ? "Ask AI"
+                : "Search sources"}
+          </Button>
+          <Button
+            type="button"
+            onClick={() =>
+              setQuestion(
+                "Revenue profit cash debt governance business operations",
+              )
+            }
+          >
+            Use overview topics
+          </Button>
+        </Stack>
+        {command.error && <Alert severity="error">{command.error}</Alert>}
       </form>
       <details onToggle={(event) => setHistoryOpen(event.currentTarget.open)}>
         <summary>Saved report history</summary>
@@ -150,7 +169,7 @@ export function ResearchReports({ company }: { company: string }) {
       {id && (
         <ReportView key={id} id={id} onNavigate={setId} onRefresh={saved} />
       )}
-    </section>
+    </Paper>
   );
 }
 
