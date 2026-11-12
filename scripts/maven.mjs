@@ -4,9 +4,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { externalWorkspace } from './workspace.mjs';
 
-const actions = { verify: ['verify'], test: ['test'], package: ['package'], run: ['spring-boot:run'] };
+const actions = { verify: ['verify'], release: ['clean', 'verify'], test: ['test'], package: ['package'], run: ['spring-boot:run'] };
 const action = process.argv[2] ?? 'verify';
-if (!Object.hasOwn(actions, action)) throw new Error('Choose verify, test, package or run.');
+if (!Object.hasOwn(actions, action)) throw new Error('Choose verify, release, test, package or run.');
 const root = await externalWorkspace();
 await mkdir(join(root, 'cache/maven-wrapper'), { recursive: true });
 const env = { ...process.env, MAVEN_USER_HOME: join(root, 'cache/maven-wrapper'),

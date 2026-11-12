@@ -4,6 +4,11 @@ import { join } from 'node:path';
 import { externalWorkspace } from './workspace.mjs';
 
 const root = await externalWorkspace();
+const port = process.env.FINN_LOCAL_WEB_PORT ?? '5173';
+if (!/^[0-9]{1,5}$/.test(port) || Number(port) < 1024 || Number(port) > 65535) {
+  throw new Error('Choose an available loopback web port from 1024 to 65535.');
+}
+const origin = `http://127.0.0.1:${Number(port)}`;
 for (const file of ['secrets/postgres-admin-password', 'secrets/backend/spring.datasource.password', 'secrets/backend/spring.flyway.password', 'secrets/identity-postgres-password', 'secrets/identity-admin-password', 'secrets/backend/finn.oidc.client-secret']) {
   try { await writeFile(join(root, file), randomBytes(32).toString('base64url'), { flag: 'wx', mode: 0o600 }); }
   catch (error) { if (error.code !== 'EEXIST') throw error; }
@@ -20,9 +25,9 @@ const realm = {
   loginWithEmailAllowed: false, verifyEmail: false, sslRequired: 'external',
   clients: [{clientId: 'finn-web', protocol: 'openid-connect', publicClient: false, secret: clientSecret,
     standardFlowEnabled: true, directAccessGrantsEnabled: false, serviceAccountsEnabled: false,
-    redirectUris: ['http://127.0.0.1:5173/login/oauth2/code/finn'], webOrigins: ['http://127.0.0.1:5173'],
+    redirectUris: [origin + '/login/oauth2/code/finn'], webOrigins: [origin],
     defaultClientScopes: ['profile', 'web-origins'],
-    attributes: {'pkce.code.challenge.method':'S256', 'post.logout.redirect.uris':'http://127.0.0.1:5173/'}}],
+    attributes: {'pkce.code.challenge.method':'S256', 'post.logout.redirect.uris':origin + '/'}}],
   users: users.map((user) => ({username:user.username, enabled:true, firstName:'Demo', lastName:'Investor',
     email:user.username+'@example.invalid', emailVerified:true,
     credentials:[{type:'password', value:user.password, temporary:false}]})),

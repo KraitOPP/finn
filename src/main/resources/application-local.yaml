@@ -1,6 +1,6 @@
 finn:
-  public-origin: http://127.0.0.1:5173
+  public-origin: "http://127.0.0.1:${FINN_LOCAL_WEB_PORT:5173}"
   oidc:
-    issuer: http://localhost:8180/realms/finn-local
+    issuer: "http://localhost:${FINN_LOCAL_IDENTITY_PORT:8180}/realms/finn-local"
 server:
   address: 127.0.0.1

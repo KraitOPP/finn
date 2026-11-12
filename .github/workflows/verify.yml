@@ -35,6 +35,8 @@ jobs:
           echo "PIP_CACHE_DIR=$RUNNER_TEMP/finn-workspace/cache/pip" >> "$GITHUB_ENV"
       - name: Build and verify real PostgreSQL integration
         run: node scripts/maven.mjs verify
+      - name: Verify encrypted database archive handling
+        run: node --test scripts/database-archive.test.mjs
       - name: Verify contracts and synthetic runtime fixture
         run: |
           python -m venv "$FINN_WORKSPACE_ROOT/cache/contract-tools"
