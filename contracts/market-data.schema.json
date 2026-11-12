@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.42.0",
+  "$id": "urn:finn:contracts:market-data:0.43.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.42.0"
+      "const": "0.43.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -887,6 +887,262 @@
       "required": [
         "snapshot",
         "valuation"
+      ],
+      "additionalProperties": false
+    },
+    "PortfolioPerformanceInput": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "end": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "reviewed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceSnapshotRef": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "snapshotId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "ledgerRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "value": {
+          "$ref": "#/$defs/DecimalString"
+        }
+      },
+      "required": [
+        "accountId",
+        "snapshotId",
+        "ledgerRevision",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceValuation": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "closingValue": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PerformanceSnapshotRef"
+          },
+          "maxItems": 100,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "date",
+        "closingValue",
+        "snapshots"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceFlow": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "deposits": {
+          "$ref": "#/$defs/NonNegativeDecimalString"
+        },
+        "withdrawals": {
+          "$ref": "#/$defs/NonNegativeDecimalString"
+        },
+        "net": {
+          "$ref": "#/$defs/DecimalString"
+        }
+      },
+      "required": [
+        "date",
+        "deposits",
+        "withdrawals",
+        "net"
+      ],
+      "additionalProperties": false
+    },
+    "ReturnMeasure": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "AVAILABLE",
+            "UNAVAILABLE"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "HISTORY_UNREVIEWED",
+            "NO_ACCOUNTS",
+            "PORTFOLIO_BUDGET",
+            "CASH_HISTORY_INCOMPLETE",
+            "NEGATIVE_CASH_BALANCE",
+            "NEW_OPENING_BALANCE",
+            "ENDPOINT_VALUATIONS_MISSING",
+            "REVIEWED_WINDOW",
+            "CALCULATED",
+            "FLOW_DAY_VALUATION_MISSING",
+            "NON_POSITIVE_BASE",
+            "CASH_FLOW_SIGNS",
+            "AMBIGUOUS_CASH_FLOWS",
+            "OUTSIDE_SOLVER_RANGE"
+          ]
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "reason",
+        "percent"
+      ],
+      "additionalProperties": false
+    },
+    "PortfolioPerformance": {
+      "type": "object",
+      "properties": {
+        "portfolioId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "start": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "end": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "currency": {
+          "const": "INR"
+        },
+        "methodology": {
+          "const": "cash-flow-returns-v1"
+        },
+        "coverage": {
+          "type": "string",
+          "enum": [
+            "HISTORY_UNREVIEWED",
+            "NO_ACCOUNTS",
+            "PORTFOLIO_BUDGET",
+            "CASH_HISTORY_INCOMPLETE",
+            "NEGATIVE_CASH_BALANCE",
+            "NEW_OPENING_BALANCE",
+            "ENDPOINT_VALUATIONS_MISSING",
+            "REVIEWED_WINDOW"
+          ]
+        },
+        "opening": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceValuation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceValuation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "flowValuations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PerformanceValuation"
+          },
+          "maxItems": 366
+        },
+        "externalFlows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PerformanceFlow"
+          },
+          "maxItems": 366
+        },
+        "recordedDividends": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "investmentResult": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "xirr": {
+          "$ref": "#/$defs/ReturnMeasure"
+        },
+        "timeWeighted": {
+          "$ref": "#/$defs/ReturnMeasure"
+        },
+        "benchmark": {
+          "const": "NO_COMPATIBLE_BENCHMARK"
+        }
+      },
+      "required": [
+        "portfolioId",
+        "start",
+        "end",
+        "currency",
+        "methodology",
+        "coverage",
+        "opening",
+        "closing",
+        "flowValuations",
+        "externalFlows",
+        "recordedDividends",
+        "investmentResult",
+        "xirr",
+        "timeWeighted",
+        "benchmark"
       ],
       "additionalProperties": false
     },

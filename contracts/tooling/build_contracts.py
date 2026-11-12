@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.42.0"
+VERSION = "0.43.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -145,6 +145,24 @@ def definitions() -> dict:
         "points": array(ref("ValuationPoint"),maxItems=90),
     })
     d["ValuationSnapshotDetail"] = obj({"snapshot": ref("ValuationPoint"), "valuation": nullable(ref("AccountValuation"))})
+    performance_coverage = ["HISTORY_UNREVIEWED","NO_ACCOUNTS","PORTFOLIO_BUDGET","CASH_HISTORY_INCOMPLETE","NEGATIVE_CASH_BALANCE",
+        "NEW_OPENING_BALANCE","ENDPOINT_VALUATIONS_MISSING","REVIEWED_WINDOW"]
+    d["PortfolioPerformanceInput"] = obj({"start":ref("SessionDate"),"end":ref("SessionDate"),"reviewed":{"type":"boolean"}})
+    d["PerformanceSnapshotRef"] = obj({"accountId":ref("OpaqueId"),"snapshotId":ref("OpaqueId"),
+        "ledgerRevision":{"type":"integer","minimum":0,"maximum":10000},"value":ref("DecimalString")})
+    d["PerformanceValuation"] = obj({"date":ref("SessionDate"),"closingValue":ref("DecimalString"),
+        "snapshots":array(ref("PerformanceSnapshotRef"),minItems=1,maxItems=100)})
+    d["PerformanceFlow"] = obj({"date":ref("SessionDate"),"deposits":ref("NonNegativeDecimalString"),
+        "withdrawals":ref("NonNegativeDecimalString"),"net":ref("DecimalString")})
+    d["ReturnMeasure"] = obj({"state":enum(["AVAILABLE","UNAVAILABLE"]),
+        "reason":enum([*performance_coverage,"CALCULATED","FLOW_DAY_VALUATION_MISSING","NON_POSITIVE_BASE","CASH_FLOW_SIGNS",
+            "AMBIGUOUS_CASH_FLOWS","OUTSIDE_SOLVER_RANGE"]),"percent":nullable(ref("DecimalString"))})
+    d["PortfolioPerformance"] = obj({"portfolioId":ref("OpaqueId"),"start":ref("SessionDate"),"end":ref("SessionDate"),
+        "currency":{"const":"INR"},"methodology":{"const":"cash-flow-returns-v1"},"coverage":enum(performance_coverage),
+        "opening":nullable(ref("PerformanceValuation")),"closing":nullable(ref("PerformanceValuation")),
+        "flowValuations":array(ref("PerformanceValuation"),maxItems=366),"externalFlows":array(ref("PerformanceFlow"),maxItems=366),
+        "recordedDividends":nullable(ref("NonNegativeDecimalString")),"investmentResult":nullable(ref("DecimalString")),
+        "xirr":ref("ReturnMeasure"),"timeWeighted":ref("ReturnMeasure"),"benchmark":{"const":"NO_COMPATIBLE_BENCHMARK"}})
     d["WatchlistName"] = obj({"name": text(maxLength=80)})
     d["WatchlistSummary"] = obj({"watchlistId": ref("OpaqueId"), "name": text(maxLength=80)})
     d["WatchlistIndex"] = obj({"items": array(ref("WatchlistSummary"),maxItems=20)})
@@ -1129,6 +1147,9 @@ def public_api_document() -> dict:
             "post": maintained("startSyntheticEventReplay","Run or reopen the fictional scenario in an isolated workspace","EventReplay",[csrf_header]),
         },
         "/api/v1/portfolios/{portfolio}/valuation":{"get":maintained("valuePortfolio","Value the owned portfolio across its recorded source accounts","PortfolioValuation",ledger_account[:1])},
+        "/api/v1/portfolios/{portfolio}/performance":{"post":maintained("calculatePortfolioPerformance",
+            "Calculate cash-flow-aware returns from a reviewed window and current exact snapshots","PortfolioPerformance",
+            ledger_account[:1],"PortfolioPerformanceInput")},
         journal_path+"/valuation":{"get":maintained("valueAccount","Value recorded positions with selected, compatible closes","AccountValuation",ledger_account)},
         journal_path+"/valuation/listing":{"post":maintained("chooseValuationListing","Choose the venue for an owned position; null clears it","ValuationListing",ledger_account,"ValuationListing")},
         market_path:{"get":maintained("getListingFeedStatus","Read the owned listing's latest close and acquisition state","MarketFeed",listing_parameter)},

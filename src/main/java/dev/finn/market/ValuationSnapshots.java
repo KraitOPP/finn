@@ -70,7 +70,7 @@ public class ValuationSnapshots {
     @Transactional
     public Series history(UUID portfolio,UUID account,LocalDate start,LocalDate end){
         var owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);MarketPrices.range(start,end,90);
-        var points=jdbc.query("SELECT DISTINCT ON(session_date) "+COLUMNS+"""
+        var points=jdbc.query("SELECT DISTINCT ON(session_date) "+COLUMNS+" "+"""
                  FROM finn.valuation_snapshot WHERE owner_id=? AND account_id=? AND session_date>=? AND session_date<?
                  ORDER BY session_date,receipt_order DESC
                 """,ValuationSnapshots::point,owner,account,start,end);
@@ -83,6 +83,14 @@ public class ValuationSnapshots {
         return jdbc.query("SELECT "+COLUMNS+",valuation FROM finn.valuation_snapshot WHERE owner_id=? AND account_id=? AND snapshot_id=?",
                 (row,index)->{String value=row.getString("valuation");return new Detail(point(row,index),value==null?null:json.readValue(value,Valuations.AccountValue.class));},
                 owner,account,id).stream().findFirst().orElseThrow(ApiFailure::notFound);
+    }
+
+    List<Point> forPerformance(UUID owner,UUID account,LocalDate start,LocalDate end,long revision){
+        return jdbc.query("SELECT DISTINCT ON(session_date) "+COLUMNS+" "+"""
+                FROM finn.valuation_snapshot WHERE owner_id=? AND account_id=? AND session_date BETWEEN ? AND ?
+                  AND ledger_revision=? AND calculation_version=?
+                ORDER BY session_date,receipt_order DESC
+                """,ValuationSnapshots::point,owner,account,start,end,revision,Valuations.CALCULATION);
     }
 
     private static Point point(ResultSet row,int index)throws SQLException{

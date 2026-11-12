@@ -102,7 +102,7 @@ public class Valuations {
         return equity.signum()>0 ? new Exposure(session,holding,equity,List.copyOf(observations)) : null;
     }
 
-    private boolean withinBudget(UUID owner,UUID id){
+    boolean withinBudget(UUID owner,UUID id){
         int events=Objects.requireNonNull(jdbc.queryForObject("""
                 SELECT count(*) FROM (
                     SELECT 1 FROM finn.investment_account a JOIN finn.ledger_event e USING(owner_id,account_id)
