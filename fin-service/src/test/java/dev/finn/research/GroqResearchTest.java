@@ -14,12 +14,12 @@ class GroqResearchTest {
     private static final String FILING = "https://exchange.example/filing";
     private static final String INVENTED = "https://example.org/unsupported";
     private final JsonMapper json = JsonMapper.builder().build();
-    private final GroqResearch research = new GroqResearch(null,json,"");
+    private final GroqResearch research = new GroqResearch(null,null,json,"");
     private final LocalDate today = LocalDate.of(2026,11,12);
 
     @Test
     void usesTheRequestedModelAndOnlyTheBrowserTool() {
-        var body = json.valueToTree(GroqResearch.request("NSE","INFY",StockResearch.Preset.DEEP_DIVE,today));
+        var body = json.valueToTree(GroqResearch.request("NSE","INFY",null,StockResearch.Preset.DEEP_DIVE,today));
         assertEquals("openai/gpt-oss-120b",body.path("model").asText());
         assertEquals("browser_search",body.at("/tools/0/type").asText());
         assertEquals(1,body.path("tools").size());
@@ -28,12 +28,21 @@ class GroqResearchTest {
     }
 
     @Test
+    void newsRequestUsesAShortDatedSearch() {
+        var body = json.valueToTree(GroqResearch.request("NSE","INFY","Infosys Limited",StockResearch.Preset.NEWS,today));
+        assertEquals(3072,body.path("max_completion_tokens").asInt());
+        assertTrue(body.at("/messages/0/content").asText().contains("14 October 2026 through 12 November 2026"));
+        assertTrue(body.at("/messages/0/content").asText().contains("Infosys Limited"));
+    }
+
+    @Test
     void displaysOnlyRecentNewsWithAMatchingBrowserSource() {
-        String raw = json.writeValueAsString(Map.of("items",List.of(
-                item("Recent exchange filing","2026-11-11",List.of(FILING,INVENTED)),
-                item("Made-up link","2026-11-10",List.of(INVENTED)),
-                item("Old filing","2026-10-01",List.of(FILING)),
-                item("Future filing","2026-11-14",List.of(FILING)))));
+        String raw = """
+                2026-11-11 | Recent exchange filing | Fictional announcement for testing. | %s
+                2026-11-10 | Made-up link | Fictional announcement for testing. | %s
+                2026-10-01 | Old filing | Fictional announcement for testing. | %s
+                2026-11-14 | Future filing | Fictional announcement for testing. | %s
+                """.formatted(FILING,INVENTED,FILING,FILING);
         var report = research.decode(response(raw),StockResearch.Preset.NEWS,today);
         assertEquals(1,report.items().size());
         assertEquals("Recent exchange filing",report.items().getFirst().title());

@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ class ResearchProviderClient {
                 return task.get(52,TimeUnit.SECONDS);
             } catch (ExecutionException error) {
                 if (error.getCause() instanceof ApiFailure failure) throw failure;
+                if (error.getCause() instanceof HttpTimeoutException) throw new ApiFailure(504,provider+"_TIMEOUT");
                 throw new ApiFailure(502,provider+"_UNAVAILABLE");
             } catch (TimeoutException error) {
                 throw new ApiFailure(504,provider+"_TIMEOUT");

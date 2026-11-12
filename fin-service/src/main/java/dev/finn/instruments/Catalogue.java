@@ -42,6 +42,12 @@ public class Catalogue {
         return jdbc.query(LISTING_SQL+"WHERE l.owner_id=? AND s.company_id=? ORDER BY l.exchange,h.symbol,l.listing_id LIMIT 100",
                 this::listingRow,owner,company);
     }
+    public String officialIssuerName(UUID owner, Listing listing) {
+        if (!"NSE_DIRECTORY".equals(listing.source())) return null;
+        return jdbc.query("""
+                SELECT name FROM finn.company WHERE owner_id=? AND company_id=? AND source='NSE_DIRECTORY'
+                """, (row,index) -> row.getString(1),owner,listing.companyId()).stream().findFirst().orElse(null);
+    }
     public UUID resolveReviewedHolding(UUID owner,String reportedName,String isin){
         if(!Isin.valid(isin))throw ApiFailure.invalid();
         var existing=jdbc.query("SELECT security_id FROM finn.security WHERE owner_id=? AND isin=?",(row,index)->row.getObject(1,UUID.class),owner,isin).stream().findFirst();
