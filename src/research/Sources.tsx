@@ -23,12 +23,21 @@ export function Research() {
   return (
     <section className="workspace-section">
       <RouteHeading>Research</RouteHeading>
-      <PrimarySources onEvent={() => setGeneration((value) => value + 1)} />
       <CompanyWorkspace generation={generation} />
-      <CompanyEvents generation={generation} />
-      <FilingCalendar generation={generation} />
-      <News />
-      <EventReplay />
+      <details className="workspace-tools">
+        <summary>Sources and filings</summary>
+        <PrimarySources onEvent={() => setGeneration((value) => value + 1)} />
+        <CompanyEvents generation={generation} />
+        <FilingCalendar generation={generation} />
+      </details>
+      <details className="workspace-tools">
+        <summary>Stock news and saved links</summary>
+        <News />
+      </details>
+      <details className="workspace-tools">
+        <summary>Practice with a fictional event</summary>
+        <EventReplay />
+      </details>
     </section>
   );
 }

@@ -66,6 +66,12 @@ export function CompanyWorkspace({ generation }: { generation: number }) {
       </label>
       {companies.error && <p role="alert">{companies.error}</p>}
       {holding.error && <p role="alert">{holding.error}</p>}
+      {!company && (
+        <p>
+          Choose a saved company or <a href="#/instruments">find a stock</a> by
+          name.
+        </p>
+      )}
       {company && (
         <Overview
           key={company}
@@ -105,6 +111,7 @@ function Overview({
   return (
     <div>
       <h3>{companyName}</h3>
+      {!target.thesis && !target.event && <ResearchReports company={company} />}
       <ThesisNotebook
         company={company}
         initialThesis={target.thesis}
@@ -148,7 +155,7 @@ function Overview({
       ))}
       <AddNote company={company} path={path} onSaved={data.reload} />
       <SearchEvidence company={company} />
-      <ResearchReports company={company} />
+      {(target.thesis || target.event) && <ResearchReports company={company} />}
       <details>
         <summary>Recent primary documents</summary>
         {sources.length === 0 && <p>No primary documents registered.</p>}

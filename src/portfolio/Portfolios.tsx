@@ -32,10 +32,7 @@ export function Portfolios() {
   return (
     <section className="workspace-section">
       <RouteHeading>Portfolio</RouteHeading>
-      <p className="muted-copy">
-        Keep holdings and records organised by portfolio and source account.{" "}
-        <a href="#/instruments">Review your securities</a>.
-      </p>
+      <p className="muted-copy">Track holdings and import Groww statements.</p>
       {candidate && <p>Open a portfolio to model the selected candidate.</p>}
       {portfolios.error ? (
         <LoadError message={portfolios.error} reload={portfolios.reload} />
@@ -206,8 +203,6 @@ function PortfolioDetail({
         </div>
       )}
       <PortfolioValuationPanel id={id} />
-      <PerformancePanel portfolio={id} />
-      <PortfolioHealthPanel portfolio={id} candidate={candidate} />
       <h3>Source accounts</h3>
       {accounts.length === 0 ? (
         <p>No accounts yet. Add the source of your portfolio records.</p>
@@ -259,33 +254,6 @@ function PortfolioDetail({
             base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
             archived={portfolio.archived}
           />
-          <ValuationHistory
-            key={`history-${selected.accountId}`}
-            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-            archived={portfolio.archived}
-          />
-          <LedgerPanel
-            key={selected.accountId}
-            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-            archived={portfolio.archived}
-            onSaved={(message) => {
-              setAccountNotice(message);
-              detail.reload();
-            }}
-          />
-          <CorporateActionsPanel
-            key={`actions-${selected.accountId}`}
-            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-            archived={portfolio.archived}
-            onRecorded={(record) => {
-              if (record.ledgerEventId && !record.replayed) {
-                setAccountNotice(
-                  "Reviewed corporate action saved. The ledger was recalculated.",
-                );
-                detail.reload();
-              }
-            }}
-          />
           {selected.source === "GROWW" && (
             <HoldingsImportPanel
               key={`import-${selected.accountId}`}
@@ -299,8 +267,46 @@ function PortfolioDetail({
               }}
             />
           )}
+          <details className="workspace-tools">
+            <summary>Transactions and history</summary>
+            <LedgerPanel
+              key={selected.accountId}
+              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+              archived={portfolio.archived}
+              onSaved={(message) => {
+                setAccountNotice(message);
+                detail.reload();
+              }}
+            />
+            <ValuationHistory
+              key={`history-${selected.accountId}`}
+              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+              archived={portfolio.archived}
+            />
+            <CorporateActionsPanel
+              key={`actions-${selected.accountId}`}
+              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+              archived={portfolio.archived}
+              onRecorded={(record) => {
+                if (record.ledgerEventId && !record.replayed) {
+                  setAccountNotice(
+                    "Reviewed corporate action saved. The ledger was recalculated.",
+                  );
+                  detail.reload();
+                }
+              }}
+            />
+          </details>
         </section>
       )}
+      <details
+        className="workspace-tools"
+        open={Boolean(candidate) || undefined}
+      >
+        <summary>Returns, risk and scenarios</summary>
+        <PerformancePanel portfolio={id} />
+        <PortfolioHealthPanel portfolio={id} candidate={candidate} />
+      </details>
     </section>
   );
 }

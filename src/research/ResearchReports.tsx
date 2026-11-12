@@ -49,8 +49,8 @@ export function ResearchReports({ company }: { company: string }) {
     history.reload();
   }
   return (
-    <details>
-      <summary>Ask a question or review company evidence</summary>
+    <section className="research-assistant" aria-label="Research assistant">
+      <h4>Research assistant</h4>
       <form
         onSubmit={async (event) => {
           event.preventDefault();
@@ -69,12 +69,13 @@ export function ResearchReports({ company }: { company: string }) {
         }}
       >
         <label>
-          Research question or topic
+          Ask about this company
           <input
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             required
             maxLength={320}
+            placeholder="For example, what changed in quarterly revenue?"
           />
         </label>
         <button
@@ -85,7 +86,7 @@ export function ResearchReports({ company }: { company: string }) {
             )
           }
         >
-          Use company overview topics
+          Use overview topics
         </button>
         {localAvailable ? (
           <label>
@@ -94,14 +95,23 @@ export function ResearchReports({ company }: { company: string }) {
               checked={rankLocally}
               onChange={(event) => setRankLocally(event.target.checked)}
             />
-            Let the configured local model rank matching excerpts for this
-            request
+            Use the local AI model to rank matching evidence
           </label>
         ) : (
-          <p>Evidence search is available. Local model ranking is off.</p>
+          <p className="muted-copy">
+            Source search is available. AI answers need a configured model.
+          </p>
         )}
-        <button type="submit" disabled={command.busy || !question.trim()}>
-          Find and save evidence
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={command.busy || !question.trim()}
+        >
+          {command.busy
+            ? "Searching…"
+            : rankLocally
+              ? "Ask AI"
+              : "Search sources"}
         </button>
         {command.error && <p role="alert">{command.error}</p>}
       </form>
@@ -140,7 +150,7 @@ export function ResearchReports({ company }: { company: string }) {
       {id && (
         <ReportView key={id} id={id} onNavigate={setId} onRefresh={saved} />
       )}
-    </details>
+    </section>
   );
 }
 
