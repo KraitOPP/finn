@@ -10,6 +10,7 @@ import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { usePreferences } from "../preferences/PreferencesProvider.tsx";
 import { AnchorEvidence } from "./Evidence.tsx";
 import { EvidencePicker } from "./FinancialFacts.tsx";
+import { ThesisConditions } from "./ThesisConditions.tsx";
 
 const root = "/api/v1/research";
 const decisions = {
@@ -113,6 +114,7 @@ function ThesisDetails({
   return (
     <div className="settings-card">
       <ThesisVersion thesis={thesis} />
+      <ThesisConditions key={thesis.revision} thesis={thesis} />
       {thesis.reminderId && (
         <p>
           <a href="#/inbox">Manage review reminders in Inbox</a>

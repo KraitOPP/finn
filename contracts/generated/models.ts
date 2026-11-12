@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.35.0") & (string);
+export type ContractVersion = ("0.36.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1620,6 +1620,44 @@ export type SymbolInput = ({
   "confirmed": (true);
 });
 
+export type ThesisCondition = ({
+  "definition": (ThesisConditionDefinition);
+  "lastCheck": (((ThesisConditionCheck)) | ((null)));
+});
+
+export type ThesisConditionCheck = ({
+  "checkId": (OpaqueId);
+  "thesisRevision": (number);
+  "state": ("MATCHED" | "VIOLATED" | "UNKNOWN" | "REVIEW_NEEDED") & (string);
+  "reason": ("PERIOD_OPEN" | "FACT_MISSING" | "DIMENSIONS_MISMATCH" | "PUBLICATION_UNKNOWN" | "PUBLISHED_AFTER_CUTOFF" | "PERIOD_PUBLICATION_INVALID" | "SOURCE_REVISED" | "DERIVATION_REVIEW_REQUIRED" | "COMPARABLE_FACT") & (string);
+  "fact": (((FinancialFact)) | ((null)));
+  "evaluatedAt": (UtcInstant);
+});
+
+export type ThesisConditionDefinition = ({
+  "label": (string);
+  "dimensions": (FinancialDimensions);
+  "comparator": ("GTE" | "LTE") & (string);
+  "threshold": (DecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "conditionId": (OpaqueId);
+  "thesisRevision": (number);
+  "retired": (boolean);
+});
+
+export type ThesisConditionInput = ({
+  "label": (string);
+  "dimensions": (FinancialDimensions);
+  "comparator": ("GTE" | "LTE") & (string);
+  "threshold": (DecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "expectedRevision": (number);
+});
+
+export type ThesisConditions = ({
+  "items": (Array<(ThesisCondition)>);
+});
+
 export type ThesisReviewSchedule = ({
   "scheduledLocal": (string);
   "timeZone": (string);
@@ -1915,6 +1953,11 @@ export interface ContractTypes {
   SymbolHistory: SymbolHistory;
   SymbolHistoryList: SymbolHistoryList;
   SymbolInput: SymbolInput;
+  ThesisCondition: ThesisCondition;
+  ThesisConditionCheck: ThesisConditionCheck;
+  ThesisConditionDefinition: ThesisConditionDefinition;
+  ThesisConditionInput: ThesisConditionInput;
+  ThesisConditions: ThesisConditions;
   ThesisReviewSchedule: ThesisReviewSchedule;
   UserProfile: UserProfile;
   UtcInstant: UtcInstant;

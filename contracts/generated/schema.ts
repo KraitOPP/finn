@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.35.0",
+  "contractVersion": "0.36.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "4c117ee2f3be534b24f94af44794888b8784aaa4d8f0806249c66af24470cfd3",
+  "sourceSha256": "3c48d9a25d2136e5a47cb4542c6eff47817b3fdf1e1317920559a4de04036498",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -189,6 +189,11 @@ export const contractMetadata = {
     "SymbolHistory",
     "SymbolHistoryList",
     "SymbolInput",
+    "ThesisCondition",
+    "ThesisConditionCheck",
+    "ThesisConditionDefinition",
+    "ThesisConditionInput",
+    "ThesisConditions",
     "ThesisReviewSchedule",
     "UserProfile",
     "UtcInstant",
@@ -2259,7 +2264,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.35.0"
+    "const": "0.36.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -9153,6 +9158,207 @@ export const contractSchemas = {
       "providerSymbol",
       "effectiveDate",
       "confirmed"
+    ],
+    "additionalProperties": false
+  },
+  "ThesisCondition": {
+    "type": "object",
+    "properties": {
+      "definition": {
+        "$ref": "#/components/schemas/ThesisConditionDefinition"
+      },
+      "lastCheck": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ThesisConditionCheck"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "definition",
+      "lastCheck"
+    ],
+    "additionalProperties": false
+  },
+  "ThesisConditionCheck": {
+    "type": "object",
+    "properties": {
+      "checkId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "thesisRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "MATCHED",
+          "VIOLATED",
+          "UNKNOWN",
+          "REVIEW_NEEDED"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "PERIOD_OPEN",
+          "FACT_MISSING",
+          "DIMENSIONS_MISMATCH",
+          "PUBLICATION_UNKNOWN",
+          "PUBLISHED_AFTER_CUTOFF",
+          "PERIOD_PUBLICATION_INVALID",
+          "SOURCE_REVISED",
+          "DERIVATION_REVIEW_REQUIRED",
+          "COMPARABLE_FACT"
+        ]
+      },
+      "fact": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FinancialFact"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "evaluatedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "checkId",
+      "thesisRevision",
+      "state",
+      "reason",
+      "fact",
+      "evaluatedAt"
+    ],
+    "additionalProperties": false
+  },
+  "ThesisConditionDefinition": {
+    "type": "object",
+    "properties": {
+      "label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "dimensions": {
+        "$ref": "#/components/schemas/FinancialDimensions"
+      },
+      "comparator": {
+        "type": "string",
+        "enum": [
+          "GTE",
+          "LTE"
+        ]
+      },
+      "threshold": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "conditionId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "thesisRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "retired": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "label",
+      "dimensions",
+      "comparator",
+      "threshold",
+      "scale",
+      "conditionId",
+      "thesisRevision",
+      "retired"
+    ],
+    "additionalProperties": false
+  },
+  "ThesisConditionInput": {
+    "type": "object",
+    "properties": {
+      "label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "dimensions": {
+        "$ref": "#/components/schemas/FinancialDimensions"
+      },
+      "comparator": {
+        "type": "string",
+        "enum": [
+          "GTE",
+          "LTE"
+        ]
+      },
+      "threshold": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      }
+    },
+    "required": [
+      "label",
+      "dimensions",
+      "comparator",
+      "threshold",
+      "scale",
+      "expectedRevision"
+    ],
+    "additionalProperties": false
+  },
+  "ThesisConditions": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ThesisCondition"
+        },
+        "maxItems": 20
+      }
+    },
+    "required": [
+      "items"
     ],
     "additionalProperties": false
   },
