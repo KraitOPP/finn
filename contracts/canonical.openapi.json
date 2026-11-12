@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.41.0",
+    "version": "0.42.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -5584,6 +5584,323 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StockScreenRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/screen-runs/{id}/rankings": {
+      "get": {
+        "operationId": "listPeerRankings",
+        "summary": "Read saved same-sector comparisons",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeerRankingIndex"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "rankScreenPeers",
+        "summary": "Save factor weights and replayable relative peer positions",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeerRanking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeerRankingInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/rankings/{id}": {
+      "get": {
+        "operationId": "readPeerRanking",
+        "summary": "Replay a retained ranking and its contributions",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeerRanking"
                 }
               }
             }
@@ -16553,7 +16870,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.41.0"
+        "const": "0.42.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -20689,6 +21006,283 @@
           "inputs",
           "results",
           "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRankingFactor": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "$ref": "#/components/schemas/DiscoveryMetric"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "HIGHER",
+              "LOWER"
+            ]
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "metric",
+          "direction",
+          "weight"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRankingSpecification": {
+        "type": "object",
+        "properties": {
+          "companyIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "maxItems": 30,
+            "minItems": 2
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeerRankingFactor"
+            },
+            "maxItems": 6,
+            "minItems": 1
+          }
+        },
+        "required": [
+          "companyIds",
+          "factors"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRankingInput": {
+        "type": "object",
+        "properties": {
+          "companyIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "maxItems": 30,
+            "minItems": 2
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeerRankingFactor"
+            },
+            "maxItems": 6,
+            "minItems": 1
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          }
+        },
+        "required": [
+          "companyIds",
+          "factors",
+          "requestId"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRankingContribution": {
+        "type": "object",
+        "properties": {
+          "factor": {
+            "$ref": "#/components/schemas/PeerRankingFactor"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "PERIOD_OPEN",
+              "FACT_MISSING",
+              "DIMENSIONS_MISMATCH",
+              "PUBLICATION_UNKNOWN",
+              "PUBLISHED_AFTER_CUTOFF",
+              "PERIOD_PUBLICATION_INVALID",
+              "SOURCE_REVISED",
+              "DERIVATION_REVIEW_REQUIRED",
+              "COMPARABLE_FACT"
+            ]
+          },
+          "fact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "percentile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "points": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "relativeWeakness": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "factor",
+          "reason",
+          "fact",
+          "percentile",
+          "points",
+          "relativeWeakness"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRankingRow": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "$ref": "#/components/schemas/DiscoveryMember"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RANKED",
+              "MISSING_FACTOR",
+              "INSUFFICIENT_PEERS"
+            ]
+          },
+          "contributions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeerRankingContribution"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "member",
+          "rank",
+          "score",
+          "status",
+          "contributions"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRanking": {
+        "type": "object",
+        "properties": {
+          "rankingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "runId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "methodology": {
+            "const": "within-sector-midrank-v1"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/DiscoverySector"
+          },
+          "specification": {
+            "$ref": "#/components/schemas/PeerRankingSpecification"
+          },
+          "completePeers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeerRankingRow"
+            },
+            "maxItems": 30
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "rankingId",
+          "runId",
+          "methodology",
+          "sector",
+          "specification",
+          "completePeers",
+          "rows",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRankingSummary": {
+        "type": "object",
+        "properties": {
+          "rankingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "rankingId",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "PeerRankingIndex": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeerRankingSummary"
+            },
+            "maxItems": 120
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       },

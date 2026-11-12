@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.41.0") & (string);
+export type ContractVersion = ("0.42.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1222,6 +1222,60 @@ export type NotificationRead = ({
 });
 
 export type OpaqueId = (string);
+
+export type PeerRanking = ({
+  "rankingId": (OpaqueId);
+  "runId": (OpaqueId);
+  "methodology": ("within-sector-midrank-v1");
+  "sector": (DiscoverySector);
+  "specification": (PeerRankingSpecification);
+  "completePeers": (number);
+  "rows": (Array<(PeerRankingRow)>);
+  "createdAt": (UtcInstant);
+});
+
+export type PeerRankingContribution = ({
+  "factor": (PeerRankingFactor);
+  "reason": ("PERIOD_OPEN" | "FACT_MISSING" | "DIMENSIONS_MISMATCH" | "PUBLICATION_UNKNOWN" | "PUBLISHED_AFTER_CUTOFF" | "PERIOD_PUBLICATION_INVALID" | "SOURCE_REVISED" | "DERIVATION_REVIEW_REQUIRED" | "COMPARABLE_FACT") & (string);
+  "fact": (((FinancialFact)) | ((null)));
+  "percentile": (((DecimalString)) | ((null)));
+  "points": (((DecimalString)) | ((null)));
+  "relativeWeakness": (boolean);
+});
+
+export type PeerRankingFactor = ({
+  "metric": (DiscoveryMetric);
+  "direction": ("HIGHER" | "LOWER") & (string);
+  "weight": (number);
+});
+
+export type PeerRankingIndex = ({
+  "items": (Array<(PeerRankingSummary)>);
+});
+
+export type PeerRankingInput = ({
+  "companyIds": (Array<(OpaqueId)>);
+  "factors": (Array<(PeerRankingFactor)>);
+  "requestId": (OpaqueId);
+});
+
+export type PeerRankingRow = ({
+  "member": (DiscoveryMember);
+  "rank": (((number)) | ((null)));
+  "score": (((DecimalString)) | ((null)));
+  "status": ("RANKED" | "MISSING_FACTOR" | "INSUFFICIENT_PEERS") & (string);
+  "contributions": (Array<(PeerRankingContribution)>);
+});
+
+export type PeerRankingSpecification = ({
+  "companyIds": (Array<(OpaqueId)>);
+  "factors": (Array<(PeerRankingFactor)>);
+});
+
+export type PeerRankingSummary = ({
+  "rankingId": (OpaqueId);
+  "createdAt": (UtcInstant);
+});
 
 export type PortfolioArchiveInput = ({
   "archived": (boolean);
@@ -2154,6 +2208,14 @@ export interface ContractTypes {
   NotificationPage: NotificationPage;
   NotificationRead: NotificationRead;
   OpaqueId: OpaqueId;
+  PeerRanking: PeerRanking;
+  PeerRankingContribution: PeerRankingContribution;
+  PeerRankingFactor: PeerRankingFactor;
+  PeerRankingIndex: PeerRankingIndex;
+  PeerRankingInput: PeerRankingInput;
+  PeerRankingRow: PeerRankingRow;
+  PeerRankingSpecification: PeerRankingSpecification;
+  PeerRankingSummary: PeerRankingSummary;
   PortfolioArchiveInput: PortfolioArchiveInput;
   PortfolioBrief: PortfolioBrief;
   PortfolioDetail: PortfolioDetail;

@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.41.0",
+  "contractVersion": "0.42.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "9219d06674574e4a92db94b22cdc09f580055c7082c6288016465660f328dc4a",
+  "sourceSha256": "e0de530b0ade02fccc984421b731d1c5eb58dccd6254b5905694bbc631cc7d3f",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -143,6 +143,14 @@ export const contractMetadata = {
     "NotificationPage",
     "NotificationRead",
     "OpaqueId",
+    "PeerRanking",
+    "PeerRankingContribution",
+    "PeerRankingFactor",
+    "PeerRankingIndex",
+    "PeerRankingInput",
+    "PeerRankingRow",
+    "PeerRankingSpecification",
+    "PeerRankingSummary",
     "PortfolioArchiveInput",
     "PortfolioBrief",
     "PortfolioDetail",
@@ -2300,7 +2308,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.41.0"
+    "const": "0.42.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -7200,6 +7208,283 @@ export const contractSchemas = {
     "minLength": 1,
     "maxLength": 128,
     "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+  },
+  "PeerRanking": {
+    "type": "object",
+    "properties": {
+      "rankingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "runId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "methodology": {
+        "const": "within-sector-midrank-v1"
+      },
+      "sector": {
+        "$ref": "#/components/schemas/DiscoverySector"
+      },
+      "specification": {
+        "$ref": "#/components/schemas/PeerRankingSpecification"
+      },
+      "completePeers": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 30
+      },
+      "rows": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PeerRankingRow"
+        },
+        "maxItems": 30
+      },
+      "createdAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "rankingId",
+      "runId",
+      "methodology",
+      "sector",
+      "specification",
+      "completePeers",
+      "rows",
+      "createdAt"
+    ],
+    "additionalProperties": false
+  },
+  "PeerRankingContribution": {
+    "type": "object",
+    "properties": {
+      "factor": {
+        "$ref": "#/components/schemas/PeerRankingFactor"
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "PERIOD_OPEN",
+          "FACT_MISSING",
+          "DIMENSIONS_MISMATCH",
+          "PUBLICATION_UNKNOWN",
+          "PUBLISHED_AFTER_CUTOFF",
+          "PERIOD_PUBLICATION_INVALID",
+          "SOURCE_REVISED",
+          "DERIVATION_REVIEW_REQUIRED",
+          "COMPARABLE_FACT"
+        ]
+      },
+      "fact": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FinancialFact"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "percentile": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "points": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "relativeWeakness": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "factor",
+      "reason",
+      "fact",
+      "percentile",
+      "points",
+      "relativeWeakness"
+    ],
+    "additionalProperties": false
+  },
+  "PeerRankingFactor": {
+    "type": "object",
+    "properties": {
+      "metric": {
+        "$ref": "#/components/schemas/DiscoveryMetric"
+      },
+      "direction": {
+        "type": "string",
+        "enum": [
+          "HIGHER",
+          "LOWER"
+        ]
+      },
+      "weight": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      }
+    },
+    "required": [
+      "metric",
+      "direction",
+      "weight"
+    ],
+    "additionalProperties": false
+  },
+  "PeerRankingIndex": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PeerRankingSummary"
+        },
+        "maxItems": 120
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "PeerRankingInput": {
+    "type": "object",
+    "properties": {
+      "companyIds": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OpaqueId"
+        },
+        "maxItems": 30,
+        "minItems": 2
+      },
+      "factors": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PeerRankingFactor"
+        },
+        "maxItems": 6,
+        "minItems": 1
+      },
+      "requestId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      }
+    },
+    "required": [
+      "companyIds",
+      "factors",
+      "requestId"
+    ],
+    "additionalProperties": false
+  },
+  "PeerRankingRow": {
+    "type": "object",
+    "properties": {
+      "member": {
+        "$ref": "#/components/schemas/DiscoveryMember"
+      },
+      "rank": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "score": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "RANKED",
+          "MISSING_FACTOR",
+          "INSUFFICIENT_PEERS"
+        ]
+      },
+      "contributions": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PeerRankingContribution"
+        },
+        "maxItems": 6
+      }
+    },
+    "required": [
+      "member",
+      "rank",
+      "score",
+      "status",
+      "contributions"
+    ],
+    "additionalProperties": false
+  },
+  "PeerRankingSpecification": {
+    "type": "object",
+    "properties": {
+      "companyIds": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OpaqueId"
+        },
+        "maxItems": 30,
+        "minItems": 2
+      },
+      "factors": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PeerRankingFactor"
+        },
+        "maxItems": 6,
+        "minItems": 1
+      }
+    },
+    "required": [
+      "companyIds",
+      "factors"
+    ],
+    "additionalProperties": false
+  },
+  "PeerRankingSummary": {
+    "type": "object",
+    "properties": {
+      "rankingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "createdAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "rankingId",
+      "createdAt"
+    ],
+    "additionalProperties": false
   },
   "PortfolioArchiveInput": {
     "type": "object",

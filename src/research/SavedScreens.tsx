@@ -19,6 +19,7 @@ import {
 import { AnchorEvidence } from "./Evidence.tsx";
 import { factAmount, metricLabels } from "./FinancialFacts.tsx";
 import { targetScales } from "./MetricTargetFields.tsx";
+import { PeerRankings } from "./PeerRankings.tsx";
 import { factReasons } from "./ThesisConditions.tsx";
 
 const base = "/api/v1/discovery";
@@ -98,6 +99,7 @@ export function SavedScreens({
               <ScreenHistory
                 key={current.screenId}
                 current={current}
+                metrics={metrics}
                 onEdit={() => setEditing(true)}
               />
             )
@@ -315,9 +317,11 @@ function ScreenEditor({
 
 function ScreenHistory({
   current,
+  metrics,
   onEdit,
 }: {
   current: StockScreen;
+  metrics: DiscoveryMetricSupport[];
   onEdit: () => void;
 }) {
   const [revision, setRevision] = useState(current.revision);
@@ -409,12 +413,24 @@ function ScreenHistory({
         </label>
       )}
       {run.loading && <p role="status">Loading the retained run…</p>}
-      {run.value && <ScreenResults key={run.value.runId} run={run.value} />}
+      {run.value && (
+        <ScreenResults
+          key={run.value.runId}
+          run={run.value}
+          metrics={metrics}
+        />
+      )}
     </div>
   );
 }
 
-function ScreenResults({ run }: { run: StockScreenRun }) {
+function ScreenResults({
+  run,
+  metrics,
+}: {
+  run: StockScreenRun;
+  metrics: DiscoveryMetricSupport[];
+}) {
   const lists = useResource("WatchlistIndex", "/api/v1/watchlists");
   const [watchlist, setWatchlist] = useState("");
   return (
@@ -451,6 +467,7 @@ function ScreenResults({ run }: { run: StockScreenRun }) {
           watchlist={watchlist}
         />
       ))}
+      <PeerRankings run={run} metrics={metrics} />
     </section>
   );
 }
