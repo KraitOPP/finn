@@ -1,4 +1,10 @@
-import { useState } from "react";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
+import { useId, useState } from "react";
 import type {
   Notification,
   NotificationDelivery,
@@ -37,16 +43,73 @@ const channelLabel = (value: NotificationDelivery["channel"]) =>
   value === "IN_APP" ? "In-app" : "Local email preview";
 
 export function Inbox() {
+  const id = useId();
+  const [view, setView] = useState("activity");
+  const views = {
+    activity: "Activity",
+    alerts: "Alerts",
+    reminders: "Reminders",
+    briefs: "Briefs",
+  };
   return (
     <section className="workspace-section">
       <RouteHeading>Inbox</RouteHeading>
-      <Attention />
-      <NotificationList />
-      <DeliveryStatus />
-      <ReviewCalendar />
-      <Briefs />
-      <PriceRules />
-      <IndicatorRules />
+      <Paper variant="outlined" sx={{ mb: 2 }}>
+        <Tabs
+          value={view}
+          aria-label="Inbox views"
+          variant="scrollable"
+          onChange={(_, next: string) => setView(next)}
+        >
+          {Object.entries(views).map(([key, label]) => (
+            <Tab
+              key={key}
+              value={key}
+              label={label}
+              id={`${id}-${key}-tab`}
+              aria-controls={`${id}-${key}`}
+            />
+          ))}
+        </Tabs>
+      </Paper>
+      {Object.keys(views).map((key) => (
+        <div
+          key={key}
+          role="tabpanel"
+          hidden={view !== key}
+          id={`${id}-${key}`}
+          aria-labelledby={`${id}-${key}-tab`}
+        >
+          {view === key && (
+            <Stack spacing={2}>
+              {key === "activity" && (
+                <>
+                  <NotificationList />
+                  <details className="workspace-tools">
+                    <summary>Research to review</summary>
+                    <Attention />
+                  </details>
+                  <details className="workspace-tools">
+                    <summary>Notification delivery</summary>
+                    <DeliveryStatus />
+                  </details>
+                </>
+              )}
+              {key === "alerts" && (
+                <>
+                  <PriceRules />
+                  <details className="workspace-tools">
+                    <summary>Volume and allocation alerts</summary>
+                    <IndicatorRules />
+                  </details>
+                </>
+              )}
+              {key === "reminders" && <ReviewCalendar />}
+              {key === "briefs" && <Briefs />}
+            </Stack>
+          )}
+        </div>
+      ))}
     </section>
   );
 }
@@ -63,15 +126,16 @@ function NotificationList() {
     <section className="detail-card">
       <div className="section-heading">
         <h2>Notifications</h2>
-        <button
-          type="button"
+        <Button
+          variant="outlined"
+          size="small"
           onClick={() => {
             setPages([]);
             data.reload();
           }}
         >
           Refresh notifications
-        </button>
+        </Button>
       </div>
       {data.error ? (
         <p role="alert">{data.error}</p>
@@ -86,18 +150,32 @@ function NotificationList() {
               <div>
                 <strong>{item.title}</strong>
                 <p>
-                  {kinds[item.kind]} · {item.readAt ? "Read" : "Unread"} ·{" "}
-                  <LocalTime value={item.createdAt} />
+                  {kinds[item.kind]} · <LocalTime value={item.createdAt} />
                 </p>
-                <button
-                  type="button"
-                  aria-expanded={open === item.activityId}
-                  onClick={() =>
-                    setOpen(open === item.activityId ? null : item.activityId)
-                  }
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  sx={{ flexWrap: "wrap", alignItems: "center" }}
                 >
-                  Details for {item.title}
-                </button>
+                  {!item.readAt && (
+                    <Chip
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      label="Unread"
+                    />
+                  )}
+                  <Button
+                    size="small"
+                    aria-expanded={open === item.activityId}
+                    onClick={() =>
+                      setOpen(open === item.activityId ? null : item.activityId)
+                    }
+                  >
+                    Details for {item.title}
+                  </Button>
+                </Stack>
                 {open === item.activityId && (
                   <NotificationDetails item={item} onChange={data.reload} />
                 )}
