@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.45.0",
+  "$id": "urn:finn:contracts:market-data:0.46.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.45.0"
+      "const": "0.46.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -9128,6 +9128,8 @@
           "type": "string",
           "enum": [
             "MANUAL_USER",
+            "NSE_DIRECTORY",
+            "YAHOO_DISCOVERY",
             "GROWW_HOLDINGS"
           ]
         }
@@ -9312,7 +9314,12 @@
           "const": "USER_CONFIRMED"
         },
         "source": {
-          "const": "MANUAL_USER"
+          "type": "string",
+          "enum": [
+            "MANUAL_USER",
+            "NSE_DIRECTORY",
+            "YAHOO_DISCOVERY"
+          ]
         },
         "validFrom": {
           "$ref": "#/$defs/SessionDate"
@@ -9334,7 +9341,7 @@
         "validFrom"
       ],
       "additionalProperties": false,
-      "description": "Owner-scoped, manually confirmed listing and optional explicit Yahoo mapping. It is not an authoritative exchange security master. No ISIN-based exchange guess."
+      "description": "An owner-scoped listing selected or confirmed by the user."
     },
     "ListingInput": {
       "type": "object",
@@ -9497,7 +9504,12 @@
           ]
         },
         "source": {
-          "const": "MANUAL_USER"
+          "type": "string",
+          "enum": [
+            "MANUAL_USER",
+            "NSE_DIRECTORY",
+            "YAHOO_DISCOVERY"
+          ]
         }
       },
       "required": [
@@ -9514,6 +9526,136 @@
         "$ref": "#/$defs/SymbolHistory"
       },
       "maxItems": 100
+    },
+    "StockLookupSelection": {
+      "type": "object",
+      "properties": {
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+        }
+      },
+      "required": [
+        "exchange",
+        "symbol"
+      ],
+      "additionalProperties": false
+    },
+    "StockSuggestion": {
+      "type": "object",
+      "properties": {
+        "exchange": {
+          "type": "string",
+          "enum": [
+            "NSE",
+            "BSE"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "series": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "pattern": "^[A-Z0-9_-]{1,16}$"
+        },
+        "isin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validFrom": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "NSE_DIRECTORY",
+            "YAHOO_DISCOVERY"
+          ]
+        }
+      },
+      "required": [
+        "exchange",
+        "symbol",
+        "name",
+        "series",
+        "isin",
+        "validFrom",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "StockLookupResults": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StockSuggestion"
+          },
+          "maxItems": 10
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "READY",
+            "UNAVAILABLE"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "StockLookupOpened": {
+      "type": "object",
+      "properties": {
+        "listing": {
+          "$ref": "#/$defs/CatalogueListing"
+        },
+        "refreshStatus": {
+          "type": "string",
+          "enum": [
+            "QUEUED",
+            "RECENT",
+            "UNAVAILABLE"
+          ]
+        }
+      },
+      "required": [
+        "listing",
+        "refreshStatus"
+      ],
+      "additionalProperties": false
     },
     "PortfolioSummary": {
       "type": "object",

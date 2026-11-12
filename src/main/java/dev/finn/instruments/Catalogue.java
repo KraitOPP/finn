@@ -25,13 +25,13 @@ public class Catalogue {
     public Catalogue(JdbcTemplate jdbc, CurrentUser users) {this.jdbc=jdbc;this.users=users;}
     private static final String SECURITY_SQL="SELECT s.*,c.name company_name FROM finn.security s JOIN finn.company c ON c.company_id=s.company_id AND c.owner_id=s.owner_id ";
     private static final String LISTING_SQL="""
-            SELECT l.*,s.company_id,s.isin,h.symbol,h.valid_from,p.provider_symbol
+            SELECT l.*,s.company_id,s.isin,h.symbol,h.valid_from,h.source,p.provider_symbol
             FROM finn.listing l JOIN finn.security s ON s.security_id=l.security_id AND s.owner_id=l.owner_id
             JOIN finn.listing_symbol h ON h.listing_id=l.listing_id AND h.owner_id=l.owner_id AND h.valid_to IS NULL
             LEFT JOIN finn.provider_symbol_history p ON p.listing_id=l.listing_id AND p.owner_id=l.owner_id AND p.valid_to IS NULL
             """;
     private Security securityRow(ResultSet row,int index) throws SQLException {return new Security(row.getObject("security_id",UUID.class),row.getObject("company_id",UUID.class),row.getString("company_name"),row.getString("name"),row.getString("isin"),row.getString("review_status"));}
-    private Listing listingRow(ResultSet row,int index) throws SQLException {return new Listing(row.getObject("listing_id",UUID.class),row.getObject("security_id",UUID.class),row.getObject("company_id",UUID.class),row.getString("exchange"),"CASH_EQUITY",row.getString("series"),row.getString("symbol"),row.getString("currency"),row.getString("isin"),row.getString("provider_symbol"),"USER_CONFIRMED","MANUAL_USER",row.getObject("valid_from",LocalDate.class));}
+    private Listing listingRow(ResultSet row,int index) throws SQLException {return new Listing(row.getObject("listing_id",UUID.class),row.getObject("security_id",UUID.class),row.getObject("company_id",UUID.class),row.getString("exchange"),"CASH_EQUITY",row.getString("series"),row.getString("symbol"),row.getString("currency"),row.getString("isin"),row.getString("provider_symbol"),"USER_CONFIRMED",row.getString("source"),row.getObject("valid_from",LocalDate.class));}
     public Security security(UUID owner,UUID id) {
         return jdbc.query(SECURITY_SQL+"WHERE s.owner_id=? AND s.security_id=?",this::securityRow,owner,id).stream().findFirst().orElseThrow(ApiFailure::notFound);
     }
@@ -57,9 +57,13 @@ public class Catalogue {
     }
     @Transactional public List<Company> companies() {return jdbc.query("SELECT * FROM finn.company WHERE owner_id=? ORDER BY lower(name),company_id LIMIT 100",(row,index)->new Company(row.getObject("company_id",UUID.class),row.getString("name"),row.getString("source")),users.requireId());}
     @Transactional public Company createCompany(String name) {
-        UUID owner=users.requireId(),id=UUID.randomUUID(); name=cleanName(name);
-        jdbc.update("INSERT INTO finn.company(company_id,owner_id,name,source) VALUES (?,?,?,'MANUAL_USER')",id,owner,name);
-        return new Company(id,name,"MANUAL_USER");
+        return insertCompany(users.requireId(),name,"MANUAL_USER");
+    }
+    private Company insertCompany(UUID owner,String name,String source) {
+        UUID id=UUID.randomUUID();
+        name=cleanName(name);
+        jdbc.update("INSERT INTO finn.company(company_id,owner_id,name,source) VALUES (?,?,?,?)",id,owner,name,source);
+        return new Company(id,name,source);
     }
     @Transactional public Security createSecurity(UUID company,String name,String isin,boolean confirmed) {
         UUID owner=users.requireId(),id=UUID.randomUUID();
@@ -74,13 +78,49 @@ public class Catalogue {
         return new SecurityDetail(security(owner,securityId),jdbc.query(LISTING_SQL+"WHERE l.owner_id=? AND l.security_id=? ORDER BY l.exchange,h.symbol,l.listing_id",this::listingRow,owner,securityId));
     }
     @Transactional public Listing addListing(UUID securityId,String exchange,String series,String symbol,String providerSymbol,LocalDate from,boolean confirmed) {
-        UUID owner=users.requireId(),id=UUID.randomUUID();
+        return insertListing(users.requireId(),securityId,exchange,series,symbol,providerSymbol,from,confirmed,"MANUAL_USER");
+    }
+    private Listing insertListing(UUID owner,UUID securityId,String exchange,String series,String symbol,String providerSymbol,
+                                  LocalDate from,boolean confirmed,String source) {
+        UUID id=UUID.randomUUID();
         if(jdbc.queryForList("SELECT security_id FROM finn.security WHERE owner_id=? AND security_id=? FOR UPDATE",owner,securityId).isEmpty()) throw ApiFailure.notFound();
         if(jdbc.queryForObject("SELECT count(*) FROM finn.listing WHERE owner_id=? AND security_id=?",Integer.class,owner,securityId)>=100) throw new ApiFailure(409,"CATALOGUE_LIMIT_REACHED");
         validateSymbols(exchange,series,symbol,providerSymbol,from,confirmed);
         jdbc.update("INSERT INTO finn.listing(listing_id,owner_id,security_id,exchange,series,currency) VALUES (?,?,?,?,?,'INR')",id,owner,securityId,exchange,series);
-        symbols(owner,id,exchange,symbol,providerSymbol,from);
+        symbols(owner,id,exchange,symbol,providerSymbol,from,source);
         return listing(owner,id);
+    }
+    @Transactional public Listing selectStock(StockDirectory.Stock stock) {
+        // requireId performs an upsert on this owner's user row and serializes selections/imports.
+        UUID owner=users.requireId();
+        var current=jdbc.query(LISTING_SQL+"WHERE l.owner_id=? AND l.exchange=? AND h.symbol=?",
+                this::listingRow,owner,stock.exchange(),stock.symbol()).stream().findFirst();
+        if(current.isPresent()) {
+            var listing=current.get();
+            if(stock.isin()!=null&&listing.isin()!=null&&!stock.isin().equals(listing.isin()))
+                throw new ApiFailure(409,"STOCK_IDENTITY_REVIEW_REQUIRED");
+            if(stock.isin()!=null&&stock.isin().equals(listing.isin())) resolveImported(owner,stock);
+            if(listing.providerSymbol()==null) {
+                var from=listing.validFrom().isAfter(stock.validFrom())?listing.validFrom():stock.validFrom();
+                providerSymbol(owner,listing.listingId(),stock.yahooSymbol(),from,stock.source());
+            }
+            return listing(owner,listing.listingId());
+        }
+        UUID securityId=null;
+        if(stock.isin()!=null) {
+            securityId=jdbc.query("SELECT security_id FROM finn.security WHERE owner_id=? AND isin=?",
+                    (row,index)->row.getObject(1,UUID.class),owner,stock.isin()).stream().findFirst().orElse(null);
+            if(securityId!=null) resolveImported(owner,stock);
+        }
+        if(securityId==null) {
+            var company=insertCompany(owner,stock.name(),stock.source());
+            securityId=createSecurity(company.companyId(),stock.name(),stock.isin(),true).securityId();
+        }
+        return insertListing(owner,securityId,stock.exchange(),stock.series(),stock.symbol(),stock.yahooSymbol(),
+                stock.validFrom(),true,stock.source());
+    }
+    private void resolveImported(UUID owner,StockDirectory.Stock stock) {
+        jdbc.query("SELECT finn.resolve_imported_security(?,?,?)",row->{},owner,stock.isin(),stock.name());
     }
     @Transactional public Listing changeSymbol(UUID listingId,String symbol,String providerSymbol,LocalDate effective,boolean confirmed) {
         UUID owner=users.requireId();
@@ -91,12 +131,15 @@ public class Catalogue {
         if(!effective.isAfter(current.validFrom())) throw ApiFailure.conflict();
         jdbc.update("UPDATE finn.listing_symbol SET valid_to=? WHERE owner_id=? AND listing_id=? AND valid_to IS NULL",effective,owner,listingId);
         jdbc.update("UPDATE finn.provider_symbol_history SET valid_to=? WHERE owner_id=? AND listing_id=? AND valid_to IS NULL",effective,owner,listingId);
-        symbols(owner,listingId,current.exchange(),symbol,providerSymbol,effective);
+        symbols(owner,listingId,current.exchange(),symbol,providerSymbol,effective,"MANUAL_USER");
         return listing(owner,listingId);
     }
-    private void symbols(UUID owner,UUID listing,String exchange,String symbol,String providerSymbol,LocalDate from) {
-        jdbc.update("INSERT INTO finn.listing_symbol(symbol_id,owner_id,listing_id,exchange,symbol,valid_from,source) VALUES (?,?,?,?,?,?,'MANUAL_USER')",UUID.randomUUID(),owner,listing,exchange,symbol,from);
-        if(providerSymbol!=null) jdbc.update("INSERT INTO finn.provider_symbol_history(mapping_id,owner_id,listing_id,provider,provider_symbol,valid_from,source) VALUES (?,?,?,'YAHOO_YFINANCE',?,?,'MANUAL_USER')",UUID.randomUUID(),owner,listing,providerSymbol,from);
+    private void symbols(UUID owner,UUID listing,String exchange,String symbol,String providerSymbol,LocalDate from,String source) {
+        jdbc.update("INSERT INTO finn.listing_symbol(symbol_id,owner_id,listing_id,exchange,symbol,valid_from,source) VALUES (?,?,?,?,?,?,?)",UUID.randomUUID(),owner,listing,exchange,symbol,from,source);
+        if(providerSymbol!=null) providerSymbol(owner,listing,providerSymbol,from,source);
+    }
+    private void providerSymbol(UUID owner,UUID listing,String providerSymbol,LocalDate from,String source) {
+        jdbc.update("INSERT INTO finn.provider_symbol_history(mapping_id,owner_id,listing_id,provider,provider_symbol,valid_from,source) VALUES (?,?,?,'YAHOO_YFINANCE',?,?,?)",UUID.randomUUID(),owner,listing,providerSymbol,from,source);
     }
     @Transactional public List<SymbolHistory> history(UUID id) {
         UUID owner=users.requireId();listing(owner,id);

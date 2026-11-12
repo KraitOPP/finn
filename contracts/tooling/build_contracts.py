@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.45.0"
+VERSION = "0.46.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -799,20 +799,27 @@ def definitions() -> dict:
                          "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}}
     d["PreferencesUpdate"] = obj(preference_fields, "Owner comes only from the authenticated session. Revision prevents silent lost updates. Only supported IANA zone IDs are accepted by Java.")
     d["Preferences"] = obj({**preference_fields, "deliveryAvailable": {"const": True}}, "In-app delivery is enabled. An optional email preview is configured separately.")
-    d["CatalogueCompany"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "source": enum(["MANUAL_USER","GROWW_HOLDINGS"])})
+    catalogue_sources = ["MANUAL_USER","NSE_DIRECTORY","YAHOO_DISCOVERY"]
+    d["CatalogueCompany"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "source": enum([*catalogue_sources,"GROWW_HOLDINGS"])})
     d["CatalogueCompanies"] = array(ref("CatalogueCompany"), maxItems=100)
     d["CompanyInput"] = obj({"name": text(maxLength=120)})
     isin = nullable(text(pattern=r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$", maxLength=12))
     d["CatalogueSecurity"] = obj({"securityId": ref("OpaqueId"), "companyId": ref("OpaqueId"), "companyName": text(maxLength=120), "name": text(maxLength=120), "isin": isin, "reviewStatus": enum(["USER_CONFIRMED", "UNRESOLVED"])})
     d["SecurityInput"] = obj({"companyId": ref("OpaqueId"), "name": text(maxLength=120), "isin": isin, "confirmed": {"const": True}})
-    d["CatalogueListing"] = obj({**d["ListingIdentity"]["properties"], "providerSymbol": nullable(text(maxLength=72)), "reviewStatus": {"const": "USER_CONFIRMED"}, "source": {"const": "MANUAL_USER"}, "validFrom": ref("SessionDate")}, "Owner-scoped, manually confirmed listing and optional explicit Yahoo mapping. It is not an authoritative exchange security master. No ISIN-based exchange guess.")
+    d["CatalogueListing"] = obj({**d["ListingIdentity"]["properties"], "providerSymbol": nullable(text(maxLength=72)), "reviewStatus": {"const": "USER_CONFIRMED"}, "source": enum(catalogue_sources), "validFrom": ref("SessionDate")}, "An owner-scoped listing selected or confirmed by the user.")
     listing_fields={"exchange": enum(["NSE", "BSE"]), "series": text(pattern=r"^[A-Z0-9_-]{1,16}$", maxLength=16), "symbol": text(pattern=r"^[A-Z0-9][A-Z0-9&._-]{0,63}$", maxLength=64), "providerSymbol": nullable(text(maxLength=72)), "validFrom": ref("SessionDate"), "confirmed": {"const": True}}
     d["ListingInput"] = obj(listing_fields)
     d["SymbolInput"] = obj({"symbol": listing_fields["symbol"], "providerSymbol": listing_fields["providerSymbol"], "effectiveDate": ref("SessionDate"), "confirmed": {"const": True}})
     d["CatalogueSecurityDetail"] = obj({"security": ref("CatalogueSecurity"), "listings": array(ref("CatalogueListing"), maxItems=100)})
     d["CatalogueSecurityPage"] = obj({"items": array(ref("CatalogueSecurity"), maxItems=100), "limit": {"type": "integer", "minimum": 1, "maximum": 100}, "offset": {"type": "integer", "minimum": 0, "maximum": 10000}, "hasMore": {"type": "boolean"}})
-    d["SymbolHistory"] = obj({"symbol": text(maxLength=64), "validFrom": ref("SessionDate"), "validTo": nullable(ref("SessionDate")), "source": {"const": "MANUAL_USER"}})
+    d["SymbolHistory"] = obj({"symbol": text(maxLength=64), "validFrom": ref("SessionDate"), "validTo": nullable(ref("SessionDate")), "source": enum(catalogue_sources)})
     d["SymbolHistoryList"] = array(ref("SymbolHistory"), maxItems=100)
+    stock_key = {"exchange": listing_fields["exchange"], "symbol": listing_fields["symbol"]}
+    d["StockLookupSelection"] = obj(stock_key)
+    d["StockSuggestion"] = obj({**stock_key, "name": text(maxLength=120), "series": listing_fields["series"],
+        "isin": isin, "validFrom": ref("SessionDate"), "source": enum(["NSE_DIRECTORY","YAHOO_DISCOVERY"])})
+    d["StockLookupResults"] = obj({"items": array(ref("StockSuggestion"),maxItems=10), "status": enum(["READY","UNAVAILABLE"])})
+    d["StockLookupOpened"] = obj({"listing": ref("CatalogueListing"), "refreshStatus": enum(["QUEUED","RECENT","UNAVAILABLE"])})
     d["PortfolioSummary"] = obj({"portfolioId": ref("OpaqueId"), "name": text(maxLength=120), "currency": {"const":"INR"}, "archived": {"type":"boolean"}, "revision": {"type":"integer","minimum":0,"maximum":9007199254740991}})
     d["PortfolioList"] = obj({"items": array(ref("PortfolioSummary"),maxItems=100)}, "Includes active and archived portfolios. At most 100 may be created per owner in this supported scope.")
     d["PortfolioInput"] = obj({"name":text(maxLength=120)})
@@ -1228,6 +1235,11 @@ def public_api_document() -> dict:
         "/api/v1/portfolios/{id}/accounts": {"post":maintained("createInvestmentAccount","Record an INR source account with unknown initial history","InvestmentAccount",identifier,"AccountInput")},
         "/api/v1/portfolios/{id}/accounts/{accountId}": {"get":maintained("getInvestmentAccount","Read an account only under its actual owned portfolio","InvestmentAccount",[*identifier,parameter("accountId","path",text(format="uuid"),True)])},
         "/api/v1/catalog/companies": {"get": maintained("getCatalogueCompanies", "List up to 100 owned companies", "CatalogueCompanies"), "post": maintained("createCatalogueCompany", "Record a manually identified company", "CatalogueCompany", input_name="CompanyInput")},
+        "/api/v1/catalog/lookup": {
+            "get": maintained("lookupStocks", "Search the private stock directory by name, symbol or ISIN", "StockLookupResults",
+                [parameter("query","query",text(minLength=0,maxLength=80),True),parameter("exchange","query",enum(["NSE","BSE"]))]),
+            "post": maintained("openStock", "Select the current listing and request daily prices if needed", "StockLookupOpened", input_name="StockLookupSelection"),
+        },
         "/api/v1/catalog/securities": {"get": maintained("searchCatalogueSecurities", "Search the owned manual catalogue", "CatalogueSecurityPage", [parameter("query", "query", text(maxLength=100,minLength=0)), parameter("limit", "query", {"type":"integer","minimum":1,"maximum":100}),parameter("offset", "query", {"type":"integer","minimum":0,"maximum":10000})]), "post": maintained("createCatalogueSecurity", "Record a security separately from its exchange listings", "CatalogueSecurity", input_name="SecurityInput")},
         "/api/v1/catalog/securities/{id}": {"get": maintained("getCatalogueSecurity", "Inspect owned security and distinct listings", "CatalogueSecurityDetail", identifier)},
         "/api/v1/catalog/securities/{id}/listings": {"post": maintained("createCatalogueListing", "Confirm an exchange listing and optional Yahoo mapping", "CatalogueListing", identifier, "ListingInput")},

@@ -8,6 +8,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -39,10 +42,20 @@ public class YahooProcess {
     }
 
     JsonNode fetch(MarketPrices.Fetch request) throws IOException, InterruptedException {
+        return invoke(request, null, Duration.ofSeconds(30));
+    }
+
+    public JsonNode lookup(String query,String exchange) throws IOException, InterruptedException {
+        return invoke(Map.of("query",query,"exchange",exchange), "lookup", Duration.ofSeconds(9));
+    }
+
+    private JsonNode invoke(Object request,String mode,Duration timeout) throws IOException, InterruptedException {
         if (!capability().equals("PRIVATE_DAILY")) throw new IOException("Yahoo configuration unavailable");
         var root=WorkspacePolicy.requireExternalRoot(workspace);
         var scratch=Files.createDirectories(root.resolve("tmp/yahoo-worker"));
-        var builder=new ProcessBuilder(python,"-B","-m","finn_yfinance.cli",root.toString())
+        var command=new ArrayList<>(List.of(python,"-B","-m","finn_yfinance.cli",root.toString()));
+        if(mode!=null) command.add(mode);
+        var builder=new ProcessBuilder(command)
                 .directory(scratch.toFile()).redirectError(ProcessBuilder.Redirect.DISCARD);
         var env=builder.environment();
         // Pass only OS launch essentials. Do not inherit app credentials or Python overrides.
@@ -50,6 +63,6 @@ public class YahooProcess {
         env.put("PYTHONPATH",source); env.put("PYTHONNOUSERSITE","1"); env.put("PYTHONUTF8","1");
         env.put("TMP",scratch.toString()); env.put("TEMP",scratch.toString()); env.put("TMPDIR",scratch.toString());
         byte[] input=json.writeValueAsString(request).getBytes(StandardCharsets.UTF_8);
-        return json.readTree(BoundedWorkerProcess.run(builder,input,MAX_BYTES,Duration.ofSeconds(30)));
+        return json.readTree(BoundedWorkerProcess.run(builder,input,MAX_BYTES,timeout));
     }
 }
