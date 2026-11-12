@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.35.0",
+    "version": "0.36.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -4979,6 +4979,447 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvestmentTheses"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/theses/{thesis}/conditions": {
+      "get": {
+        "operationId": "readThesisConditions",
+        "summary": "Read thresholds and their last checked evidence",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "thesis",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThesisConditions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "addThesisCondition",
+        "summary": "Set a threshold for an exact reporting period",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "thesis",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThesisCondition"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThesisConditionInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/theses/{thesis}/conditions/check": {
+      "post": {
+        "operationId": "checkThesisConditions",
+        "summary": "Check current reviewed figures and save distinct results",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "thesis",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThesisConditions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/theses/{thesis}/conditions/{condition}/retire": {
+      "post": {
+        "operationId": "retireThesisCondition",
+        "summary": "Retire a threshold while retaining checked evidence",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "thesis",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThesisCondition"
                 }
               }
             }
@@ -13935,7 +14376,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.35.0"
+        "const": "0.36.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -17352,6 +17793,207 @@
               "$ref": "#/components/schemas/InvestmentThesis"
             },
             "maxItems": 100
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "ThesisConditionInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "dimensions": {
+            "$ref": "#/components/schemas/FinancialDimensions"
+          },
+          "comparator": {
+            "type": "string",
+            "enum": [
+              "GTE",
+              "LTE"
+            ]
+          },
+          "threshold": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "scale": {
+            "type": "string",
+            "enum": [
+              "ONES",
+              "THOUSAND",
+              "LAKH",
+              "MILLION",
+              "CRORE",
+              "BILLION"
+            ]
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "label",
+          "dimensions",
+          "comparator",
+          "threshold",
+          "scale",
+          "expectedRevision"
+        ],
+        "additionalProperties": false
+      },
+      "ThesisConditionDefinition": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "dimensions": {
+            "$ref": "#/components/schemas/FinancialDimensions"
+          },
+          "comparator": {
+            "type": "string",
+            "enum": [
+              "GTE",
+              "LTE"
+            ]
+          },
+          "threshold": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "scale": {
+            "type": "string",
+            "enum": [
+              "ONES",
+              "THOUSAND",
+              "LAKH",
+              "MILLION",
+              "CRORE",
+              "BILLION"
+            ]
+          },
+          "conditionId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "thesisRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "retired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "dimensions",
+          "comparator",
+          "threshold",
+          "scale",
+          "conditionId",
+          "thesisRevision",
+          "retired"
+        ],
+        "additionalProperties": false
+      },
+      "ThesisConditionCheck": {
+        "type": "object",
+        "properties": {
+          "checkId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "thesisRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "MATCHED",
+              "VIOLATED",
+              "UNKNOWN",
+              "REVIEW_NEEDED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "PERIOD_OPEN",
+              "FACT_MISSING",
+              "DIMENSIONS_MISMATCH",
+              "PUBLICATION_UNKNOWN",
+              "PUBLISHED_AFTER_CUTOFF",
+              "PERIOD_PUBLICATION_INVALID",
+              "SOURCE_REVISED",
+              "DERIVATION_REVIEW_REQUIRED",
+              "COMPARABLE_FACT"
+            ]
+          },
+          "fact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evaluatedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "checkId",
+          "thesisRevision",
+          "state",
+          "reason",
+          "fact",
+          "evaluatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ThesisCondition": {
+        "type": "object",
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/ThesisConditionDefinition"
+          },
+          "lastCheck": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThesisConditionCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "definition",
+          "lastCheck"
+        ],
+        "additionalProperties": false
+      },
+      "ThesisConditions": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThesisCondition"
+            },
+            "maxItems": 20
           }
         },
         "required": [

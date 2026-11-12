@@ -171,7 +171,7 @@ class FinancialFacts {
         return OffsetDateTime.parse(left).isAfter(OffsetDateTime.parse(right))?left:right;
     }
 
-    private Fact byDimensions(UUID owner,UUID company,Dimensions d){
+    Fact byDimensions(UUID owner,UUID company,Dimensions d){
         return jdbc.query(SELECT+"""
                 WHERE f.owner_id=? AND f.company_id=? AND f.metric=? AND f.basis=? AND f.period_kind=?
                  AND f.period_start=? AND f.period_end=? AND f.unit=? AND f.currency IS NOT DISTINCT FROM CAST(? AS char(3))

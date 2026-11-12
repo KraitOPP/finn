@@ -8,8 +8,10 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.regex.Pattern;
+import tools.jackson.databind.JsonNode;
 
 final class FactPolicy {
+    static final ZoneId INDIA=ZoneId.of("Asia/Kolkata");
     enum Metric {
         REVENUE, EBITDA, PROFIT_AFTER_TAX, CASH_FROM_OPERATIONS, CAPITAL_EXPENDITURE, FREE_CASH_FLOW,
         TOTAL_DEBT, TOTAL_EQUITY, EPS_BASIC, OPERATING_MARGIN;
@@ -38,6 +40,11 @@ final class FactPolicy {
     private FactPolicy(){}
 
     static void validate(FinancialFacts.Dimensions dimensions,Scale scale) {
+        validateTarget(dimensions,scale);
+        if(dimensions.periodEnd().isAfter(LocalDate.now(INDIA)))throw ApiFailure.invalid();
+    }
+
+    static void validateTarget(FinancialFacts.Dimensions dimensions,Scale scale) {
         var metric=Metric.valueOf(dimensions.metric());
         if(!metric.unit().equals(dimensions.unit()) || !dimensions.unit().equals("MONEY")&&scale!=Scale.ONES)
             throw ApiFailure.invalid();
@@ -46,7 +53,8 @@ final class FactPolicy {
         var start=dimensions.periodStart();
         var end=dimensions.periodEnd();
         long days=ChronoUnit.DAYS.between(start,end)+1;
-        if(start.isBefore(LocalDate.of(1900,1,1))||end.isAfter(LocalDate.now(ZoneId.of("Asia/Kolkata")))||days<1||days>400)throw ApiFailure.invalid();
+        if(start.isBefore(LocalDate.of(1900,1,1))||end.isAfter(LocalDate.now(INDIA).plusYears(10))||days<1||days>400)
+            throw ApiFailure.invalid();
         if(metric.stock()!=dimensions.periodKind().equals("AS_OF"))throw ApiFailure.invalid();
         boolean valid=switch(dimensions.periodKind()){
             case "QUARTER" -> days>=75&&days<=105;
@@ -56,6 +64,11 @@ final class FactPolicy {
             default -> false;
         };
         if(!valid)throw ApiFailure.invalid();
+    }
+
+    static BigDecimal parseAmount(JsonNode value) {
+        if(!value.isString()||!value.asText().matches("-?(0|[1-9][0-9]{0,21})(\\.[0-9]{1,8})?"))throw ApiFailure.invalid();
+        return new BigDecimal(value.asText());
     }
 
     static boolean containsAmount(String source,BigDecimal amount) {
@@ -69,6 +82,7 @@ final class FactPolicy {
         }
         return false;
     }
+
 
     static boolean sameSeries(FinancialFacts.Dimensions left,FinancialFacts.Dimensions right) {
         return left.metric().equals(right.metric())&&compatible(left,right);

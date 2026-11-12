@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.35.0"
+VERSION = "0.36.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -348,6 +348,18 @@ def definitions() -> dict:
     d["InvestmentThesis"] = obj({**thesis_input,"thesisId":ref("OpaqueId"),"companyId":ref("OpaqueId"),
         "revision":thesis_revision,"reminderId":nullable(ref("OpaqueId")),"savedAt":ref("UtcInstant")})
     d["InvestmentTheses"] = obj({"items":array(ref("InvestmentThesis"),maxItems=100)})
+    condition_input = {"label":text(minLength=1,maxLength=100),"dimensions":ref("FinancialDimensions"),
+        "comparator":enum(["GTE","LTE"]),"threshold":ref("DecimalString"),"scale":fact_scale}
+    d["ThesisConditionInput"] = obj({**condition_input,"expectedRevision":thesis_revision})
+    d["ThesisConditionDefinition"] = obj({**condition_input,"conditionId":ref("OpaqueId"),
+        "thesisRevision":thesis_revision,"retired":{"type":"boolean"}})
+    fact_evaluation_reason = enum(["PERIOD_OPEN","FACT_MISSING","DIMENSIONS_MISMATCH","PUBLICATION_UNKNOWN","PUBLISHED_AFTER_CUTOFF",
+        "PERIOD_PUBLICATION_INVALID","SOURCE_REVISED","DERIVATION_REVIEW_REQUIRED","COMPARABLE_FACT"])
+    d["ThesisConditionCheck"] = obj({"checkId":ref("OpaqueId"),"thesisRevision":thesis_revision,
+        "state":enum(["MATCHED","VIOLATED","UNKNOWN","REVIEW_NEEDED"]),"reason":fact_evaluation_reason,
+        "fact":nullable(ref("FinancialFact")),"evaluatedAt":ref("UtcInstant")})
+    d["ThesisCondition"] = obj({"definition":ref("ThesisConditionDefinition"),"lastCheck":nullable(ref("ThesisConditionCheck"))})
+    d["ThesisConditions"] = obj({"items":array(ref("ThesisCondition"),maxItems=20)})
     d["ResearchReportCapabilities"] = obj({"localRanking":{"type":"boolean"}})
     d["ResearchReportInput"] = obj({"question":text(minLength=1,maxLength=320),"rankLocally":{"type":"boolean"}})
     report_feedback = {"note":text(minLength=1,maxLength=500),"anchorId":nullable(ref("OpaqueId"))}
@@ -909,6 +921,16 @@ def public_api_document() -> dict:
         "/api/v1/research/theses/{id}":{"post":maintained("reviseInvestmentThesis","Append a thesis revision","InvestmentThesis",identifier,"InvestmentThesisEdit")},
         "/api/v1/research/theses/{id}/versions":{"get":maintained("readInvestmentThesisVersions","Read immutable thesis reasoning and decisions",
             "InvestmentTheses",identifier)},
+        "/api/v1/research/theses/{thesis}/conditions":{
+            "get":maintained("readThesisConditions","Read thresholds and their last checked evidence","ThesisConditions",
+                [parameter("thesis","path",text(format="uuid"),True)]),
+            "post":maintained("addThesisCondition","Set a threshold for an exact reporting period","ThesisCondition",
+                [parameter("thesis","path",text(format="uuid"),True)],"ThesisConditionInput"),
+        },
+        "/api/v1/research/theses/{thesis}/conditions/check":{"post":maintained("checkThesisConditions","Check current reviewed figures and save distinct results",
+            "ThesisConditions",[parameter("thesis","path",text(format="uuid"),True),csrf_header])},
+        "/api/v1/research/theses/{thesis}/conditions/{condition}/retire":{"post":maintained("retireThesisCondition","Retire a threshold while retaining checked evidence",
+            "ThesisCondition",[parameter("thesis","path",text(format="uuid"),True),parameter("condition","path",text(format="uuid"),True),csrf_header])},
         "/api/v1/research/report-capabilities":{"get":maintained(
             "getResearchReportCapabilities","Read the configured research modes","ResearchReportCapabilities")},
         "/api/v1/research/companies/{company}/reports":{

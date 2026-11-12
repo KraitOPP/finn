@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.35.0",
+  "$id": "urn:finn:contracts:market-data:0.36.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.35.0"
+      "const": "0.36.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3424,6 +3424,207 @@
             "$ref": "#/$defs/InvestmentThesis"
           },
           "maxItems": 100
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisConditionInput": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "dimensions": {
+          "$ref": "#/$defs/FinancialDimensions"
+        },
+        "comparator": {
+          "type": "string",
+          "enum": [
+            "GTE",
+            "LTE"
+          ]
+        },
+        "threshold": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "ONES",
+            "THOUSAND",
+            "LAKH",
+            "MILLION",
+            "CRORE",
+            "BILLION"
+          ]
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "label",
+        "dimensions",
+        "comparator",
+        "threshold",
+        "scale",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisConditionDefinition": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "dimensions": {
+          "$ref": "#/$defs/FinancialDimensions"
+        },
+        "comparator": {
+          "type": "string",
+          "enum": [
+            "GTE",
+            "LTE"
+          ]
+        },
+        "threshold": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "ONES",
+            "THOUSAND",
+            "LAKH",
+            "MILLION",
+            "CRORE",
+            "BILLION"
+          ]
+        },
+        "conditionId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "thesisRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "retired": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "label",
+        "dimensions",
+        "comparator",
+        "threshold",
+        "scale",
+        "conditionId",
+        "thesisRevision",
+        "retired"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisConditionCheck": {
+      "type": "object",
+      "properties": {
+        "checkId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "thesisRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "MATCHED",
+            "VIOLATED",
+            "UNKNOWN",
+            "REVIEW_NEEDED"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "PERIOD_OPEN",
+            "FACT_MISSING",
+            "DIMENSIONS_MISMATCH",
+            "PUBLICATION_UNKNOWN",
+            "PUBLISHED_AFTER_CUTOFF",
+            "PERIOD_PUBLICATION_INVALID",
+            "SOURCE_REVISED",
+            "DERIVATION_REVIEW_REQUIRED",
+            "COMPARABLE_FACT"
+          ]
+        },
+        "fact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinancialFact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evaluatedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "checkId",
+        "thesisRevision",
+        "state",
+        "reason",
+        "fact",
+        "evaluatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisCondition": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "$ref": "#/$defs/ThesisConditionDefinition"
+        },
+        "lastCheck": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThesisConditionCheck"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "definition",
+        "lastCheck"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisConditions": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThesisCondition"
+          },
+          "maxItems": 20
         }
       },
       "required": [
