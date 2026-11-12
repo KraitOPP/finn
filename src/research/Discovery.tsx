@@ -3,7 +3,6 @@ import type {
   CatalogueListing,
   DiscoveryCompany,
   DiscoveryMember,
-  DiscoveryPeriod,
   DiscoverySector,
 } from "../../contracts/generated/models.ts";
 import { requestContract } from "../api/request.ts";
@@ -12,26 +11,17 @@ import { useResource } from "../api/useResource.ts";
 import { ListingPicker } from "../instruments/ListingPicker.tsx";
 import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { RouteHeading } from "../Navigation.tsx";
+import {
+  DiscoveryPeriodFields,
+  emptyPeriod,
+  sectors,
+} from "./DiscoveryFields.tsx";
 import { AnchorEvidence } from "./Evidence.tsx";
 import { FactLabels, factAmount, metricLabels } from "./FinancialFacts.tsx";
+import { SavedScreens } from "./SavedScreens.tsx";
 import { factReasons } from "./ThesisConditions.tsx";
 
 const path = "/api/v1/discovery";
-export const sectors: Record<DiscoverySector, string> = {
-  BANKING: "Banking",
-  FINANCIAL_SERVICES: "Financial services",
-  MANUFACTURING: "Manufacturing",
-  TECHNOLOGY: "Technology",
-  CONSUMER: "Consumer",
-  ENERGY: "Energy",
-  OTHER: "Other",
-};
-export const emptyPeriod: DiscoveryPeriod = {
-  kind: "FULL_YEAR",
-  start: "",
-  end: "",
-};
-
 export function Discovery() {
   const directory = useResource("DiscoveryDirectory", `${path}/universe`);
   const [query, setQuery] = useState("");
@@ -115,58 +105,8 @@ export function Discovery() {
           </>
         )}
       </section>
+      {directory.value && <SavedScreens metrics={directory.value.metrics} />}
     </section>
-  );
-}
-
-export function DiscoveryPeriodFields({
-  value,
-  onChange,
-}: {
-  value: DiscoveryPeriod;
-  onChange: (period: DiscoveryPeriod) => void;
-}) {
-  return (
-    <fieldset>
-      <legend>Reporting period</legend>
-      <label>
-        Period type{" "}
-        <select
-          value={value.kind}
-          onChange={(event) =>
-            onChange({
-              ...value,
-              kind: event.target.value as DiscoveryPeriod["kind"],
-            })
-          }
-        >
-          <option value="FULL_YEAR">Full year</option>
-          <option value="QUARTER">Quarter</option>
-        </select>
-      </label>
-      <label>
-        Start date{" "}
-        <input
-          required
-          type="date"
-          value={value.start}
-          max={value.end || undefined}
-          onChange={(event) =>
-            onChange({ ...value, start: event.target.value })
-          }
-        />
-      </label>
-      <label>
-        End date{" "}
-        <input
-          required
-          type="date"
-          value={value.end}
-          min={value.start || undefined}
-          onChange={(event) => onChange({ ...value, end: event.target.value })}
-        />
-      </label>
-    </fieldset>
   );
 }
 

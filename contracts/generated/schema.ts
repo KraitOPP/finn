@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.40.0",
+  "contractVersion": "0.41.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "8a1b1fc89da668150cb7f01b7b7485b4acc7b3790f4af701dece55e688549392",
+  "sourceSha256": "9219d06674574e4a92db94b22cdc09f580055c7082c6288016465660f328dc4a",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -202,6 +202,17 @@ export const contractMetadata = {
     "SessionDate",
     "SessionResponse",
     "SourceTimes",
+    "StockScreen",
+    "StockScreenCheck",
+    "StockScreenEdit",
+    "StockScreenFilter",
+    "StockScreenHistory",
+    "StockScreenIndex",
+    "StockScreenInput",
+    "StockScreenResult",
+    "StockScreenRun",
+    "StockScreenRunInput",
+    "StockScreenRunSummary",
     "SymbolHistory",
     "SymbolHistoryList",
     "SymbolInput",
@@ -2289,7 +2300,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.40.0"
+    "const": "0.41.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -9767,6 +9778,302 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Source and FINN processing times are distinct. Null timestamps require matching unknownTimeReasons; checked by semantic validation."
+  },
+  "StockScreen": {
+    "type": "object",
+    "properties": {
+      "screenId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "definition": {
+        "$ref": "#/components/schemas/StockScreenInput"
+      },
+      "savedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "screenId",
+      "revision",
+      "definition",
+      "savedAt"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenCheck": {
+    "type": "object",
+    "properties": {
+      "filter": {
+        "$ref": "#/components/schemas/StockScreenFilter"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "PERIOD_OPEN",
+          "FACT_MISSING",
+          "DIMENSIONS_MISMATCH",
+          "PUBLICATION_UNKNOWN",
+          "PUBLISHED_AFTER_CUTOFF",
+          "PERIOD_PUBLICATION_INVALID",
+          "SOURCE_REVISED",
+          "DERIVATION_REVIEW_REQUIRED",
+          "COMPARABLE_FACT"
+        ]
+      },
+      "fact": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FinancialFact"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "filter",
+      "state",
+      "reason",
+      "fact"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenEdit": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "screen": {
+        "$ref": "#/components/schemas/StockScreenInput"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "screen"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenFilter": {
+    "type": "object",
+    "properties": {
+      "metric": {
+        "$ref": "#/components/schemas/DiscoveryMetric"
+      },
+      "comparator": {
+        "type": "string",
+        "enum": [
+          "GTE",
+          "LTE"
+        ]
+      },
+      "amount": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      }
+    },
+    "required": [
+      "metric",
+      "comparator",
+      "amount",
+      "scale"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenHistory": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockScreenRunSummary"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenIndex": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockScreen"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenInput": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "sector": {
+        "$ref": "#/components/schemas/DiscoverySector"
+      },
+      "period": {
+        "$ref": "#/components/schemas/DiscoveryPeriod"
+      },
+      "filters": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockScreenFilter"
+        },
+        "maxItems": 6,
+        "minItems": 1
+      }
+    },
+    "required": [
+      "name",
+      "sector",
+      "period",
+      "filters"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenResult": {
+    "type": "object",
+    "properties": {
+      "member": {
+        "$ref": "#/components/schemas/DiscoveryMember"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "MATCH",
+          "EXCLUDED",
+          "UNKNOWN",
+          "OUTSIDE_SECTOR"
+        ]
+      },
+      "checks": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockScreenCheck"
+        },
+        "maxItems": 6
+      }
+    },
+    "required": [
+      "member",
+      "state",
+      "checks"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenRun": {
+    "type": "object",
+    "properties": {
+      "runId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "screen": {
+        "$ref": "#/components/schemas/StockScreen"
+      },
+      "methodology": {
+        "const": "absolute-thresholds-v1"
+      },
+      "inputs": {
+        "$ref": "#/components/schemas/DiscoverySnapshot"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockScreenResult"
+        },
+        "maxItems": 30
+      },
+      "createdAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "runId",
+      "screen",
+      "methodology",
+      "inputs",
+      "results",
+      "createdAt"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenRunInput": {
+    "type": "object",
+    "properties": {
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "requestId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      }
+    },
+    "required": [
+      "revision",
+      "requestId"
+    ],
+    "additionalProperties": false
+  },
+  "StockScreenRunSummary": {
+    "type": "object",
+    "properties": {
+      "runId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "createdAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "runId",
+      "revision",
+      "createdAt"
+    ],
+    "additionalProperties": false
   },
   "SymbolHistory": {
     "type": "object",

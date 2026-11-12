@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.40.0") & (string);
+export type ContractVersion = ("0.41.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1720,6 +1720,73 @@ export type SourceTimes = ({
   "unknownTimeReasons": (Array<("OBSERVATION_TIME_NOT_PROVIDED" | "PUBLICATION_TIME_NOT_PROVIDED" | "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED" | "NOT_YET_INGESTED" | "NOT_YET_ACCEPTED") & (string)>);
 });
 
+export type StockScreen = ({
+  "screenId": (OpaqueId);
+  "revision": (number);
+  "definition": (StockScreenInput);
+  "savedAt": (UtcInstant);
+});
+
+export type StockScreenCheck = ({
+  "filter": (StockScreenFilter);
+  "state": ("PASS" | "FAIL" | "UNKNOWN") & (string);
+  "reason": ("PERIOD_OPEN" | "FACT_MISSING" | "DIMENSIONS_MISMATCH" | "PUBLICATION_UNKNOWN" | "PUBLISHED_AFTER_CUTOFF" | "PERIOD_PUBLICATION_INVALID" | "SOURCE_REVISED" | "DERIVATION_REVIEW_REQUIRED" | "COMPARABLE_FACT") & (string);
+  "fact": (((FinancialFact)) | ((null)));
+});
+
+export type StockScreenEdit = ({
+  "expectedRevision": (number);
+  "screen": (StockScreenInput);
+});
+
+export type StockScreenFilter = ({
+  "metric": (DiscoveryMetric);
+  "comparator": ("GTE" | "LTE") & (string);
+  "amount": (DecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+});
+
+export type StockScreenHistory = ({
+  "items": (Array<(StockScreenRunSummary)>);
+});
+
+export type StockScreenIndex = ({
+  "items": (Array<(StockScreen)>);
+});
+
+export type StockScreenInput = ({
+  "name": (string);
+  "sector": (DiscoverySector);
+  "period": (DiscoveryPeriod);
+  "filters": (Array<(StockScreenFilter)>);
+});
+
+export type StockScreenResult = ({
+  "member": (DiscoveryMember);
+  "state": ("MATCH" | "EXCLUDED" | "UNKNOWN" | "OUTSIDE_SECTOR") & (string);
+  "checks": (Array<(StockScreenCheck)>);
+});
+
+export type StockScreenRun = ({
+  "runId": (OpaqueId);
+  "screen": (StockScreen);
+  "methodology": ("absolute-thresholds-v1");
+  "inputs": (DiscoverySnapshot);
+  "results": (Array<(StockScreenResult)>);
+  "createdAt": (UtcInstant);
+});
+
+export type StockScreenRunInput = ({
+  "revision": (number);
+  "requestId": (OpaqueId);
+});
+
+export type StockScreenRunSummary = ({
+  "runId": (OpaqueId);
+  "revision": (number);
+  "createdAt": (UtcInstant);
+});
+
 export type SymbolHistory = ({
   "symbol": (string);
   "validFrom": (SessionDate);
@@ -2146,6 +2213,17 @@ export interface ContractTypes {
   SessionDate: SessionDate;
   SessionResponse: SessionResponse;
   SourceTimes: SourceTimes;
+  StockScreen: StockScreen;
+  StockScreenCheck: StockScreenCheck;
+  StockScreenEdit: StockScreenEdit;
+  StockScreenFilter: StockScreenFilter;
+  StockScreenHistory: StockScreenHistory;
+  StockScreenIndex: StockScreenIndex;
+  StockScreenInput: StockScreenInput;
+  StockScreenResult: StockScreenResult;
+  StockScreenRun: StockScreenRun;
+  StockScreenRunInput: StockScreenRunInput;
+  StockScreenRunSummary: StockScreenRunSummary;
   SymbolHistory: SymbolHistory;
   SymbolHistoryList: SymbolHistoryList;
   SymbolInput: SymbolInput;
