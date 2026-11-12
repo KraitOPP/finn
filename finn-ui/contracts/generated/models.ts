@@ -404,7 +404,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.48.0") & (string);
+export type ContractVersion = ("0.49.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1978,6 +1978,39 @@ export type StockLookupSelection = ({
   "symbol": (string);
 });
 
+export type StockResearchArticle = ({
+  "title": (string);
+  "detail": (string);
+  "impact": (string);
+  "publishedOn": (SessionDate);
+  "sourceId": (number);
+});
+
+export type StockResearchAssessment = ({
+  "itemIndex": (number);
+  "signal": ("SUPPORTIVE" | "MIXED" | "ADVERSE") & (string);
+  "rationale": (string);
+  "watchFor": (string);
+});
+
+export type StockResearchCheck = ({
+  "itemIndex": (number);
+  "verdict": ("SUPPORTED" | "CHALLENGED" | "UNSUPPORTED") & (string);
+  "concern": (string);
+  "verify": (string);
+});
+
+export type StockResearchDecision = ({
+  "stance": ("RESEARCH_FURTHER" | "WATCH" | "CAUTION" | "INSUFFICIENT_EVIDENCE") & (string);
+  "status": ("REVIEWED" | "ANALYSIS_UNAVAILABLE" | "REVIEW_INCOMPLETE") & (string);
+  "news": (Array<(StockResearchArticle)>);
+  "assessments": (Array<(StockResearchAssessment)>);
+  "checks": (Array<(StockResearchCheck)>);
+  "market": (((StockResearchMarket)) | ((null)));
+});
+
+export type StockResearchFactor = ("BUSINESS" | "FINANCIALS" | "VALUATION" | "RISKS" | "CATALYSTS") & (string);
+
 export type StockResearchInput = ({
   "listingId": (OpaqueId);
   "preset": (StockResearchPreset);
@@ -1985,6 +2018,13 @@ export type StockResearchInput = ({
 
 export type StockResearchListings = ({
   "items": (Array<(CatalogueListing)>);
+});
+
+export type StockResearchMarket = ({
+  "firstSession": (SessionDate);
+  "lastSession": (SessionDate);
+  "close": (PositiveDecimalString);
+  "changePercent": (((DecimalString)) | ((null)));
 });
 
 export type StockResearchPreset = ("DEEP_DIVE" | "FINANCIALS" | "VALUATION" | "RISKS" | "NEWS") & (string);
@@ -1998,6 +2038,7 @@ export type StockResearchReport = ({
   "detail": (string);
   "publishedOn": (((SessionDate)) | ((null)));
   "sourceIds": (Array<(number)>);
+  "factor"?: (StockResearchFactor);
 })>);
   "sources": (Array<({
   "id": (number);
@@ -2005,6 +2046,7 @@ export type StockResearchReport = ({
   "url": (string);
 })>);
   "searchSuggestions": (((string)) | ((null)));
+  "decision"?: (StockResearchDecision);
 });
 
 export type StockScreen = ({
@@ -2547,8 +2589,14 @@ export interface ContractTypes {
   StockLookupOpened: StockLookupOpened;
   StockLookupResults: StockLookupResults;
   StockLookupSelection: StockLookupSelection;
+  StockResearchArticle: StockResearchArticle;
+  StockResearchAssessment: StockResearchAssessment;
+  StockResearchCheck: StockResearchCheck;
+  StockResearchDecision: StockResearchDecision;
+  StockResearchFactor: StockResearchFactor;
   StockResearchInput: StockResearchInput;
   StockResearchListings: StockResearchListings;
+  StockResearchMarket: StockResearchMarket;
   StockResearchPreset: StockResearchPreset;
   StockResearchReport: StockResearchReport;
   StockScreen: StockScreen;

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
 @Service
-class MarketCharts {
+public class MarketCharts {
     static final ZoneId INDIA = ZoneId.of("Asia/Kolkata");
     private static final int MAX_POINTS = 420;
     enum Range {
@@ -35,6 +35,7 @@ class MarketCharts {
     record Chart(Range range, String source, String interval, List<Point> points, int count,
                  String changePercent, String low, String high, EquityCalendar.Session today,
                  List<EquityCalendar.Session> calendarEvents) {}
+    public record ResearchSnapshot(LocalDate firstSession, LocalDate lastSession, String close, String changePercent) {}
 
     private final CurrentUser users;
     private final Catalogue catalogue;
@@ -64,6 +65,23 @@ class MarketCharts {
                     owner,id,start == null || range == Range.D1 ? LocalDate.of(1900,1,1) : start,end);
             return summarize(range,"MANUAL_REVIEWED",false,listing.exchange(),today,rows);
         }
+        return yahooChart(listing,range,today,end);
+    }
+
+    public ResearchSnapshot researchSnapshot(Catalogue.Listing listing, LocalDate asOf) {
+        if (listing.providerSymbol() == null) return null;
+        try {
+            // Use completed days only, even if a same-day daily candle is already visible.
+            var chart = yahooChart(listing,Range.M1,asOf,asOf);
+            if (chart.points().isEmpty()) return null;
+            var latest = chart.points().getLast();
+            return new ResearchSnapshot(chart.points().getFirst().date(),latest.date(),latest.close(),chart.changePercent());
+        } catch (ApiFailure unavailable) {
+            return null;
+        }
+    }
+
+    private Chart yahooChart(Catalogue.Listing listing, Range range, LocalDate today, LocalDate end) {
         if (!"PRIVATE_DAILY".equals(yahoo.capability())) throw new ApiFailure(503,"CHART_NOT_CONFIGURED");
         if (!providerSlots.tryAcquire()) throw new ApiFailure(429,"CHART_BUSY");
         try {

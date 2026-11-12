@@ -14,7 +14,7 @@ class GroqResearchTest {
     private static final String FILING = "https://exchange.example/filing";
     private static final String INVENTED = "https://example.org/unsupported";
     private final JsonMapper json = JsonMapper.builder().build();
-    private final GroqResearch research = new GroqResearch(null,null,json,"");
+    private final GroqResearch research = new GroqResearch(null,null,null,json,"");
     private final LocalDate today = LocalDate.of(2026,11,12);
 
     @Test
@@ -43,7 +43,7 @@ class GroqResearchTest {
                 2026-10-01 | Old filing | Fictional announcement for testing. | %s
                 2026-11-14 | Future filing | Fictional announcement for testing. | %s
                 """.formatted(FILING,INVENTED,FILING,FILING);
-        var report = research.decode(response(raw),StockResearch.Preset.NEWS,today);
+        var report = research.decode(response(raw),StockResearch.Preset.NEWS,today).report();
         assertEquals(1,report.items().size());
         assertEquals("Recent exchange filing",report.items().getFirst().title());
         assertEquals(List.of(0),report.items().getFirst().sourceIds());

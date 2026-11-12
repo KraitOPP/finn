@@ -1,5 +1,6 @@
 package dev.finn.research;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import dev.finn.instruments.Catalogue;
 import dev.finn.platform.ApiFailure;
 import jakarta.validation.constraints.NotNull;
@@ -18,9 +19,10 @@ final class StockResearch {
 
     enum Preset {
         DEEP_DIVE("""
-            Cover the business and revenue segments, competitive advantages and industry outlook, the latest reported
-            financial results and multi-year direction, cash conversion and balance sheet, dated valuation and
-            comparable peers, governance and downside risks, and near-term catalysts. Aim for seven useful sections.
+            Use five distinct factors: BUSINESS (segments, competitive position and industry outlook),
+            FINANCIALS (latest reported results, multi-year direction, cash conversion and balance sheet),
+            VALUATION (dated multiples and genuinely comparable peers), RISKS (material downside and governance),
+            and CATALYSTS (near-term developments and their timing).
             """),
         FINANCIALS("""
             Review the latest quarterly and annual filings, sales and operating margin direction, profit quality
@@ -51,8 +53,18 @@ final class StockResearch {
     record Input(@NotNull UUID listingId, @NotNull Preset preset) {}
     record Listings(List<Catalogue.Listing> items) {}
     record Source(int id, String title, String url) {}
-    record Item(String title, String detail, LocalDate publishedOn, List<Integer> sourceIds) {}
-    record Report(Preset preset, String model, LocalDate asOf, List<Item> items, List<Source> sources, String searchSuggestions) {}
+    record Item(String title, String detail, LocalDate publishedOn, List<Integer> sourceIds,
+                @JsonInclude(JsonInclude.Include.NON_NULL) StockDecision.Factor factor) {
+        Item(String title, String detail, LocalDate publishedOn, List<Integer> sourceIds) {
+            this(title,detail,publishedOn,sourceIds,null);
+        }
+    }
+    record Report(Preset preset, String model, LocalDate asOf, List<Item> items, List<Source> sources,
+                  String searchSuggestions, @JsonInclude(JsonInclude.Include.NON_NULL) StockDecision.Brief decision) {
+        Report(Preset preset, String model, LocalDate asOf, List<Item> items, List<Source> sources, String searchSuggestions) {
+            this(preset,model,asOf,items,sources,searchSuggestions,null);
+        }
+    }
 
     static void validateListing(Catalogue.Listing listing) {
         if (!listing.symbol().matches("[A-Z0-9][A-Z0-9&_.^-]{0,35}") ||

@@ -29,17 +29,21 @@ class ResearchProviderClient {
     ResearchProviderClient(JsonMapper json) { this.json = json; }
 
     JsonNode post(UUID owner, URI endpoint, String header, String credential, Object body, String provider) {
+        return post(owner,endpoint,header,credential,body,provider,Duration.ofSeconds(50));
+    }
+
+    JsonNode post(UUID owner, URI endpoint, String header, String credential, Object body, String provider, Duration budget) {
         if (!slots.tryAcquire()) throw new ApiFailure(429,provider+"_RATE_LIMIT");
         try {
             admit(owner,provider);
             var request = HttpRequest.newBuilder(endpoint)
                     .header(header,credential).header("Content-Type","application/json")
-                    .timeout(Duration.ofSeconds(50))
+                    .timeout(budget)
                     .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();
             var task = new FutureTask<>(() -> exchange(request,provider));
             Thread.startVirtualThread(task);
             try {
-                return task.get(52,TimeUnit.SECONDS);
+                return task.get(budget.toMillis()+1000,TimeUnit.MILLISECONDS);
             } catch (ExecutionException error) {
                 if (error.getCause() instanceof ApiFailure failure) throw failure;
                 if (error.getCause() instanceof HttpTimeoutException) throw new ApiFailure(504,provider+"_TIMEOUT");

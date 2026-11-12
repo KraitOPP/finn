@@ -1,9 +1,7 @@
 import Alert from "@mui/material/Alert";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import LinearProgress from "@mui/material/LinearProgress";
-import Link from "@mui/material/Link";
 import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
@@ -19,17 +17,15 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { StockHistoryChart } from "../market/ListingHistory.tsx";
-import {
-  GoogleSearchSuggestions,
-  searchSuggestionsFragment,
-} from "./GoogleSearchSuggestions.tsx";
+import { searchSuggestionsFragment } from "./GoogleSearchSuggestions.tsx";
+import { StockResearchReportView } from "./StockResearchReport.tsx";
 
 const endpoint = "/api/v1/research/stock-ai";
 const presets = {
   DEEP_DIVE: {
     label: "Complete stock analysis",
     description:
-      "Business, competition, financials, valuation, governance and upcoming catalysts.",
+      "A factor-by-factor decision, recent news, source links and a critic review with Groq.",
   },
   FINANCIALS: {
     label: "Results and financial health",
@@ -71,7 +67,7 @@ export function StockAiTool({
       requestContract("StockAiResult", endpoint, {
         method: "POST",
         csrf,
-        timeoutMs: 60000,
+        timeoutMs: selected === "DEEP_DIVE" && !usesGemini ? 90000 : 60000,
         body: { listingId: listing.listingId, preset: selected },
       }),
     );
@@ -169,7 +165,9 @@ export function StockAiTool({
             <>
               <LinearProgress aria-label="Searching public sources" />
               <Typography role="status" variant="body2">
-                Checking public sources…
+                {!news && selected === "DEEP_DIVE" && !usesGemini
+                  ? "Gathering sources, assessing the stock and reviewing the draft. This can take up to 90 seconds…"
+                  : "Checking public sources…"}
               </Typography>
             </>
           )}
@@ -182,124 +180,16 @@ export function StockAiTool({
         </Stack>
       </Paper>
       {result && (
-        <>
-          <GroundedReport result={result} />
-          {!news && <StockHistoryChart listing={listing} initialRange="Y1" />}
-        </>
+        <StockResearchReportView
+          result={result}
+          heading={news ? "News results" : presets[preset].label}
+          chart={
+            news ? undefined : (
+              <StockHistoryChart listing={listing} initialRange="Y1" />
+            )
+          }
+        />
       )}
     </Stack>
-  );
-}
-
-function GroundedReport({ result }: { result: StockAiResult }) {
-  const { provider, report } = result;
-  const news = report.preset === "NEWS";
-  const date = new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeZone: "Asia/Kolkata",
-  });
-  return (
-    <Paper component="section" variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
-      <Stack spacing={2}>
-        <Stack spacing={0.5}>
-          <Typography component="h3" variant="h6">
-            {news
-              ? "News results"
-              : presets[report.preset as ResearchPreset].label}
-          </Typography>
-          <Typography color="text.secondary" variant="body2">
-            {provider === "GROQ"
-              ? "GPT-OSS 120B via Groq Browser Search"
-              : "Gemini with Google Search"}{" "}
-            · {date.format(new Date(report.asOf))}
-          </Typography>
-        </Stack>
-        {report.items.length === 0 && (
-          <Alert severity="info">
-            No recent items with a publication date and a matching source were
-            found.
-          </Alert>
-        )}
-        <Box
-          sx={{
-            display: "grid",
-            gap: 1.5,
-            gridTemplateColumns: {
-              xs: "minmax(0, 1fr)",
-              lg: news ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
-            },
-          }}
-        >
-          {report.items.map((item) => (
-            <Paper
-              key={item.title}
-              component="article"
-              variant="outlined"
-              sx={{ p: 2, overflowWrap: "anywhere" }}
-            >
-              <Stack spacing={1}>
-                {item.publishedOn && (
-                  <Typography variant="caption" color="text.secondary">
-                    {date.format(new Date(item.publishedOn))}
-                  </Typography>
-                )}
-                <Typography
-                  component="h4"
-                  variant="subtitle1"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
-                  {item.detail}
-                </Typography>
-                {item.sourceIds.length === 0 && (
-                  <Typography variant="caption" color="text.secondary">
-                    No citation was supplied for this section.
-                  </Typography>
-                )}
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  useFlexGap
-                  sx={{ flexWrap: "wrap" }}
-                >
-                  {report.sources
-                    .filter((source) => item.sourceIds.includes(source.id))
-                    .map((source) => (
-                      <Link
-                        key={source.id}
-                        href={source.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        variant="body2"
-                      >
-                        {source.title}
-                      </Link>
-                    ))}
-                </Stack>
-              </Stack>
-            </Paper>
-          ))}
-        </Box>
-        {report.sources.length > 0 && (
-          <details>
-            <summary>Sources for this result</summary>
-            <ul>
-              {report.sources.map((source) => (
-                <li key={source.id}>
-                  <Link href={source.url} target="_blank" rel="noreferrer">
-                    {source.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-        {report.searchSuggestions && (
-          <GoogleSearchSuggestions html={report.searchSuggestions} />
-        )}
-      </Stack>
-    </Paper>
   );
 }

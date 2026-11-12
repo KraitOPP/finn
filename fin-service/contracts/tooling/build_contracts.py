@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.48.0"
+VERSION = "0.49.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -119,15 +119,43 @@ def definitions() -> dict:
     d["StockResearchInput"] = obj({"listingId": ref("OpaqueId"), "preset": ref("StockResearchPreset")})
     d["GeminiInput"] = ref("StockResearchInput")
     source_index = {"type":"integer","minimum":0,"maximum":99}
+    item_index = {"type":"integer","minimum":0,"maximum":7}
+    d["StockResearchFactor"] = enum(["BUSINESS","FINANCIALS","VALUATION","RISKS","CATALYSTS"])
+    d["StockResearchAssessment"] = obj({
+        "itemIndex": item_index, "signal": enum(["SUPPORTIVE","MIXED","ADVERSE"]),
+        "rationale": text(maxLength=800), "watchFor": text(maxLength=450),
+    })
+    d["StockResearchCheck"] = obj({
+        "itemIndex": item_index, "verdict": enum(["SUPPORTED","CHALLENGED","UNSUPPORTED"]),
+        "concern": text(maxLength=800), "verify": text(maxLength=450),
+    })
+    d["StockResearchArticle"] = obj({
+        "title": text(maxLength=180), "detail": text(maxLength=2400), "impact": text(maxLength=450),
+        "publishedOn": ref("SessionDate"), "sourceId": source_index,
+    })
+    d["StockResearchMarket"] = obj({
+        "firstSession": ref("SessionDate"), "lastSession": ref("SessionDate"),
+        "close": ref("PositiveDecimalString"), "changePercent": nullable(ref("DecimalString")),
+    })
+    d["StockResearchDecision"] = obj({
+        "stance": enum(["RESEARCH_FURTHER","WATCH","CAUTION","INSUFFICIENT_EVIDENCE"]),
+        "status": enum(["REVIEWED","ANALYSIS_UNAVAILABLE","REVIEW_INCOMPLETE"]),
+        "news": array(ref("StockResearchArticle"), maxItems=4),
+        "assessments": array(ref("StockResearchAssessment"), maxItems=5),
+        "checks": array(ref("StockResearchCheck"), maxItems=5),
+        "market": nullable(ref("StockResearchMarket")),
+    })
     d["StockResearchReport"] = obj({
         "preset": ref("StockResearchPreset"), "model": text(maxLength=77), "asOf": ref("SessionDate"),
         "items": array(obj({"title": text(maxLength=180), "detail": text(maxLength=2400),
                             "publishedOn": nullable(ref("SessionDate")),
-                            "sourceIds": array(source_index, maxItems=100)}), maxItems=8),
+                            "sourceIds": array(source_index, maxItems=100),
+                            "factor": ref("StockResearchFactor")}, optional=("factor",)), maxItems=8),
         "sources": array(obj({"id": source_index, "title": text(maxLength=240),
                               "url": text(pattern=r"^https://",maxLength=4000)}), maxItems=100),
         "searchSuggestions": nullable(text(maxLength=64000)),
-    })
+        "decision": ref("StockResearchDecision"),
+    }, optional=("decision",))
     d["GeminiReport"] = ref("StockResearchReport")
     provider = enum(["GROQ","GEMINI"])
     d["StockAiCapability"] = obj({"provider":provider,"configured":{"type":"boolean"},"model":nullable(text(maxLength=77))})

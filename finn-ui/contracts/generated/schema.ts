@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.48.0",
+  "contractVersion": "0.49.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "8f5bab65743d01167e1154a01e2c8094255832b1fb354e205f401beafca43ba2",
+  "sourceSha256": "fd75ea5e797e4cd98b3a3aeac3396f9c0204485ddcb05f0bac6e24b4815a76eb",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -239,8 +239,14 @@ export const contractMetadata = {
     "StockLookupOpened",
     "StockLookupResults",
     "StockLookupSelection",
+    "StockResearchArticle",
+    "StockResearchAssessment",
+    "StockResearchCheck",
+    "StockResearchDecision",
+    "StockResearchFactor",
     "StockResearchInput",
     "StockResearchListings",
+    "StockResearchMarket",
     "StockResearchPreset",
     "StockResearchReport",
     "StockScreen",
@@ -2360,7 +2366,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.48.0"
+    "const": "0.49.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -11234,6 +11240,184 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "StockResearchArticle": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 180
+      },
+      "detail": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2400
+      },
+      "impact": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 450
+      },
+      "publishedOn": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "sourceId": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 99
+      }
+    },
+    "required": [
+      "title",
+      "detail",
+      "impact",
+      "publishedOn",
+      "sourceId"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchAssessment": {
+    "type": "object",
+    "properties": {
+      "itemIndex": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 7
+      },
+      "signal": {
+        "type": "string",
+        "enum": [
+          "SUPPORTIVE",
+          "MIXED",
+          "ADVERSE"
+        ]
+      },
+      "rationale": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 800
+      },
+      "watchFor": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 450
+      }
+    },
+    "required": [
+      "itemIndex",
+      "signal",
+      "rationale",
+      "watchFor"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchCheck": {
+    "type": "object",
+    "properties": {
+      "itemIndex": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 7
+      },
+      "verdict": {
+        "type": "string",
+        "enum": [
+          "SUPPORTED",
+          "CHALLENGED",
+          "UNSUPPORTED"
+        ]
+      },
+      "concern": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 800
+      },
+      "verify": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 450
+      }
+    },
+    "required": [
+      "itemIndex",
+      "verdict",
+      "concern",
+      "verify"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchDecision": {
+    "type": "object",
+    "properties": {
+      "stance": {
+        "type": "string",
+        "enum": [
+          "RESEARCH_FURTHER",
+          "WATCH",
+          "CAUTION",
+          "INSUFFICIENT_EVIDENCE"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "REVIEWED",
+          "ANALYSIS_UNAVAILABLE",
+          "REVIEW_INCOMPLETE"
+        ]
+      },
+      "news": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockResearchArticle"
+        },
+        "maxItems": 4
+      },
+      "assessments": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockResearchAssessment"
+        },
+        "maxItems": 5
+      },
+      "checks": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockResearchCheck"
+        },
+        "maxItems": 5
+      },
+      "market": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/StockResearchMarket"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "stance",
+      "status",
+      "news",
+      "assessments",
+      "checks",
+      "market"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchFactor": {
+    "type": "string",
+    "enum": [
+      "BUSINESS",
+      "FINANCIALS",
+      "VALUATION",
+      "RISKS",
+      "CATALYSTS"
+    ]
+  },
   "StockResearchInput": {
     "type": "object",
     "properties": {
@@ -11263,6 +11447,37 @@ export const contractSchemas = {
     },
     "required": [
       "items"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchMarket": {
+    "type": "object",
+    "properties": {
+      "firstSession": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "lastSession": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "close": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "changePercent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "firstSession",
+      "lastSession",
+      "close",
+      "changePercent"
     ],
     "additionalProperties": false
   },
@@ -11323,6 +11538,9 @@ export const contractSchemas = {
                 "maximum": 99
               },
               "maxItems": 100
+            },
+            "factor": {
+              "$ref": "#/components/schemas/StockResearchFactor"
             }
           },
           "required": [
@@ -11377,6 +11595,9 @@ export const contractSchemas = {
             "type": "null"
           }
         ]
+      },
+      "decision": {
+        "$ref": "#/components/schemas/StockResearchDecision"
       }
     },
     "required": [

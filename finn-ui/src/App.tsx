@@ -98,7 +98,7 @@ function WorkspaceApp() {
         Skip to content
       </button>
       <header className="topbar">
-        <a href="/" className="brand" aria-label="FINN home">
+        <a href="/" className="brand">
           <span className="brand-mark" aria-hidden="true">
             f
           </span>

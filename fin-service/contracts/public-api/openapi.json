@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.48.0",
+    "version": "0.49.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -18476,7 +18476,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.48.0"
+        "const": "0.49.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -19021,6 +19021,215 @@
       "GeminiInput": {
         "$ref": "#/components/schemas/StockResearchInput"
       },
+      "StockResearchFactor": {
+        "type": "string",
+        "enum": [
+          "BUSINESS",
+          "FINANCIALS",
+          "VALUATION",
+          "RISKS",
+          "CATALYSTS"
+        ]
+      },
+      "StockResearchAssessment": {
+        "type": "object",
+        "properties": {
+          "itemIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "SUPPORTIVE",
+              "MIXED",
+              "ADVERSE"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          },
+          "watchFor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 450
+          }
+        },
+        "required": [
+          "itemIndex",
+          "signal",
+          "rationale",
+          "watchFor"
+        ],
+        "additionalProperties": false
+      },
+      "StockResearchCheck": {
+        "type": "object",
+        "properties": {
+          "itemIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "SUPPORTED",
+              "CHALLENGED",
+              "UNSUPPORTED"
+            ]
+          },
+          "concern": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          },
+          "verify": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 450
+          }
+        },
+        "required": [
+          "itemIndex",
+          "verdict",
+          "concern",
+          "verify"
+        ],
+        "additionalProperties": false
+      },
+      "StockResearchArticle": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2400
+          },
+          "impact": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 450
+          },
+          "publishedOn": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "sourceId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          }
+        },
+        "required": [
+          "title",
+          "detail",
+          "impact",
+          "publishedOn",
+          "sourceId"
+        ],
+        "additionalProperties": false
+      },
+      "StockResearchMarket": {
+        "type": "object",
+        "properties": {
+          "firstSession": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "lastSession": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "close": {
+            "$ref": "#/components/schemas/PositiveDecimalString"
+          },
+          "changePercent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "firstSession",
+          "lastSession",
+          "close",
+          "changePercent"
+        ],
+        "additionalProperties": false
+      },
+      "StockResearchDecision": {
+        "type": "object",
+        "properties": {
+          "stance": {
+            "type": "string",
+            "enum": [
+              "RESEARCH_FURTHER",
+              "WATCH",
+              "CAUTION",
+              "INSUFFICIENT_EVIDENCE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REVIEWED",
+              "ANALYSIS_UNAVAILABLE",
+              "REVIEW_INCOMPLETE"
+            ]
+          },
+          "news": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockResearchArticle"
+            },
+            "maxItems": 4
+          },
+          "assessments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockResearchAssessment"
+            },
+            "maxItems": 5
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockResearchCheck"
+            },
+            "maxItems": 5
+          },
+          "market": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockResearchMarket"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "stance",
+          "status",
+          "news",
+          "assessments",
+          "checks",
+          "market"
+        ],
+        "additionalProperties": false
+      },
       "StockResearchReport": {
         "type": "object",
         "properties": {
@@ -19068,6 +19277,9 @@
                     "maximum": 99
                   },
                   "maxItems": 100
+                },
+                "factor": {
+                  "$ref": "#/components/schemas/StockResearchFactor"
                 }
               },
               "required": [
@@ -19122,6 +19334,9 @@
                 "type": "null"
               }
             ]
+          },
+          "decision": {
+            "$ref": "#/components/schemas/StockResearchDecision"
           }
         },
         "required": [
