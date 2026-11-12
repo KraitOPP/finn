@@ -42,6 +42,9 @@ class FoundationIntegrationTest {
     @Test void screensRetainExactInputsAcrossEditsAndRetries() throws Exception {
         dev.finn.market.DiscoveryChecks.savesAndReplaysScreenInputs(mvc,researchExtraction);
     }
+    @Test void peerRankingReplaysExactWeightsAndPreservesCoverageGaps() throws Exception {
+        dev.finn.market.DiscoveryChecks.ranksPeersWithTransparentWeightsAndGaps(mvc,researchExtraction);
+    }
 
     @Test void thesisVersionsKeepOriginalReasoningAndSchedule() throws Exception {
         dev.finn.market.ThesisChecks.keepsOriginalThesisAndSchedulesReview(mvc,researchExtraction);
@@ -184,7 +187,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.41.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.42.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

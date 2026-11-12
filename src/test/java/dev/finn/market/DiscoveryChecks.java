@@ -47,6 +47,45 @@ public final class DiscoveryChecks {
                 """.formatted(sector,PERIOD,metric,amount,scale);
     }
 
+    public static void ranksPeersWithTransparentWeightsAndGaps(MockMvc mvc,ResearchExtractionWorker worker)throws Exception{
+        String owner="fictional-peer-owner",other="fictional-peer-other";
+        String first=company(mvc,owner),second=company(mvc,owner),missing=company(mvc,owner),bank=company(mvc,owner);
+        ok(submit(mvc,UNIVERSE,owner,member(listing(mvc,owner,first,"FICTIONALA"),"MANUFACTURING",true,null)));
+        ok(submit(mvc,UNIVERSE,owner,member(listing(mvc,owner,second,"FICTIONALB"),"MANUFACTURING",true,null)));
+        ok(submit(mvc,UNIVERSE,owner,member(listing(mvc,owner,missing,"FICTIONALC"),"MANUFACTURING",true,null)));
+        ok(submit(mvc,UNIVERSE,owner,member(listing(mvc,owner,bank,"FICTIONALD"),"BANKING",true,null)));
+        saveFact(mvc,worker,owner,first,"REVENUE","150","CRORE","Fictional first revenue");
+        saveFact(mvc,worker,owner,second,"REVENUE","120","CRORE","Fictional second revenue");
+        saveFact(mvc,worker,owner,first,"OPERATING_MARGIN","12","ONES","Fictional first margin");
+        saveFact(mvc,worker,owner,second,"OPERATING_MARGIN","18","ONES","Fictional second margin");
+        String id=ok(submit(mvc,DISCOVERY+"/screens",owner,screen("MANUFACTURING","REVENUE","100","CRORE"))).path("screenId").asText();
+        String run=ok(submit(mvc,DISCOVERY+"/screens/"+id+"/runs",owner,"{\"revision\":1,\"requestId\":\""+java.util.UUID.randomUUID()+"\"}"))
+                .path("runId").asText();
+        String path=DISCOVERY+"/screen-runs/"+run+"/rankings";
+        String key=java.util.UUID.randomUUID().toString();
+        String input="""
+                {"requestId":"%s","companyIds":["%s","%s","%s"],
+                 "factors":[{"metric":"REVENUE","direction":"HIGHER","weight":60},{"metric":"OPERATING_MARGIN","direction":"HIGHER","weight":40}]}
+                """.formatted(key,first,second,missing);
+        submit(mvc,path,owner,input.replace(missing,bank)).andExpect(status().isUnprocessableContent());
+        var ranking=ok(submit(mvc,path,owner,input).andExpect(status().isOk())
+                .andExpect(jsonPath("$.completePeers").value(2))
+                .andExpect(jsonPath("$.rows[0].member.companyId").value(first))
+                .andExpect(jsonPath("$.rows[0].score").value("60"))
+                .andExpect(jsonPath("$.rows[0].contributions[1].relativeWeakness").value(true))
+                .andExpect(jsonPath("$.rows[2].score").isEmpty())
+                .andExpect(jsonPath("$.rows[2].status").value("MISSING_FACTOR")));
+        String revised=input.replace(key,java.util.UUID.randomUUID().toString()).replace("\"weight\":60","\"weight\":20");
+        submit(mvc,path,owner,revised).andExpect(status().isOk()).andExpect(jsonPath("$.rows[0].member.companyId").value(second));
+        String tie=input.replace(key,java.util.UUID.randomUUID().toString()).replace("\"weight\":60","\"weight\":40");
+        submit(mvc,path,owner,tie).andExpect(status().isOk()).andExpect(jsonPath("$.rows[0].score").value("50"))
+                .andExpect(jsonPath("$.rows[1].rank").value(1));
+        String saved=DISCOVERY+"/rankings/"+ranking.path("rankingId").asText();
+        read(mvc,saved,other).andExpect(status().isNotFound());
+        org.assertj.core.api.Assertions.assertThat(ok(read(mvc,saved,owner))).isEqualTo(ranking);
+        org.assertj.core.api.Assertions.assertThat(ok(submit(mvc,path,owner,input))).isEqualTo(ranking);
+    }
+
     public static void savesAndReplaysScreenInputs(MockMvc mvc,ResearchExtractionWorker worker)throws Exception{
         String owner="fictional-screen-owner",other="fictional-screen-other",company=company(mvc,owner);
         String listing=listing(mvc,owner,company,"FICTIONALSC");

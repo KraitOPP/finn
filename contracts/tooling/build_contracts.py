@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.41.0"
+VERSION = "0.42.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -391,6 +391,23 @@ def definitions() -> dict:
         "checks":array(ref("StockScreenCheck"),maxItems=6)})
     d["StockScreenRun"] = obj({"runId":ref("OpaqueId"),"screen":ref("StockScreen"),"methodology":{"const":"absolute-thresholds-v1"},
         "inputs":ref("DiscoverySnapshot"),"results":array(ref("StockScreenResult"),maxItems=30),"createdAt":ref("UtcInstant")})
+    d["PeerRankingFactor"] = obj({"metric":ref("DiscoveryMetric"),"direction":enum(["HIGHER","LOWER"]),
+        "weight":{"type":"integer","minimum":1,"maximum":100}})
+    ranking_spec = {"companyIds":array(ref("OpaqueId"),minItems=2,maxItems=30),
+        "factors":array(ref("PeerRankingFactor"),minItems=1,maxItems=6)}
+    d["PeerRankingSpecification"] = obj(ranking_spec)
+    d["PeerRankingInput"] = obj({**ranking_spec,"requestId":ref("OpaqueId")})
+    d["PeerRankingContribution"] = obj({"factor":ref("PeerRankingFactor"),"reason":fact_evaluation_reason,
+        "fact":nullable(ref("FinancialFact")),"percentile":nullable(ref("DecimalString")),"points":nullable(ref("DecimalString")),
+        "relativeWeakness":{"type":"boolean"}})
+    d["PeerRankingRow"] = obj({"member":ref("DiscoveryMember"),"rank":nullable({"type":"integer","minimum":1,"maximum":30}),
+        "score":nullable(ref("DecimalString")),"status":enum(["RANKED","MISSING_FACTOR","INSUFFICIENT_PEERS"]),
+        "contributions":array(ref("PeerRankingContribution"),maxItems=6)})
+    d["PeerRanking"] = obj({"rankingId":ref("OpaqueId"),"runId":ref("OpaqueId"),"methodology":{"const":"within-sector-midrank-v1"},
+        "sector":ref("DiscoverySector"),"specification":ref("PeerRankingSpecification"),
+        "completePeers":{"type":"integer","minimum":0,"maximum":30},"rows":array(ref("PeerRankingRow"),maxItems=30),"createdAt":ref("UtcInstant")})
+    d["PeerRankingSummary"] = obj({"rankingId":ref("OpaqueId"),"createdAt":ref("UtcInstant")})
+    d["PeerRankingIndex"] = obj({"items":array(ref("PeerRankingSummary"),maxItems=120)})
     d["ThesisConditionCheck"] = obj({"checkId":ref("OpaqueId"),"thesisRevision":thesis_revision,
         "state":enum(["MATCHED","VIOLATED","UNKNOWN","REVIEW_NEEDED"]),"reason":fact_evaluation_reason,
         "fact":nullable(ref("FinancialFact")),"evaluatedAt":ref("UtcInstant")})
@@ -999,6 +1016,11 @@ def public_api_document() -> dict:
             "post":maintained("runStockScreen","Capture current reviewed inputs and run a screen version","StockScreenRun",identifier,"StockScreenRunInput"),
         },
         "/api/v1/discovery/screen-runs/{id}":{"get":maintained("readStockScreenRun","Replay a run from retained inputs","StockScreenRun",identifier)},
+        "/api/v1/discovery/screen-runs/{id}/rankings":{
+            "get":maintained("listPeerRankings","Read saved same-sector comparisons","PeerRankingIndex",identifier),
+            "post":maintained("rankScreenPeers","Save factor weights and replayable relative peer positions","PeerRanking",identifier,"PeerRankingInput"),
+        },
+        "/api/v1/discovery/rankings/{id}":{"get":maintained("readPeerRanking","Replay a retained ranking and its contributions","PeerRanking",identifier)},
         "/api/v1/research/companies/{company}/theses":{
             "get":maintained("listInvestmentTheses","Read the latest thesis versions for a company","InvestmentTheses",company_parameter),
             "post":maintained("createInvestmentThesis","Save original reasoning and an optional review reminder","InvestmentThesis",
