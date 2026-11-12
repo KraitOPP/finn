@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.42.0") & (string);
+export type ContractVersion = ("0.43.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1277,6 +1277,26 @@ export type PeerRankingSummary = ({
   "createdAt": (UtcInstant);
 });
 
+export type PerformanceFlow = ({
+  "date": (SessionDate);
+  "deposits": (NonNegativeDecimalString);
+  "withdrawals": (NonNegativeDecimalString);
+  "net": (DecimalString);
+});
+
+export type PerformanceSnapshotRef = ({
+  "accountId": (OpaqueId);
+  "snapshotId": (OpaqueId);
+  "ledgerRevision": (number);
+  "value": (DecimalString);
+});
+
+export type PerformanceValuation = ({
+  "date": (SessionDate);
+  "closingValue": (DecimalString);
+  "snapshots": (Array<(PerformanceSnapshotRef)>);
+});
+
 export type PortfolioArchiveInput = ({
   "archived": (boolean);
   "revision": (number);
@@ -1317,6 +1337,30 @@ export type PortfolioInput = ({
 
 export type PortfolioList = ({
   "items": (Array<(PortfolioSummary)>);
+});
+
+export type PortfolioPerformance = ({
+  "portfolioId": (OpaqueId);
+  "start": (SessionDate);
+  "end": (SessionDate);
+  "currency": ("INR");
+  "methodology": ("cash-flow-returns-v1");
+  "coverage": ("HISTORY_UNREVIEWED" | "NO_ACCOUNTS" | "PORTFOLIO_BUDGET" | "CASH_HISTORY_INCOMPLETE" | "NEGATIVE_CASH_BALANCE" | "NEW_OPENING_BALANCE" | "ENDPOINT_VALUATIONS_MISSING" | "REVIEWED_WINDOW") & (string);
+  "opening": (((PerformanceValuation)) | ((null)));
+  "closing": (((PerformanceValuation)) | ((null)));
+  "flowValuations": (Array<(PerformanceValuation)>);
+  "externalFlows": (Array<(PerformanceFlow)>);
+  "recordedDividends": (((NonNegativeDecimalString)) | ((null)));
+  "investmentResult": (((DecimalString)) | ((null)));
+  "xirr": (ReturnMeasure);
+  "timeWeighted": (ReturnMeasure);
+  "benchmark": ("NO_COMPATIBLE_BENCHMARK");
+});
+
+export type PortfolioPerformanceInput = ({
+  "start": (SessionDate);
+  "end": (SessionDate);
+  "reviewed": (boolean);
 });
 
 export type PortfolioSummary = ({
@@ -1695,6 +1739,12 @@ export type ResearchTextPage = ({
   "page": (number);
   "state": ("TEXT" | "TRUNCATED" | "NO_TEXT" | "UNREADABLE") & (string);
   "content": (string);
+});
+
+export type ReturnMeasure = ({
+  "state": ("AVAILABLE" | "UNAVAILABLE") & (string);
+  "reason": ("HISTORY_UNREVIEWED" | "NO_ACCOUNTS" | "PORTFOLIO_BUDGET" | "CASH_HISTORY_INCOMPLETE" | "NEGATIVE_CASH_BALANCE" | "NEW_OPENING_BALANCE" | "ENDPOINT_VALUATIONS_MISSING" | "REVIEWED_WINDOW" | "CALCULATED" | "FLOW_DAY_VALUATION_MISSING" | "NON_POSITIVE_BASE" | "CASH_FLOW_SIGNS" | "AMBIGUOUS_CASH_FLOWS" | "OUTSIDE_SOLVER_RANGE") & (string);
+  "percent": (((DecimalString)) | ((null)));
 });
 
 export type ReviewCloseInput = ({
@@ -2216,11 +2266,16 @@ export interface ContractTypes {
   PeerRankingRow: PeerRankingRow;
   PeerRankingSpecification: PeerRankingSpecification;
   PeerRankingSummary: PeerRankingSummary;
+  PerformanceFlow: PerformanceFlow;
+  PerformanceSnapshotRef: PerformanceSnapshotRef;
+  PerformanceValuation: PerformanceValuation;
   PortfolioArchiveInput: PortfolioArchiveInput;
   PortfolioBrief: PortfolioBrief;
   PortfolioDetail: PortfolioDetail;
   PortfolioInput: PortfolioInput;
   PortfolioList: PortfolioList;
+  PortfolioPerformance: PortfolioPerformance;
+  PortfolioPerformanceInput: PortfolioPerformanceInput;
   PortfolioSummary: PortfolioSummary;
   PortfolioValuation: PortfolioValuation;
   PositiveDecimalString: PositiveDecimalString;
@@ -2268,6 +2323,7 @@ export interface ContractTypes {
   ResearchReportSummary: ResearchReportSummary;
   ResearchSearchResult: ResearchSearchResult;
   ResearchTextPage: ResearchTextPage;
+  ReturnMeasure: ReturnMeasure;
   ReviewCloseInput: ReviewCloseInput;
   ReviewReminder: ReviewReminder;
   Rights: Rights;

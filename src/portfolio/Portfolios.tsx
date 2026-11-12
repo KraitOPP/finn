@@ -3,6 +3,7 @@ import type { InvestmentAccount } from "../../contracts/generated/models.ts";
 import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
+import { PerformancePanel } from "../market/PerformancePanel.tsx";
 import { ValuationHistory } from "../market/ValuationHistory.tsx";
 import {
   AccountValuationPanel,
@@ -190,6 +191,7 @@ function PortfolioDetail({
         </div>
       )}
       <PortfolioValuationPanel id={id} />
+      <PerformancePanel portfolio={id} />
       <h3>Source accounts</h3>
       {accounts.length === 0 ? (
         <p>No accounts yet. Add the source of your portfolio records.</p>

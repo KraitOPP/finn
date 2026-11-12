@@ -8,7 +8,7 @@ import { AuthProvider } from "./auth/AuthProvider.tsx";
 const anonymous = () =>
   new Response(
     JSON.stringify({
-      contractVersion: "0.42.0",
+      contractVersion: "0.43.0",
       requestId: "synthetic-session",
       authenticated: false,
       user: null,

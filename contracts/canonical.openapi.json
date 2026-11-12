@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.42.0",
+    "version": "0.43.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -11417,6 +11417,139 @@
         }
       }
     },
+    "/api/v1/portfolios/{portfolio}/performance": {
+      "post": {
+        "operationId": "calculatePortfolioPerformance",
+        "summary": "Calculate cash-flow-aware returns from a reviewed window and current exact snapshots",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "portfolio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioPerformance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioPerformanceInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/portfolios/{portfolio}/accounts/{account}/valuation": {
       "get": {
         "operationId": "valueAccount",
@@ -16870,7 +17003,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.42.0"
+        "const": "0.43.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -17750,6 +17883,262 @@
         "required": [
           "snapshot",
           "valuation"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioPerformanceInput": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "end": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "reviewed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "reviewed"
+        ],
+        "additionalProperties": false
+      },
+      "PerformanceSnapshotRef": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "snapshotId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "ledgerRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "value": {
+            "$ref": "#/components/schemas/DecimalString"
+          }
+        },
+        "required": [
+          "accountId",
+          "snapshotId",
+          "ledgerRevision",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "PerformanceValuation": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "closingValue": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "snapshots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceSnapshotRef"
+            },
+            "maxItems": 100,
+            "minItems": 1
+          }
+        },
+        "required": [
+          "date",
+          "closingValue",
+          "snapshots"
+        ],
+        "additionalProperties": false
+      },
+      "PerformanceFlow": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "deposits": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "withdrawals": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "net": {
+            "$ref": "#/components/schemas/DecimalString"
+          }
+        },
+        "required": [
+          "date",
+          "deposits",
+          "withdrawals",
+          "net"
+        ],
+        "additionalProperties": false
+      },
+      "ReturnMeasure": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "HISTORY_UNREVIEWED",
+              "NO_ACCOUNTS",
+              "PORTFOLIO_BUDGET",
+              "CASH_HISTORY_INCOMPLETE",
+              "NEGATIVE_CASH_BALANCE",
+              "NEW_OPENING_BALANCE",
+              "ENDPOINT_VALUATIONS_MISSING",
+              "REVIEWED_WINDOW",
+              "CALCULATED",
+              "FLOW_DAY_VALUATION_MISSING",
+              "NON_POSITIVE_BASE",
+              "CASH_FLOW_SIGNS",
+              "AMBIGUOUS_CASH_FLOWS",
+              "OUTSIDE_SOLVER_RANGE"
+            ]
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "percent"
+        ],
+        "additionalProperties": false
+      },
+      "PortfolioPerformance": {
+        "type": "object",
+        "properties": {
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "start": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "end": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "currency": {
+            "const": "INR"
+          },
+          "methodology": {
+            "const": "cash-flow-returns-v1"
+          },
+          "coverage": {
+            "type": "string",
+            "enum": [
+              "HISTORY_UNREVIEWED",
+              "NO_ACCOUNTS",
+              "PORTFOLIO_BUDGET",
+              "CASH_HISTORY_INCOMPLETE",
+              "NEGATIVE_CASH_BALANCE",
+              "NEW_OPENING_BALANCE",
+              "ENDPOINT_VALUATIONS_MISSING",
+              "REVIEWED_WINDOW"
+            ]
+          },
+          "opening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceValuation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceValuation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flowValuations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceValuation"
+            },
+            "maxItems": 366
+          },
+          "externalFlows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceFlow"
+            },
+            "maxItems": 366
+          },
+          "recordedDividends": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "investmentResult": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "xirr": {
+            "$ref": "#/components/schemas/ReturnMeasure"
+          },
+          "timeWeighted": {
+            "$ref": "#/components/schemas/ReturnMeasure"
+          },
+          "benchmark": {
+            "const": "NO_COMPATIBLE_BENCHMARK"
+          }
+        },
+        "required": [
+          "portfolioId",
+          "start",
+          "end",
+          "currency",
+          "methodology",
+          "coverage",
+          "opening",
+          "closing",
+          "flowValuations",
+          "externalFlows",
+          "recordedDividends",
+          "investmentResult",
+          "xirr",
+          "timeWeighted",
+          "benchmark"
         ],
         "additionalProperties": false
       },

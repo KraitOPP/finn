@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.42.0",
+  "contractVersion": "0.43.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "e0de530b0ade02fccc984421b731d1c5eb58dccd6254b5905694bbc631cc7d3f",
+  "sourceSha256": "cbe32ebb420254192b0afbde738b669a8e7f2bfe5829114c6d9ddbf77cbdff8b",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -151,11 +151,16 @@ export const contractMetadata = {
     "PeerRankingRow",
     "PeerRankingSpecification",
     "PeerRankingSummary",
+    "PerformanceFlow",
+    "PerformanceSnapshotRef",
+    "PerformanceValuation",
     "PortfolioArchiveInput",
     "PortfolioBrief",
     "PortfolioDetail",
     "PortfolioInput",
     "PortfolioList",
+    "PortfolioPerformance",
+    "PortfolioPerformanceInput",
     "PortfolioSummary",
     "PortfolioValuation",
     "PositiveDecimalString",
@@ -203,6 +208,7 @@ export const contractMetadata = {
     "ResearchReportSummary",
     "ResearchSearchResult",
     "ResearchTextPage",
+    "ReturnMeasure",
     "ReviewCloseInput",
     "ReviewReminder",
     "Rights",
@@ -2308,7 +2314,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.42.0"
+    "const": "0.43.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -7486,6 +7492,81 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "PerformanceFlow": {
+    "type": "object",
+    "properties": {
+      "date": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "deposits": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "withdrawals": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "net": {
+        "$ref": "#/components/schemas/DecimalString"
+      }
+    },
+    "required": [
+      "date",
+      "deposits",
+      "withdrawals",
+      "net"
+    ],
+    "additionalProperties": false
+  },
+  "PerformanceSnapshotRef": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "snapshotId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "ledgerRevision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "value": {
+        "$ref": "#/components/schemas/DecimalString"
+      }
+    },
+    "required": [
+      "accountId",
+      "snapshotId",
+      "ledgerRevision",
+      "value"
+    ],
+    "additionalProperties": false
+  },
+  "PerformanceValuation": {
+    "type": "object",
+    "properties": {
+      "date": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "closingValue": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "snapshots": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PerformanceSnapshotRef"
+        },
+        "maxItems": 100,
+        "minItems": 1
+      }
+    },
+    "required": [
+      "date",
+      "closingValue",
+      "snapshots"
+    ],
+    "additionalProperties": false
+  },
   "PortfolioArchiveInput": {
     "type": "object",
     "properties": {
@@ -7696,6 +7777,140 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Includes active and archived portfolios. At most 100 may be created per owner in this supported scope."
+  },
+  "PortfolioPerformance": {
+    "type": "object",
+    "properties": {
+      "portfolioId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "start": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "end": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "currency": {
+        "const": "INR"
+      },
+      "methodology": {
+        "const": "cash-flow-returns-v1"
+      },
+      "coverage": {
+        "type": "string",
+        "enum": [
+          "HISTORY_UNREVIEWED",
+          "NO_ACCOUNTS",
+          "PORTFOLIO_BUDGET",
+          "CASH_HISTORY_INCOMPLETE",
+          "NEGATIVE_CASH_BALANCE",
+          "NEW_OPENING_BALANCE",
+          "ENDPOINT_VALUATIONS_MISSING",
+          "REVIEWED_WINDOW"
+        ]
+      },
+      "opening": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PerformanceValuation"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "closing": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PerformanceValuation"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "flowValuations": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PerformanceValuation"
+        },
+        "maxItems": 366
+      },
+      "externalFlows": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PerformanceFlow"
+        },
+        "maxItems": 366
+      },
+      "recordedDividends": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "investmentResult": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "xirr": {
+        "$ref": "#/components/schemas/ReturnMeasure"
+      },
+      "timeWeighted": {
+        "$ref": "#/components/schemas/ReturnMeasure"
+      },
+      "benchmark": {
+        "const": "NO_COMPATIBLE_BENCHMARK"
+      }
+    },
+    "required": [
+      "portfolioId",
+      "start",
+      "end",
+      "currency",
+      "methodology",
+      "coverage",
+      "opening",
+      "closing",
+      "flowValuations",
+      "externalFlows",
+      "recordedDividends",
+      "investmentResult",
+      "xirr",
+      "timeWeighted",
+      "benchmark"
+    ],
+    "additionalProperties": false
+  },
+  "PortfolioPerformanceInput": {
+    "type": "object",
+    "properties": {
+      "start": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "end": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "reviewed": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "start",
+      "end",
+      "reviewed"
+    ],
+    "additionalProperties": false
   },
   "PortfolioSummary": {
     "type": "object",
@@ -9600,6 +9815,53 @@ export const contractSchemas = {
       "page",
       "state",
       "content"
+    ],
+    "additionalProperties": false
+  },
+  "ReturnMeasure": {
+    "type": "object",
+    "properties": {
+      "state": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "UNAVAILABLE"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "HISTORY_UNREVIEWED",
+          "NO_ACCOUNTS",
+          "PORTFOLIO_BUDGET",
+          "CASH_HISTORY_INCOMPLETE",
+          "NEGATIVE_CASH_BALANCE",
+          "NEW_OPENING_BALANCE",
+          "ENDPOINT_VALUATIONS_MISSING",
+          "REVIEWED_WINDOW",
+          "CALCULATED",
+          "FLOW_DAY_VALUATION_MISSING",
+          "NON_POSITIVE_BASE",
+          "CASH_FLOW_SIGNS",
+          "AMBIGUOUS_CASH_FLOWS",
+          "OUTSIDE_SOLVER_RANGE"
+        ]
+      },
+      "percent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "state",
+      "reason",
+      "percent"
     ],
     "additionalProperties": false
   },
