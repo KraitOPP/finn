@@ -3,17 +3,34 @@ package dev.finn.imports;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import dev.finn.instruments.Isin;
+import dev.finn.platform.WorkspacePolicy;
 
 public final class SyntheticWorkbook {
     private static final String MAIN="http://schemas.openxmlformats.org/spreadsheetml/2006/main";
     private static final String REL="http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     public static final String WORKSHEET="xl/worksheets/sheet1.xml";
     private SyntheticWorkbook(){}
+    public static void main(String[] args)throws IOException {
+        var root=WorkspacePolicy.requireExternalRoot(System.getenv("FINN_WORKSPACE_ROOT"));
+        var directory=Files.createDirectories(root.resolve("demo")).toRealPath();
+        if(!directory.startsWith(root))throw new IOException("Demo directory is outside the workspace.");
+        var workbook=directory.resolve("fictional-groww-holdings.xlsx");
+        byte[] data=holdings();
+        if(Files.exists(workbook,java.nio.file.LinkOption.NOFOLLOW_LINKS)){
+            if(Files.isSymbolicLink(workbook)||Files.size(workbook)!=data.length||!java.util.Arrays.equals(Files.readAllBytes(workbook),data))
+                throw new IOException("The synthetic fixture already exists with different contents.");
+        }else{
+            Files.write(workbook,data,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE);
+        }
+        System.out.println("Fictional workbook is ready in the external demo directory.");
+    }
     public static String isin(int number){
         String prefix="ZZ%09d".formatted(number);
         for(int check=0;check<10;check++)if(Isin.valid(prefix+check))return prefix+check;
@@ -51,7 +68,13 @@ public final class SyntheticWorkbook {
     public static byte[] zip(Map<String,String> parts){
         var output=new ByteArrayOutputStream();
         try(var zip=new ZipOutputStream(output,StandardCharsets.UTF_8)){
-            for(var part:parts.entrySet()){zip.putNextEntry(new ZipEntry(part.getKey()));zip.write(part.getValue().getBytes(StandardCharsets.UTF_8));zip.closeEntry();}
+            for(var part:parts.entrySet()){
+                var entry=new ZipEntry(part.getKey());
+                entry.setTime(0);
+                zip.putNextEntry(entry);
+                zip.write(part.getValue().getBytes(StandardCharsets.UTF_8));
+                zip.closeEntry();
+            }
         }catch(IOException error){throw new AssertionError("Synthetic ZIP creation failed",error);}
         return output.toByteArray();
     }

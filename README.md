@@ -26,7 +26,7 @@ On Linux/macOS export the same variables and create the external directory, then
 
 Setup creates random development credentials outside Git and preserves existing files. PostgreSQL bootstrap, migration, identity-provider and runtime identities are distinct: the application role cannot create tables or read migration history. Restore existing secrets if they are lost; setup does not reset passwords in an existing database. Stop only this project's services with `docker compose stop`; no data removal is part of startup or shutdown.
 
-The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability but suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.45.0. `GET /api/v1/session` supplies authentication state and a CSRF token; `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read/save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision; concurrent changes return 409. Delivery is explicitly unavailable until its own implementation. User-supplied owner IDs are not accepted. The holdings route accepts bounded raw workbook bytes; multipart remains disabled.
+The API binds to `127.0.0.1:8080`. `GET /actuator/health/readiness` includes database availability and suppresses details. `GET /api/v1/demo/quote` serves a curated fictional quote using public contract 0.45.0. `GET /api/v1/session` supplies authentication state and a CSRF token. `GET /api/v1/me` requires a signed-in user. Authenticated `GET`/`PUT /api/v1/preferences` read and save the current user's IANA display time zone, INR currency and delivery choices. Updates require CSRF and the last read revision. Concurrent changes return 409. The server derives ownership from the session. The holdings route accepts bounded raw workbook bytes.
 
 Run the frontend at exactly `http://127.0.0.1:5173` and use its same-origin proxies. Sign in redirects to the local Keycloak realm at `http://localhost:8180/realms/finn-local`. Development-only synthetic account credentials are generated in the private `secrets/identity/demo-users.json` file under the working directory. Never commit or share that file. Keycloak stores identity records in its own database; the app stores only an issuer/subject link and display name. The packaged JAR is under `FINN_WORKSPACE_ROOT/build/backend`; running it needs Java and configuration but does not need Node.
 
@@ -58,6 +58,20 @@ Reports use PostgreSQL keyword retrieval by default. To enable optional model ra
 
 ## Verification
 
+See [Deployment and recovery](deployment/RELEASE.md) for packaged deployment, encrypted archives, restore, and rollback.
+See [Fictional replay](deployment/DEMO.md) for the generated workbook and end-to-end API scenario.
+
+```mermaid
+flowchart LR
+    React[React workspace] --> Proxy[Same-origin HTTPS proxy]
+    Proxy --> API[Spring Boot API]
+    API <-->|OIDC| Identity[Identity provider]
+    API --> DB[(PostgreSQL)]
+    DB --> Jobs[Leased ingestion and delivery jobs]
+    Jobs --> DB
+    Jobs --> Workers[Optional bounded Python workers]
+```
+
 `node scripts/maven.mjs verify` compiles, tests and packages the application. Integration checks start real PostgreSQL containers, verify migrations and role restrictions, and exercise signed OIDC callbacks against a deterministic test provider. They check state/nonce/PKCE, session rotation, database expiry, CSRF and logout. Docker must be available; missing Docker is a failure, not a silently skipped database test.
 
 The GitHub workflow runs the application and existing Python contract/adapter checks without live providers or personal reports. Build actions and the PostgreSQL image are pinned to verified immutable identifiers. Python check tools must use external environments/caches; their component READMEs document standalone commands.
@@ -81,11 +95,11 @@ The GitHub workflow runs the application and existing Python contract/adapter ch
 
 Each component documents its checks. Install dependencies and retain caches/output outside the checkout using `FINN_WORKSPACE_ROOT`.
 
-## Planned responsibilities
+## Application responsibilities
 
 - Portfolio transactions, cash movements, import reconciliation, and financial calculations.
 - PostgreSQL persistence, identity and ownership checks, and auditable corrections.
-- Market-data adapters for Yahoo Finance/yfinance and permitted official exchange end-of-day reports.
+- Optional Yahoo Finance daily history and manually reviewed exchange closes.
 - Watchlists, reliable alerts, reminders, filings, news, and evidence-based research.
 - Investment thesis tracking, management guidance comparisons, and explainable stock screening.
 
