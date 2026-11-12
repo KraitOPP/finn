@@ -172,11 +172,22 @@ class FinancialFacts {
     }
 
     Fact byDimensions(UUID owner,UUID company,Dimensions d){
+        return selectDimensions(owner,company,d,null);
+    }
+
+    Fact byDimensionsAsOf(UUID owner,UUID company,Dimensions d,OffsetDateTime until){
+        return selectDimensions(owner,company,d,until);
+    }
+
+    private Fact selectDimensions(UUID owner,UUID company,Dimensions d,OffsetDateTime until){
+        String version=until==null?" AND v.revision=f.revision":" AND v.published_at<? ORDER BY v.revision DESC LIMIT 1";
+        var arguments=new java.util.ArrayList<>(java.util.Arrays.asList(owner,company,d.metric(),d.basis(),d.periodKind(),
+                d.periodStart(),d.periodEnd(),d.unit(),d.currency()));
+        if(until!=null)arguments.add(until);
         return jdbc.query(SELECT+"""
                 WHERE f.owner_id=? AND f.company_id=? AND f.metric=? AND f.basis=? AND f.period_kind=?
                  AND f.period_start=? AND f.period_end=? AND f.unit=? AND f.currency IS NOT DISTINCT FROM CAST(? AS char(3))
-                 AND v.revision=f.revision
-                """,FinancialFacts::row,owner,company,d.metric(),d.basis(),d.periodKind(),d.periodStart(),d.periodEnd(),d.unit(),d.currency())
+                """+version,FinancialFacts::row,arguments.toArray())
                 .stream().findFirst().orElse(null);
     }
 

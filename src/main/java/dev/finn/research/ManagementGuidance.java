@@ -84,6 +84,11 @@ class ManagementGuidance {
                 .stream().findFirst().orElseThrow(ApiFailure::notFound);
     }
 
+    List<Version> confirmedAfter(UUID owner,UUID id,int revision){
+        return jdbc.query(SELECT+" WHERE g.owner_id=? AND g.guidance_id=? AND v.revision>? AND v.stage<>'DRAFT' ORDER BY v.revision DESC",
+                this::row,owner,id,revision);
+    }
+
     private Version append(UUID owner,UUID company,UUID id,int revision,GuidanceController.Input input,Version previous) {
         var location=evidence.require(owner,input.anchorId());
         if(!location.companyId().equals(company))throw ApiFailure.notFound();

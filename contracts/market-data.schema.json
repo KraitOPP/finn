@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.37.0",
+  "$id": "urn:finn:contracts:market-data:0.38.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.37.0"
+      "const": "0.38.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -3912,6 +3912,85 @@
       "required": [
         "evidence",
         "printedNumbers"
+      ],
+      "additionalProperties": false
+    },
+    "GuidanceDelivery": {
+      "type": "object",
+      "properties": {
+        "guidanceId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "guidanceRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "asOf": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "MET",
+            "MISSED",
+            "PARTIAL",
+            "WITHDRAWN",
+            "REVISED",
+            "NOT_DUE",
+            "INSUFFICIENT_EVIDENCE"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "PERIOD_OPEN",
+            "FACT_MISSING",
+            "DIMENSIONS_MISMATCH",
+            "PUBLICATION_UNKNOWN",
+            "PUBLISHED_AFTER_CUTOFF",
+            "PERIOD_PUBLICATION_INVALID",
+            "SOURCE_REVISED",
+            "DERIVATION_REVIEW_REQUIRED",
+            "COMPARABLE_FACT",
+            "GUIDANCE_UNCONFIRMED",
+            "GUIDANCE_NOT_PUBLISHED",
+            "WITHDRAWAL_PUBLISHED",
+            "REVISION_PUBLISHED",
+            "QUALITATIVE_STATEMENT",
+            "OUTCOME_PREDATES_GUIDANCE",
+            "INTERIM_YTD_ONLY"
+          ]
+        },
+        "actual": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinancialFact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "successor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ManagementGuidance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "guidanceId",
+        "guidanceRevision",
+        "asOf",
+        "state",
+        "reason",
+        "actual",
+        "successor"
       ],
       "additionalProperties": false
     },

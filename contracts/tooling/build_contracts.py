@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.37.0"
+VERSION = "0.38.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -370,6 +370,11 @@ def definitions() -> dict:
         "revision":source_revision,"publishedAt":nullable(ref("UtcInstant")),"savedAt":ref("UtcInstant")})
     d["ManagementGuidanceList"] = obj({"items":array(ref("ManagementGuidance"),maxItems=50)})
     d["GuidanceCandidates"] = obj({"evidence":ref("ResearchLocation"),"printedNumbers":array(text(minLength=1,maxLength=80),maxItems=12)})
+    d["GuidanceDelivery"] = obj({"guidanceId":ref("OpaqueId"),"guidanceRevision":source_revision,"asOf":ref("SessionDate"),
+        "state":enum(["MET","MISSED","PARTIAL","WITHDRAWN","REVISED","NOT_DUE","INSUFFICIENT_EVIDENCE"]),
+        "reason":enum([*fact_evaluation_reason["enum"],"GUIDANCE_UNCONFIRMED","GUIDANCE_NOT_PUBLISHED","WITHDRAWAL_PUBLISHED",
+            "REVISION_PUBLISHED","QUALITATIVE_STATEMENT","OUTCOME_PREDATES_GUIDANCE","INTERIM_YTD_ONLY"]),
+        "actual":nullable(ref("FinancialFact")),"successor":nullable(ref("ManagementGuidance"))})
     d["ResearchReportCapabilities"] = obj({"localRanking":{"type":"boolean"}})
     d["ResearchReportInput"] = obj({"question":text(minLength=1,maxLength=320),"rankLocally":{"type":"boolean"}})
     report_feedback = {"note":text(minLength=1,maxLength=500),"anchorId":nullable(ref("OpaqueId"))}
@@ -950,6 +955,9 @@ def public_api_document() -> dict:
             "ManagementGuidance",identifier,"ManagementGuidanceEdit")},
         "/api/v1/research/guidance/{id}/versions":{"get":maintained("readGuidanceTimeline","Read source-linked guidance versions",
             "ManagementGuidanceList",identifier)},
+        "/api/v1/research/guidance/{id}/versions/{revision}/delivery":{"get":maintained("compareGuidanceDelivery",
+            "Compare the statement and outcome known on the selected date","GuidanceDelivery",
+            [*source_version_params,parameter("asOf","query",ref("SessionDate"))])},
         "/api/v1/research/guidance/candidates/{anchor}":{"get":maintained("readGuidanceCandidates","Inspect the selected source and its printed numbers",
             "GuidanceCandidates",[parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/report-capabilities":{"get":maintained(
