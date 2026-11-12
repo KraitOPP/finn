@@ -14,21 +14,20 @@ export const destinations = [
 ] as const;
 export type Route = (typeof destinations)[number][0];
 
-function readRoute() {
-  const value =
-    window.location.hash.replace(/^#\/?/, "").split("?", 1)[0] || "overview";
+function readRoute(hash: string) {
+  const value = hash.replace(/^#\/?/, "").split("?", 1)[0] || "overview";
   return destinations.some(([route]) => route === value)
     ? (value as Route)
     : null;
 }
 export function useRoute() {
-  const [route, setRoute] = useState<Route | null>(readRoute);
+  const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
-    const update = () => setRoute(readRoute());
+    const update = () => setHash(window.location.hash);
     window.addEventListener("hashchange", update);
     return () => window.removeEventListener("hashchange", update);
   }, []);
-  return route;
+  return readRoute(hash);
 }
 
 export function Navigation({ route }: { route: Route | null }) {

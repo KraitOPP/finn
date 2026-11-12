@@ -358,9 +358,9 @@ function PriceSeries({ value }: { value: MarketChart }) {
             title="Observed trading prices in Indian rupees"
             desc="Prices are plotted in trading order. Exact displayed observations are listed below."
             height={268}
-            margin={{ top: 12, bottom: 8, right: 14, left: 4 }}
+            margin={{ top: 12, bottom: 8, right: 29, left: 4 }}
             skipAnimation
-            sx={{ "& .MuiAreaElement-root": { fillOpacity: 0.16 } }}
+            sx={{ "& .MuiLineChart-area": { fillOpacity: 0.16 } }}
             xAxis={[
               {
                 scaleType: "point",
