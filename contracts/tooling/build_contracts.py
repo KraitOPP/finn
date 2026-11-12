@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.38.0"
+VERSION = "0.39.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -185,7 +185,7 @@ def definitions() -> dict:
         "status": enum(["PAUSED","EXPIRED","WAITING_FOR_PRICE","STALE","EVALUATED","INSUFFICIENT_HISTORY"]),
         "items": array(ref("PriceEvaluation"),maxItems=50),
     })
-    activity_kind = enum(["PRICE_RULE","REVIEW_REMINDER","PORTFOLIO_BRIEF","VOLUME_RULE","ALLOCATION_RULE","COMPANY_EVENT"])
+    activity_kind = enum(["PRICE_RULE","REVIEW_REMINDER","PORTFOLIO_BRIEF","VOLUME_RULE","ALLOCATION_RULE","COMPANY_EVENT","THESIS_REVIEW"])
     channel = enum(["IN_APP","EMAIL_PREVIEW"])
     delivery_status = enum(["PENDING","DELIVERED","SUPPRESSED","PREVIEWED","FAILED"])
     d["Notification"] = obj({
@@ -225,12 +225,14 @@ def definitions() -> dict:
         "triggered": {"type":"boolean"}, "evaluatedAt": ref("UtcInstant"),
     })
     d["IndicatorEvaluations"] = obj({"items": array(ref("IndicatorEvaluation"),maxItems=40)})
+    d["ThesisReviewLink"] = obj({"companyId":ref("OpaqueId"),"thesisId":ref("OpaqueId"),"reviewId":ref("OpaqueId")})
     d["NotificationDetail"] = obj({
         "notification": ref("Notification"), "price": nullable(ref("PriceEvaluation")),
         "reminder": nullable(ref("ReminderEvidence")),
         "indicator": nullable(ref("IndicatorEvaluation")),
         "briefId": nullable(ref("OpaqueId")),
         "companyEvent": nullable(ref("CompanyEvent")),
+        "thesisReview": nullable(ref("ThesisReviewLink")),
         "deliveries": array(ref("NotificationDelivery"),maxItems=2), "attempts": array(ref("NotificationAttempt"),maxItems=6),
     })
     local_minute = text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$",maxLength=16)
@@ -375,6 +377,23 @@ def definitions() -> dict:
         "reason":enum([*fact_evaluation_reason["enum"],"GUIDANCE_UNCONFIRMED","GUIDANCE_NOT_PUBLISHED","WITHDRAWAL_PUBLISHED",
             "REVISION_PUBLISHED","QUALITATIVE_STATEMENT","OUTCOME_PREDATES_GUIDANCE","INTERIM_YTD_ONLY"]),
         "actual":nullable(ref("FinancialFact")),"successor":nullable(ref("ManagementGuidance"))})
+    review_relation = enum(["CONTEXT","SUPPORTS","CHALLENGES"])
+    review_decision = {"action":enum(["REAFFIRM","REVISE","PAUSE","CLOSE","DISMISS"]),
+        "note":text(minLength=1,maxLength=1200),"anchorId":nullable(ref("OpaqueId"))}
+    d["ThesisReviewGuidanceRef"] = obj({"id":ref("OpaqueId"),"revision":source_revision})
+    d["ThesisReviewInput"] = obj({"expectedRevision":thesis_revision,"eventVersionId":ref("OpaqueId"),
+        "relation":review_relation,"anchorId":nullable(ref("OpaqueId")),"conditionCheckId":nullable(ref("OpaqueId")),
+        "guidance":nullable(ref("ThesisReviewGuidanceRef"))})
+    d["ThesisReviewDecisionInput"] = obj(review_decision)
+    d["ThesisReviewDecision"] = obj({**review_decision,"decidedAt":ref("UtcInstant")})
+    d["ThesisReviewGuidance"] = obj({"statement":ref("ManagementGuidance"),"outcome":ref("GuidanceDelivery")})
+    d["ThesisReviewSummary"] = obj({"reviewId":ref("OpaqueId"),"thesisRevision":thesis_revision,"eventTitle":text(maxLength=120),
+        "createdAt":ref("UtcInstant"),"decided":{"type":"boolean"}})
+    d["ThesisReviewIndex"] = obj({"suggestions":array(ref("CompanyEvent"),maxItems=10),
+        "items":array(ref("ThesisReviewSummary"),maxItems=20),"hasMore":{"type":"boolean"}})
+    d["ThesisReview"] = obj({"reviewId":ref("OpaqueId"),"thesis":ref("InvestmentThesis"),"event":ref("CompanyEvent"),
+        "relation":review_relation,"anchorId":nullable(ref("OpaqueId")),"condition":nullable(ref("ThesisConditionCheck")),
+        "guidance":nullable(ref("ThesisReviewGuidance")),"decision":nullable(ref("ThesisReviewDecision")),"createdAt":ref("UtcInstant")})
     d["ResearchReportCapabilities"] = obj({"localRanking":{"type":"boolean"}})
     d["ResearchReportInput"] = obj({"question":text(minLength=1,maxLength=320),"rankLocally":{"type":"boolean"}})
     report_feedback = {"note":text(minLength=1,maxLength=500),"anchorId":nullable(ref("OpaqueId"))}
@@ -946,6 +965,16 @@ def public_api_document() -> dict:
             "ThesisConditions",[parameter("thesis","path",text(format="uuid"),True),csrf_header])},
         "/api/v1/research/theses/{thesis}/conditions/{condition}/retire":{"post":maintained("retireThesisCondition","Retire a threshold while retaining checked evidence",
             "ThesisCondition",[parameter("thesis","path",text(format="uuid"),True),parameter("condition","path",text(format="uuid"),True),csrf_header])},
+        "/api/v1/research/theses/{thesis}/reviews":{
+            "get":maintained("listThesisReviews","Read owned review tasks and same-company event suggestions","ThesisReviewIndex",[
+                parameter("thesis","path",text(format="uuid"),True),parameter("offset","query",{"type":"integer","minimum":0,"maximum":500}),
+                parameter("event","query",ref("OpaqueId"))]),
+            "post":maintained("createThesisReview","Queue one review notification with pinned thesis and evidence","ThesisReview",
+                [parameter("thesis","path",text(format="uuid"),True)],"ThesisReviewInput"),
+        },
+        "/api/v1/research/thesis-reviews/{id}":{"get":maintained("readThesisReview","Read a saved review and its original evidence","ThesisReview",identifier)},
+        "/api/v1/research/thesis-reviews/{id}/decision":{"post":maintained("recordThesisReviewDecision","Record a user-reviewed decision",
+            "ThesisReview",identifier,"ThesisReviewDecisionInput")},
         "/api/v1/research/companies/{company}/guidance":{
             "get":maintained("listManagementGuidance","Read current statements and review status","ManagementGuidanceList",company_parameter),
             "post":maintained("recordManagementGuidance","Save a dated guidance statement from a passage","ManagementGuidance",

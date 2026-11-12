@@ -112,6 +112,12 @@ class ThesisConditions {
                 .map(check->view(check,check.factId()==null?null:facts.require(owner,check.factId(),check.factRevision()))).orElse(null);
     }
 
+    Check checked(UUID owner,UUID thesis,UUID id){
+        var check=jdbc.query("SELECT * FROM finn.thesis_condition_check WHERE owner_id=? AND thesis_id=? AND check_id=?",
+                ThesisConditions::row,owner,thesis,id).stream().findFirst().orElseThrow(ApiFailure::notFound);
+        return view(check,check.factId()==null?null:facts.require(owner,check.factId(),check.factRevision()));
+    }
+
     private static Check view(StoredCheck check,FinancialFacts.Fact fact){
         return new Check(check.id(),check.revision(),check.state(),check.reason(),fact,check.evaluatedAt());
     }

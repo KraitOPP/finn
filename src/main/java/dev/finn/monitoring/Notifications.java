@@ -19,8 +19,9 @@ class Notifications {
     record Attempt(String channel, int attempt, String outcome, String attemptedAt) {}
     record Delivery(String channel, String status, int attempts, String nextAttemptAt, String completedAt, String failureCode) {}
     record ReminderEvidence(int revision, String dueAt, String deliverAt) {}
+    record ThesisReviewLink(UUID companyId,UUID thesisId,UUID reviewId) {}
     record Detail(Item notification, PriceEvaluationReport.Evaluation price, ReminderEvidence reminder,
-                  Indicators.Evaluation indicator, UUID briefId, CompanyEvents.Version companyEvent,
+                  Indicators.Evaluation indicator, UUID briefId, CompanyEvents.Version companyEvent,ThesisReviewLink thesisReview,
                   List<Delivery> deliveries, List<Attempt> attempts) {}
     record DeliveryItem(UUID activityId, String title, String kind, Delivery delivery) {}
     record DeliveryPage(boolean emailPreviewEnabled, List<DeliveryItem> items) {}
@@ -82,7 +83,12 @@ class Notifications {
         var indicator = item.kind().equals("VOLUME_RULE") || item.kind().equals("ALLOCATION_RULE")
                 ? indicators.evidence(owner, evidence) : null;
         var event=item.kind().equals("COMPANY_EVENT")?companyEvents.evidence(owner,evidence):null;
-        return new Detail(item, evaluation, reminder, indicator, item.kind().equals("PORTFOLIO_BRIEF") ? evidence : null, event, deliveries, attempts);
+        var review=item.kind().equals("THESIS_REVIEW")?jdbc.query("""
+                SELECT t.company_id,t.thesis_id FROM finn.thesis_review_task r JOIN finn.investment_thesis t USING(owner_id,thesis_id)
+                WHERE r.owner_id=? AND r.review_id=?
+                """,(row,i)->new ThesisReviewLink(row.getObject("company_id",UUID.class),row.getObject("thesis_id",UUID.class),evidence),
+                owner,evidence).stream().findFirst().orElse(null):null;
+        return new Detail(item, evaluation, reminder, indicator, item.kind().equals("PORTFOLIO_BRIEF") ? evidence : null, event, review, deliveries, attempts);
     }
 
     @Transactional

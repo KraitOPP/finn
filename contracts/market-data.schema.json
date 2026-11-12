@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.38.0",
+  "$id": "urn:finn:contracts:market-data:0.39.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.38.0"
+      "const": "0.39.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -1316,7 +1316,8 @@
             "PORTFOLIO_BRIEF",
             "VOLUME_RULE",
             "ALLOCATION_RULE",
-            "COMPANY_EVENT"
+            "COMPANY_EVENT",
+            "THESIS_REVIEW"
           ]
         },
         "subjectId": {
@@ -1763,6 +1764,26 @@
       ],
       "additionalProperties": false
     },
+    "ThesisReviewLink": {
+      "type": "object",
+      "properties": {
+        "companyId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "thesisId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "reviewId": {
+          "$ref": "#/$defs/OpaqueId"
+        }
+      },
+      "required": [
+        "companyId",
+        "thesisId",
+        "reviewId"
+      ],
+      "additionalProperties": false
+    },
     "NotificationDetail": {
       "type": "object",
       "properties": {
@@ -1819,6 +1840,16 @@
             }
           ]
         },
+        "thesisReview": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThesisReviewLink"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "deliveries": {
           "type": "array",
           "items": {
@@ -1841,6 +1872,7 @@
         "indicator",
         "briefId",
         "companyEvent",
+        "thesisReview",
         "deliveries",
         "attempts"
       ],
@@ -2194,7 +2226,8 @@
                   "PORTFOLIO_BRIEF",
                   "VOLUME_RULE",
                   "ALLOCATION_RULE",
-                  "COMPANY_EVENT"
+                  "COMPANY_EVENT",
+                  "THESIS_REVIEW"
                 ]
               },
               "title": {
@@ -3994,6 +4027,313 @@
       ],
       "additionalProperties": false
     },
+    "ThesisReviewGuidanceRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": [
+        "id",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisReviewInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "eventVersionId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "CONTEXT",
+            "SUPPORTS",
+            "CHALLENGES"
+          ]
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conditionCheckId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "guidance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThesisReviewGuidanceRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "eventVersionId",
+        "relation",
+        "anchorId",
+        "conditionCheckId",
+        "guidance"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisReviewDecisionInput": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "REAFFIRM",
+            "REVISE",
+            "PAUSE",
+            "CLOSE",
+            "DISMISS"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "action",
+        "note",
+        "anchorId"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisReviewDecision": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "REAFFIRM",
+            "REVISE",
+            "PAUSE",
+            "CLOSE",
+            "DISMISS"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decidedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "action",
+        "note",
+        "anchorId",
+        "decidedAt"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisReviewGuidance": {
+      "type": "object",
+      "properties": {
+        "statement": {
+          "$ref": "#/$defs/ManagementGuidance"
+        },
+        "outcome": {
+          "$ref": "#/$defs/GuidanceDelivery"
+        }
+      },
+      "required": [
+        "statement",
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisReviewSummary": {
+      "type": "object",
+      "properties": {
+        "reviewId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "thesisRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "eventTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "createdAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "decided": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "reviewId",
+        "thesisRevision",
+        "eventTitle",
+        "createdAt",
+        "decided"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisReviewIndex": {
+      "type": "object",
+      "properties": {
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompanyEvent"
+          },
+          "maxItems": 10
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThesisReviewSummary"
+          },
+          "maxItems": 20
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "suggestions",
+        "items",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "ThesisReview": {
+      "type": "object",
+      "properties": {
+        "reviewId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "thesis": {
+          "$ref": "#/$defs/InvestmentThesis"
+        },
+        "event": {
+          "$ref": "#/$defs/CompanyEvent"
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "CONTEXT",
+            "SUPPORTS",
+            "CHALLENGES"
+          ]
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThesisConditionCheck"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "guidance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThesisReviewGuidance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThesisReviewDecision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "reviewId",
+        "thesis",
+        "event",
+        "relation",
+        "anchorId",
+        "condition",
+        "guidance",
+        "decision",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
     "ResearchReportCapabilities": {
       "type": "object",
       "properties": {
@@ -5356,7 +5696,8 @@
                   "PORTFOLIO_BRIEF",
                   "VOLUME_RULE",
                   "ALLOCATION_RULE",
-                  "COMPANY_EVENT"
+                  "COMPANY_EVENT",
+                  "THESIS_REVIEW"
                 ]
               },
               "delivery": {

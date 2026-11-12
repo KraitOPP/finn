@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ActivityWriter {
-    public enum Kind { PRICE_RULE, REVIEW_REMINDER, PORTFOLIO_BRIEF, VOLUME_RULE, ALLOCATION_RULE, COMPANY_EVENT }
+    public enum Kind { PRICE_RULE, REVIEW_REMINDER, PORTFOLIO_BRIEF, VOLUME_RULE, ALLOCATION_RULE, COMPANY_EVENT, THESIS_REVIEW }
 
     private final JdbcTemplate jdbc;
     private final EmailPreviewSink preview;
