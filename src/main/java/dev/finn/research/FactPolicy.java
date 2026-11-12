@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import tools.jackson.databind.JsonNode;
@@ -81,6 +82,10 @@ final class FactPolicy {
             }catch(NumberFormatException ignored){/* Unrecognized printed form. */}
         }
         return false;
+    }
+
+    static List<String> printedNumbers(String source) {
+        return NUMBER.matcher(source).results().map(match->match.group()).filter(token->token.length()<=80).distinct().limit(12).toList();
     }
 
 

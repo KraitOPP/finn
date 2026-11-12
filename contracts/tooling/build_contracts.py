@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.36.0"
+VERSION = "0.37.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -360,6 +360,16 @@ def definitions() -> dict:
         "fact":nullable(ref("FinancialFact")),"evaluatedAt":ref("UtcInstant")})
     d["ThesisCondition"] = obj({"definition":ref("ThesisConditionDefinition"),"lastCheck":nullable(ref("ThesisConditionCheck"))})
     d["ThesisConditions"] = obj({"items":array(ref("ThesisCondition"),maxItems=20)})
+    guidance_input = {"title":text(minLength=1,maxLength=120),"kind":enum(["QUALITATIVE","AT_LEAST","AT_MOST","RANGE"]),
+        "stage":enum(["DRAFT","CONFIRMED","WITHDRAWN"]),"statementDate":nullable(ref("SessionDate")),
+        "dimensions":nullable(ref("FinancialDimensions")),"lower":nullable(ref("DecimalString")),"upper":nullable(ref("DecimalString")),
+        "scale":fact_scale,"caveats":text(maxLength=1200),"anchorId":ref("OpaqueId")}
+    d["ManagementGuidanceInput"] = obj(guidance_input)
+    d["ManagementGuidanceEdit"] = obj({"expectedRevision":source_revision,"guidance":ref("ManagementGuidanceInput")})
+    d["ManagementGuidance"] = obj({**guidance_input,"guidanceId":ref("OpaqueId"),"companyId":ref("OpaqueId"),
+        "revision":source_revision,"publishedAt":nullable(ref("UtcInstant")),"savedAt":ref("UtcInstant")})
+    d["ManagementGuidanceList"] = obj({"items":array(ref("ManagementGuidance"),maxItems=50)})
+    d["GuidanceCandidates"] = obj({"evidence":ref("ResearchLocation"),"printedNumbers":array(text(minLength=1,maxLength=80),maxItems=12)})
     d["ResearchReportCapabilities"] = obj({"localRanking":{"type":"boolean"}})
     d["ResearchReportInput"] = obj({"question":text(minLength=1,maxLength=320),"rankLocally":{"type":"boolean"}})
     report_feedback = {"note":text(minLength=1,maxLength=500),"anchorId":nullable(ref("OpaqueId"))}
@@ -931,6 +941,17 @@ def public_api_document() -> dict:
             "ThesisConditions",[parameter("thesis","path",text(format="uuid"),True),csrf_header])},
         "/api/v1/research/theses/{thesis}/conditions/{condition}/retire":{"post":maintained("retireThesisCondition","Retire a threshold while retaining checked evidence",
             "ThesisCondition",[parameter("thesis","path",text(format="uuid"),True),parameter("condition","path",text(format="uuid"),True),csrf_header])},
+        "/api/v1/research/companies/{company}/guidance":{
+            "get":maintained("listManagementGuidance","Read current statements and review status","ManagementGuidanceList",company_parameter),
+            "post":maintained("recordManagementGuidance","Save a dated guidance statement from a passage","ManagementGuidance",
+                company_parameter,"ManagementGuidanceInput"),
+        },
+        "/api/v1/research/guidance/{id}":{"post":maintained("reviseManagementGuidance","Append a guidance revision or withdrawal",
+            "ManagementGuidance",identifier,"ManagementGuidanceEdit")},
+        "/api/v1/research/guidance/{id}/versions":{"get":maintained("readGuidanceTimeline","Read source-linked guidance versions",
+            "ManagementGuidanceList",identifier)},
+        "/api/v1/research/guidance/candidates/{anchor}":{"get":maintained("readGuidanceCandidates","Inspect the selected source and its printed numbers",
+            "GuidanceCandidates",[parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/report-capabilities":{"get":maintained(
             "getResearchReportCapabilities","Read the configured research modes","ResearchReportCapabilities")},
         "/api/v1/research/companies/{company}/reports":{
