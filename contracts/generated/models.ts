@@ -201,7 +201,7 @@ export type CatalogueCompanies = (Array<(CatalogueCompany)>);
 export type CatalogueCompany = ({
   "companyId": (OpaqueId);
   "name": (string);
-  "source": ("MANUAL_USER" | "GROWW_HOLDINGS") & (string);
+  "source": ("MANUAL_USER" | "NSE_DIRECTORY" | "YAHOO_DISCOVERY" | "GROWW_HOLDINGS") & (string);
 });
 
 export type CatalogueListing = ({
@@ -216,7 +216,7 @@ export type CatalogueListing = ({
   "isin": (((string)) | ((null)));
   "providerSymbol": (((string)) | ((null)));
   "reviewStatus": ("USER_CONFIRMED");
-  "source": ("MANUAL_USER");
+  "source": ("MANUAL_USER" | "NSE_DIRECTORY" | "YAHOO_DISCOVERY") & (string);
   "validFrom": (SessionDate);
 });
 
@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.45.0") & (string);
+export type ContractVersion = ("0.46.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1913,6 +1913,21 @@ export type StagedResearchPdfs = ({
   "items": (Array<(StagedResearchPdf)>);
 });
 
+export type StockLookupOpened = ({
+  "listing": (CatalogueListing);
+  "refreshStatus": ("QUEUED" | "RECENT" | "UNAVAILABLE") & (string);
+});
+
+export type StockLookupResults = ({
+  "items": (Array<(StockSuggestion)>);
+  "status": ("READY" | "UNAVAILABLE") & (string);
+});
+
+export type StockLookupSelection = ({
+  "exchange": ("NSE" | "BSE") & (string);
+  "symbol": (string);
+});
+
 export type StockScreen = ({
   "screenId": (OpaqueId);
   "revision": (number);
@@ -1980,11 +1995,21 @@ export type StockScreenRunSummary = ({
   "createdAt": (UtcInstant);
 });
 
+export type StockSuggestion = ({
+  "exchange": ("NSE" | "BSE") & (string);
+  "symbol": (string);
+  "name": (string);
+  "series": (string);
+  "isin": (((string)) | ((null)));
+  "validFrom": (SessionDate);
+  "source": ("NSE_DIRECTORY" | "YAHOO_DISCOVERY") & (string);
+});
+
 export type SymbolHistory = ({
   "symbol": (string);
   "validFrom": (SessionDate);
   "validTo": (((SessionDate)) | ((null)));
-  "source": ("MANUAL_USER");
+  "source": ("MANUAL_USER" | "NSE_DIRECTORY" | "YAHOO_DISCOVERY") & (string);
 });
 
 export type SymbolHistoryList = (Array<(SymbolHistory)>);
@@ -2430,6 +2455,9 @@ export interface ContractTypes {
   SourceTimes: SourceTimes;
   StagedResearchPdf: StagedResearchPdf;
   StagedResearchPdfs: StagedResearchPdfs;
+  StockLookupOpened: StockLookupOpened;
+  StockLookupResults: StockLookupResults;
+  StockLookupSelection: StockLookupSelection;
   StockScreen: StockScreen;
   StockScreenCheck: StockScreenCheck;
   StockScreenEdit: StockScreenEdit;
@@ -2441,6 +2469,7 @@ export interface ContractTypes {
   StockScreenRun: StockScreenRun;
   StockScreenRunInput: StockScreenRunInput;
   StockScreenRunSummary: StockScreenRunSummary;
+  StockSuggestion: StockSuggestion;
   SymbolHistory: SymbolHistory;
   SymbolHistoryList: SymbolHistoryList;
   SymbolInput: SymbolInput;

@@ -3,7 +3,9 @@ import type { QuoteResponse } from "../contracts/generated/models.ts";
 import { quotePresentation } from "../contracts/presentation.ts";
 import { loadDemoQuote } from "./api/demo.ts";
 import { AuthControls, SessionNotice } from "./auth/AuthControls.tsx";
+import { useAuthentication } from "./auth/AuthProvider.tsx";
 import { Securities } from "./instruments/Securities.tsx";
+import { StockExplorer } from "./instruments/StockExplorer.tsx";
 import { Watchlists } from "./market/Watchlists.tsx";
 import {
   Navigation,
@@ -61,11 +63,14 @@ export function App() {
 }
 function WorkspaceApp() {
   const route = useRoute();
+  const auth = useAuthentication();
+  const signedIn = auth.status === "ready" && auth.session.authenticated;
+  const showDemo = route === "overview" && !signedIn;
   const preferences = usePreferences();
   const [attempt, setAttempt] = useState(0);
   const [snapshot, setSnapshot] = useState<Snapshot>({ state: "loading" });
   useEffect(() => {
-    if (route !== "overview") return;
+    if (!showDemo) return;
     const controller = new AbortController();
     setSnapshot({ state: "loading" });
     loadDemoQuote(controller.signal, attempt > 0)
@@ -76,7 +81,7 @@ function WorkspaceApp() {
         if (!controller.signal.aborted) setSnapshot({ state: "error" });
       });
     return () => controller.abort();
-  }, [attempt, route]);
+  }, [attempt, showDemo]);
   const presentation =
     snapshot.state === "ready"
       ? quotePresentation(snapshot.quote, "public-demo")
@@ -99,8 +104,8 @@ function WorkspaceApp() {
           </span>
           finn<span className="brand-dot">.</span>
         </a>
-        <span className="workspace-label">Investment workspace</span>
-        {route === "overview" && (
+        <span className="workspace-label">Portfolio &amp; research</span>
+        {showDemo && (
           <span className="demo-badge">
             <span aria-hidden="true" />
             Synthetic demo
@@ -111,18 +116,17 @@ function WorkspaceApp() {
       <Navigation route={route} />
       <main id="main" tabIndex={-1}>
         <SessionNotice />
-        {route === "overview" ? (
+        {route === "overview" && signedIn ? (
+          <PrivateView>
+            <StockExplorer home />
+          </PrivateView>
+        ) : showDemo ? (
           <>
             <section className="intro">
-              <p className="eyebrow">CLARITY, BEFORE THE NEXT MOVE</p>
-              <h1>
-                A clearer view
-                <br />
-                of your investments<span className="intro-emphasis">.</span>
-              </h1>
+              <h1>Manage your portfolio in one place.</h1>
               <p className="intro-copy">
-                Keep the numbers and their context together. Explore a fictional
-                stock snapshot to get started.
+                Import Groww holdings, find stocks by name, and keep your
+                research and alerts together.
               </p>
             </section>
             <section
@@ -132,8 +136,7 @@ function WorkspaceApp() {
               <article className="quote-card">
                 <div className="card-heading">
                   <div>
-                    <p className="eyebrow">MARKET SNAPSHOT</p>
-                    <h2 id="snapshot-heading">A sample, with context</h2>
+                    <h2 id="snapshot-heading">Example stock snapshot</h2>
                   </div>
                   <span className="pill">Fictional security</span>
                 </div>
@@ -218,16 +221,8 @@ function WorkspaceApp() {
                 <div className="context-icon" aria-hidden="true">
                   i
                 </div>
-                <p className="eyebrow">BEHIND THE NUMBER</p>
-                <h2 id="context-heading">
-                  Know what
-                  <br />
-                  you’re looking at.
-                </h2>
-                <p>
-                  A recent download doesn’t necessarily mean a recent trade.
-                  Every snapshot keeps its source and timing in view.
-                </p>
+                <h2 id="context-heading">Price details</h2>
+                <p>Check the source and session date before using a price.</p>
                 <dl className="context-list">
                   <div className="context-row">
                     <dt>Source</dt>
@@ -246,10 +241,7 @@ function WorkspaceApp() {
                 </dl>
               </aside>
             </section>
-            <p className="demo-note">
-              All figures in this demonstration are fictional. No personal
-              portfolio has been imported.
-            </p>
+            <p className="demo-note">This example uses fictional data.</p>
           </>
         ) : route === null ? (
           <PendingView title="Page not found">
@@ -263,7 +255,13 @@ function WorkspaceApp() {
                 <Portfolios />
               </Suspense>
             ) : route === "instruments" ? (
-              <Securities />
+              <>
+                <StockExplorer />
+                <details className="workspace-tools">
+                  <summary>Saved securities and listing history</summary>
+                  <Securities embedded />
+                </details>
+              </>
             ) : route === "watchlists" ? (
               <Watchlists />
             ) : route === "inbox" ? (
@@ -285,10 +283,7 @@ function WorkspaceApp() {
         )}
       </main>
       <footer className="page-footer">
-        <span>
-          finn.{" "}
-          <span className="footer-caption">A little more perspective.</span>
-        </span>
+        <span>finn.</span>
         <span>
           India · INR · {preferences.value?.timeZone ?? "Asia/Kolkata"}
         </span>

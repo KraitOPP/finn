@@ -61,9 +61,11 @@ export function PriceSource({ price }: { price: PrivateClose }) {
 export function ListingPrices({
   listing,
   onChanged,
+  compact = false,
 }: {
   listing: CatalogueListing;
   onChanged?: () => void;
+  compact?: boolean;
 }) {
   const auth = useAuthentication();
   const path = `/api/v1/market/listings/${listing.listingId}`;
@@ -76,8 +78,13 @@ export function ListingPrices({
   const [notice, setNotice] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [job, setJob] = useState<string | null>(null);
+  const activeJob =
+    job ??
+    (feed?.latestJobState === "QUEUED" || feed?.latestJobState === "RUNNING"
+      ? feed.latestJobId
+      : null);
   useEffect(() => {
-    if (!job) return;
+    if (!activeJob) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     let attempts = 0;
@@ -85,7 +92,7 @@ export function ListingPrices({
       try {
         const status = await requestContract(
           "AsyncJobStatus",
-          `/api/v1/jobs/${job}`,
+          `/api/v1/jobs/${activeJob}`,
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
@@ -104,6 +111,7 @@ export function ListingPrices({
                 "Refresh failed. See acquisition status.")
               : "The job may still be running. Check acquisition status for updates.",
         );
+        if (status.state === "SUCCEEDED") onChanged?.();
       } catch {
         if (controller.signal.aborted) return;
         setNotice(
@@ -118,7 +126,7 @@ export function ListingPrices({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [job, reload]);
+  }, [activeJob, reload, onChanged]);
   async function submit(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     if (busy || auth.status !== "ready") return;
@@ -179,40 +187,47 @@ export function ListingPrices({
   }
   return (
     <section
-      className="detail-card"
+      className={compact ? "detail-card compact-price" : "detail-card"}
       aria-label={`${listing.symbol} prices and availability`}
     >
       <h3>Closing prices</h3>
-      <p className="muted-copy">
-        Completed sessions only. Official exchange file imports and live
-        streaming are awaiting source verification.
-      </p>
+      {!compact && (
+        <p className="muted-copy">
+          Completed sessions only. Official exchange file imports and live
+          streaming are awaiting source verification.
+        </p>
+      )}
       {error ? (
         <p role="alert">{error}</p>
       ) : !feed ? (
         <p role="status">Checking price coverage…</p>
       ) : (
         <>
-          <p>{capabilities[feed.yahoo]}.</p>
+          {(!compact || feed.yahoo !== "PRIVATE_DAILY") && (
+            <p>{capabilities[feed.yahoo]}.</p>
+          )}
           {feed.latest ? (
             <p>
-              <strong>₹{feed.latest.close}</strong>
+              <strong className="stock-close">₹{feed.latest.close}</strong>
               {" · "}
               <PriceSource price={feed.latest} />
             </p>
+          ) : activeJob ? (
+            <p role="status">Loading recent daily closes…</p>
           ) : (
             <p>No closing price has been recorded for this listing.</p>
           )}
-          {feed.latestJobState && (
-            <p>
-              Last refresh:{" "}
-              {feed.latestJobState.toLowerCase().replaceAll("_", " ")}.
-              {feed.failureCode
-                ? ` ${failures[feed.failureCode] ?? "See job status for details."}`
-                : ""}
-            </p>
-          )}
-          {feed.lastSuccessAt && (
+          {feed.latestJobState &&
+            (!compact || feed.latestJobState === "FAILED") && (
+              <p>
+                Last refresh:{" "}
+                {feed.latestJobState.toLowerCase().replaceAll("_", " ")}.
+                {feed.failureCode
+                  ? ` ${failures[feed.failureCode] ?? "See job status for details."}`
+                  : ""}
+              </p>
+            )}
+          {feed.lastSuccessAt && !compact && (
             <p>
               Last successful download: {feed.lastSuccessAt} · delay unknown
             </p>
@@ -220,68 +235,75 @@ export function ListingPrices({
           {feed.yahoo === "PRIVATE_DAILY" && (
             <button
               type="button"
+              className={compact ? "stock-refresh" : undefined}
               disabled={
-                busy || job !== null || listing.validFrom >= sessionOffset(0)
+                busy ||
+                activeJob !== null ||
+                listing.validFrom >= sessionOffset(0)
               }
               onClick={() => void submit()}
             >
-              Refresh Yahoo daily closes
+              {compact ? "Refresh prices" : "Refresh Yahoo daily closes"}
             </button>
           )}
         </>
       )}
-      <button type="button" onClick={reload}>
-        Check acquisition status
-      </button>
+      {!compact && (
+        <button type="button" onClick={reload}>
+          Check acquisition status
+        </button>
+      )}
       {notice && <p role="status">{notice}</p>}
       {failure && <p role="alert">{failure}</p>}
-      <details className="settings-card">
-        <summary>Add a reviewed exchange close</summary>
-        <form onSubmit={(event) => void submit(event)}>
-          <label>
-            Exchange session date{" "}
-            <input
-              type="date"
-              max={sessionOffset(-1)}
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            As-reported close in INR{" "}
-            <input
-              value={close}
-              onChange={(event) => setClose(event.target.value)}
-              inputMode="decimal"
-              maxLength={25}
-              required
-            />
-          </label>
-          <label>
-            Source reference{" "}
-            <input
-              value={reference}
-              onChange={(event) => setReference(event.target.value)}
-              maxLength={240}
-              required
-            />
-          </label>
-          <label className="check-label">
-            <input
-              type="checkbox"
-              required
-              checked={confirmed}
-              onChange={(event) => setConfirmed(event.target.checked)}
-            />
-            I verified the closing price, date, currency and exchange against
-            the source.
-          </label>
-          <button className="primary-button" disabled={busy} type="submit">
-            Save reviewed close
-          </button>
-        </form>
-      </details>
+      {!compact && (
+        <details className="settings-card">
+          <summary>Add a reviewed exchange close</summary>
+          <form onSubmit={(event) => void submit(event)}>
+            <label>
+              Exchange session date{" "}
+              <input
+                type="date"
+                max={sessionOffset(-1)}
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              As-reported close in INR{" "}
+              <input
+                value={close}
+                onChange={(event) => setClose(event.target.value)}
+                inputMode="decimal"
+                maxLength={25}
+                required
+              />
+            </label>
+            <label>
+              Source reference{" "}
+              <input
+                value={reference}
+                onChange={(event) => setReference(event.target.value)}
+                maxLength={240}
+                required
+              />
+            </label>
+            <label className="check-label">
+              <input
+                type="checkbox"
+                required
+                checked={confirmed}
+                onChange={(event) => setConfirmed(event.target.checked)}
+              />
+              I verified the closing price, date, currency and exchange against
+              the source.
+            </label>
+            <button className="primary-button" disabled={busy} type="submit">
+              Save reviewed close
+            </button>
+          </form>
+        </details>
+      )}
     </section>
   );
 }

@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.45.0",
+  "contractVersion": "0.46.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "3cb0bb0e19c75f2cd301dd20c496123f955ca5ba818c7c75610b02733d97058a",
+  "sourceSha256": "08cc874454e47f0bb4ceab54fa001726da378fa650b3adf5b1bb607338ecef0e",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -226,6 +226,9 @@ export const contractMetadata = {
     "SourceTimes",
     "StagedResearchPdf",
     "StagedResearchPdfs",
+    "StockLookupOpened",
+    "StockLookupResults",
+    "StockLookupSelection",
     "StockScreen",
     "StockScreenCheck",
     "StockScreenEdit",
@@ -237,6 +240,7 @@ export const contractMetadata = {
     "StockScreenRun",
     "StockScreenRunInput",
     "StockScreenRunSummary",
+    "StockSuggestion",
     "SymbolHistory",
     "SymbolHistoryList",
     "SymbolInput",
@@ -1258,6 +1262,8 @@ export const contractSchemas = {
         "type": "string",
         "enum": [
           "MANUAL_USER",
+          "NSE_DIRECTORY",
+          "YAHOO_DISCOVERY",
           "GROWW_HOLDINGS"
         ]
       }
@@ -1335,7 +1341,12 @@ export const contractSchemas = {
         "const": "USER_CONFIRMED"
       },
       "source": {
-        "const": "MANUAL_USER"
+        "type": "string",
+        "enum": [
+          "MANUAL_USER",
+          "NSE_DIRECTORY",
+          "YAHOO_DISCOVERY"
+        ]
       },
       "validFrom": {
         "$ref": "#/components/schemas/SessionDate"
@@ -1357,7 +1368,7 @@ export const contractSchemas = {
       "validFrom"
     ],
     "additionalProperties": false,
-    "description": "Owner-scoped, manually confirmed listing and optional explicit Yahoo mapping. It is not an authoritative exchange security master. No ISIN-based exchange guess."
+    "description": "An owner-scoped listing selected or confirmed by the user."
   },
   "CatalogueSecurity": {
     "type": "object",
@@ -2324,7 +2335,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.45.0"
+    "const": "0.46.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -10887,6 +10898,74 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "StockLookupOpened": {
+    "type": "object",
+    "properties": {
+      "listing": {
+        "$ref": "#/components/schemas/CatalogueListing"
+      },
+      "refreshStatus": {
+        "type": "string",
+        "enum": [
+          "QUEUED",
+          "RECENT",
+          "UNAVAILABLE"
+        ]
+      }
+    },
+    "required": [
+      "listing",
+      "refreshStatus"
+    ],
+    "additionalProperties": false
+  },
+  "StockLookupResults": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StockSuggestion"
+        },
+        "maxItems": 10
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "READY",
+          "UNAVAILABLE"
+        ]
+      }
+    },
+    "required": [
+      "items",
+      "status"
+    ],
+    "additionalProperties": false
+  },
+  "StockLookupSelection": {
+    "type": "object",
+    "properties": {
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+      }
+    },
+    "required": [
+      "exchange",
+      "symbol"
+    ],
+    "additionalProperties": false
+  },
   "StockScreen": {
     "type": "object",
     "properties": {
@@ -11183,6 +11262,68 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "StockSuggestion": {
+    "type": "object",
+    "properties": {
+      "exchange": {
+        "type": "string",
+        "enum": [
+          "NSE",
+          "BSE"
+        ]
+      },
+      "symbol": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Z0-9][A-Z0-9&._-]{0,63}$"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "series": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 16,
+        "pattern": "^[A-Z0-9_-]{1,16}$"
+      },
+      "isin": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12,
+            "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "validFrom": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "NSE_DIRECTORY",
+          "YAHOO_DISCOVERY"
+        ]
+      }
+    },
+    "required": [
+      "exchange",
+      "symbol",
+      "name",
+      "series",
+      "isin",
+      "validFrom",
+      "source"
+    ],
+    "additionalProperties": false
+  },
   "SymbolHistory": {
     "type": "object",
     "properties": {
@@ -11205,7 +11346,12 @@ export const contractSchemas = {
         ]
       },
       "source": {
-        "const": "MANUAL_USER"
+        "type": "string",
+        "enum": [
+          "MANUAL_USER",
+          "NSE_DIRECTORY",
+          "YAHOO_DISCOVERY"
+        ]
       }
     },
     "required": [

@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.45.0",
+  "contractVersion": "0.46.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "3cb0bb0e19c75f2cd301dd20c496123f955ca5ba818c7c75610b02733d97058a",
+  "sourceSha256": "08cc874454e47f0bb4ceab54fa001726da378fa650b3adf5b1bb607338ecef0e",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -225,6 +225,9 @@
     "SourceTimes",
     "StagedResearchPdf",
     "StagedResearchPdfs",
+    "StockLookupOpened",
+    "StockLookupResults",
+    "StockLookupSelection",
     "StockScreen",
     "StockScreenCheck",
     "StockScreenEdit",
@@ -236,6 +239,7 @@
     "StockScreenRun",
     "StockScreenRunInput",
     "StockScreenRunSummary",
+    "StockSuggestion",
     "SymbolHistory",
     "SymbolHistoryList",
     "SymbolInput",

@@ -16,7 +16,7 @@ const today = () =>
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
-export function Securities() {
+export function Securities({ embedded = false }: { embedded?: boolean }) {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
@@ -56,7 +56,11 @@ export function Securities() {
   const reload = () => setAttempt((value) => value + 1);
   return (
     <section className="workspace-section">
-      <RouteHeading>Securities</RouteHeading>
+      {embedded ? (
+        <h2>Saved securities</h2>
+      ) : (
+        <RouteHeading>Securities</RouteHeading>
+      )}
       <p className="muted-copy">
         Your manually reviewed catalogue. A company, a security and an exchange
         listing have separate identities. This search covers your saved records.

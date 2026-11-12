@@ -180,41 +180,77 @@ function ListingChoice({
   const [estimate, setEstimate] = useState(row.allowProviderEstimate);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const isin = data.value?.security.isin;
+  const matches = useResource(
+    "StockLookupResults",
+    isin && !data.value?.listings.length
+      ? `/api/v1/catalog/lookup?${new URLSearchParams({ query: isin, exchange: "NSE" })}`
+      : null,
+  );
+  const exact =
+    matches.value?.items.filter((stock) => stock.isin === isin) ?? [];
+  const match = exact.length === 1 ? exact[0] : undefined;
+  async function save(automatic: boolean) {
+    if (auth.status !== "ready" || busy) return;
+    setBusy(true);
+    setError(false);
+    try {
+      let selected = listing || null;
+      let useYahoo = estimate;
+      if (automatic && match) {
+        const opened = await requestContract(
+          "StockLookupOpened",
+          "/api/v1/catalog/lookup",
+          {
+            method: "POST",
+            csrf: auth.session.csrf,
+            body: { exchange: match.exchange, symbol: match.symbol },
+          },
+        );
+        if (opened.listing.securityId !== row.securityId)
+          throw new Error("Stock does not match this holding.");
+        selected = opened.listing.listingId;
+        useYahoo = true;
+      }
+      await requestContract("ValuationListing", `${base}/valuation/listing`, {
+        method: "POST",
+        csrf: auth.session.csrf,
+        body: {
+          securityId: row.securityId,
+          listingId: selected,
+          allowProviderEstimate: selected !== null && useYahoo,
+        },
+      });
+      onSaved();
+    } catch (failure) {
+      if (
+        failure instanceof ApiError &&
+        (failure.status === 401 || failure.status === 403)
+      )
+        auth.refresh();
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <form
       className="settings-card"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (auth.status !== "ready" || busy) return;
-        setBusy(true);
-        setError(false);
-        try {
-          await requestContract(
-            "ValuationListing",
-            `${base}/valuation/listing`,
-            {
-              method: "POST",
-              csrf: auth.session.csrf,
-              body: {
-                securityId: row.securityId,
-                listingId: listing || null,
-                allowProviderEstimate: listing !== "" && estimate,
-              },
-            },
-          );
-          onSaved();
-        } catch (error) {
-          if (
-            error instanceof ApiError &&
-            (error.status === 401 || error.status === 403)
-          )
-            auth.refresh();
-          setError(true);
-        } finally {
-          setBusy(false);
-        }
+        await save(false);
       }}
     >
+      {match && (
+        <button
+          type="button"
+          className="primary-button"
+          disabled={busy}
+          onClick={() => void save(true)}
+        >
+          Use {match.symbol} on NSE
+        </button>
+      )}
       <label>
         Exchange listing
         <select
@@ -233,10 +269,12 @@ function ListingChoice({
         </select>
       </label>
       {!data.value && <p>{data.error ?? "Loading reviewed listings…"}</p>}
-      {data.value?.listings.length === 0 && (
+      {data.value?.listings.length === 0 && !match && (
         <p>
-          Add and confirm a listing in <a href="#/instruments">Securities</a>{" "}
-          first.
+          {matches.loading
+            ? "Looking for the matching stock…"
+            : "No verified listing for this holding yet."}{" "}
+          <a href="#/instruments">Find a stock</a>
         </p>
       )}
       <label className="check-label">

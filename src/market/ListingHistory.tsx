@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { CatalogueListing } from "../../contracts/generated/models.ts";
 import { useResource } from "../api/useResource.ts";
 import { calendarDates, GapChart } from "./GapChart.tsx";
@@ -22,24 +22,32 @@ export function ListingPriceDisclosure({
 
 export function ListingMarketDetail({
   listing,
+  compact = false,
 }: {
   listing: CatalogueListing;
+  compact?: boolean;
 }) {
   const [generation, setGeneration] = useState(0);
+  const updated = useCallback(() => setGeneration((value) => value + 1), []);
   return (
     <>
-      <ListingPrices
-        listing={listing}
-        onChanged={() => setGeneration((value) => value + 1)}
-      />
-      <ListingHistory key={generation} listing={listing} />
+      <ListingPrices listing={listing} onChanged={updated} compact={compact} />
+      <ListingHistory key={generation} listing={listing} compact={compact} />
     </>
   );
 }
 
-function ListingHistory({ listing }: { listing: CatalogueListing }) {
+function ListingHistory({
+  listing,
+  compact,
+}: {
+  listing: CatalogueListing;
+  compact: boolean;
+}) {
   const [period, setPeriod] = useState("14");
-  const [basis, setBasis] = useState("YAHOO_YFINANCE");
+  const [basis, setBasis] = useState(
+    listing.providerSymbol ? "YAHOO_YFINANCE" : "MANUAL_REVIEWED",
+  );
   const start = sessionOffset(-Number(period));
   const endExclusive = sessionOffset(0);
   const params = new URLSearchParams({ start, endExclusive });
@@ -63,40 +71,46 @@ function ListingHistory({ listing }: { listing: CatalogueListing }) {
       aria-label={`${listing.symbol} price history`}
     >
       <h3>Price history</h3>
-      <div className="market-filters">
-        <label>
-          Price period{" "}
-          <select
-            value={period}
-            onChange={(event) => setPeriod(event.target.value)}
-          >
-            <option value="14">14 days</option>
-            <option value="30">30 days</option>
-            <option value="90">90 days</option>
-          </select>
-        </label>
-        <label>
-          Price source{" "}
-          <select
-            value={basis}
-            onChange={(event) => setBasis(event.target.value)}
-          >
-            <option value="YAHOO_YFINANCE">Yahoo daily closes</option>
-            <option value="MANUAL_REVIEWED">Reviewed exchange closes</option>
-          </select>
-        </label>
-        <button type="button" onClick={data.reload}>
-          Update chart from saved prices
-        </button>
-      </div>
-      <p className="muted-copy">
-        Sources are charted separately. A gap can mean no trading session, no
-        coverage or no saved close.
-      </p>
+      {!compact && (
+        <div className="market-filters">
+          <label>
+            Price period{" "}
+            <select
+              value={period}
+              onChange={(event) => setPeriod(event.target.value)}
+            >
+              <option value="14">14 days</option>
+              <option value="30">30 days</option>
+              <option value="90">90 days</option>
+            </select>
+          </label>
+          <label>
+            Price source{" "}
+            <select
+              value={basis}
+              onChange={(event) => setBasis(event.target.value)}
+            >
+              <option value="YAHOO_YFINANCE">Yahoo daily closes</option>
+              <option value="MANUAL_REVIEWED">Reviewed exchange closes</option>
+            </select>
+          </label>
+          <button type="button" onClick={data.reload}>
+            Update chart from saved prices
+          </button>
+        </div>
+      )}
+      {!compact && (
+        <p className="muted-copy">
+          Sources are charted separately. A gap can mean no trading session, no
+          coverage or no saved close.
+        </p>
+      )}
       {data.error ? (
         <p role="alert">{data.error}</p>
       ) : !data.value ? (
         <p role="status">Loading price history…</p>
+      ) : observations.size === 0 ? (
+        <p>No daily closes in this window yet.</p>
       ) : (
         <>
           <GapChart

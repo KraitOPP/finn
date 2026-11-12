@@ -4,7 +4,7 @@ import { useAuthentication } from "./auth/AuthProvider.tsx";
 export const destinations = [
   ["overview", "Overview"],
   ["portfolio", "Portfolio"],
-  ["instruments", "Securities"],
+  ["instruments", "Stocks"],
   ["watchlists", "Watchlists"],
   ["inbox", "Inbox"],
   ["research", "Research"],
@@ -31,17 +31,46 @@ export function useRoute() {
 }
 
 export function Navigation({ route }: { route: Route | null }) {
+  const primary = destinations.filter(([value]) =>
+    ["overview", "portfolio", "instruments", "research", "inbox"].includes(
+      value,
+    ),
+  );
+  const secondary = destinations.filter(
+    ([value]) => !primary.some(([key]) => key === value),
+  );
+  const [more, setMore] = useState(false);
+  function link([value, label]: (typeof destinations)[number]) {
+    return (
+      <a
+        key={value}
+        href={`#/${value}`}
+        aria-current={route === value ? "page" : undefined}
+        onClick={() => setMore(false)}
+      >
+        {label}
+      </a>
+    );
+  }
   return (
     <nav className="main-navigation" aria-label="Workspace">
-      {destinations.map(([value, label]) => (
-        <a
-          key={value}
-          href={`#/${value}`}
-          aria-current={route === value ? "page" : undefined}
-        >
-          {label}
-        </a>
-      ))}
+      {primary.map(link)}
+      <button
+        type="button"
+        aria-expanded={more}
+        aria-controls="workspace-more"
+        className={
+          secondary.some(([value]) => value === route)
+            ? "nav-current"
+            : undefined
+        }
+        onClick={() => setMore(!more)}
+      >
+        More
+      </button>
+      <div id="workspace-more" className="secondary-navigation" hidden={!more}>
+        {secondary.map(link)}
+      </div>
     </nav>
   );
 }

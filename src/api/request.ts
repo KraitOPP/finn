@@ -5,6 +5,8 @@ import type {
 } from "../../contracts/generated/models.ts";
 
 const safeMessages: Record<string, string> = {
+  STOCK_IDENTITY_REVIEW_REQUIRED:
+    "This ticker is already saved for a different security. Check the existing listing before using it.",
   UNSUPPORTED_SHORT_POSITION:
     "This would make the recorded units negative. Review the dates and available units.",
   SNAPSHOT_BOUNDARY_CONFLICT:
