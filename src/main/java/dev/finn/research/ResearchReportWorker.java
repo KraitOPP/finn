@@ -44,7 +44,7 @@ class ResearchReportWorker {
     static class Schedule {
         private final ResearchReportWorker worker;
         Schedule(ResearchReportWorker worker){this.worker=worker;}
-        @Scheduled(fixedDelay=3500)
+        @Scheduled(fixedDelay=3500,scheduler="ingestionScheduler")
         void run(){
             try{worker.processNext();}
             catch(RuntimeException unavailable){LoggerFactory.getLogger(Schedule.class).warn("Research ranking temporarily unavailable");}

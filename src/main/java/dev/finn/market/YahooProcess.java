@@ -1,13 +1,13 @@
 
 package dev.finn.market;
 
+import dev.finn.platform.BoundedWorkerProcess;
 import dev.finn.platform.WorkspacePolicy;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -49,26 +49,7 @@ public class YahooProcess {
         env.keySet().removeIf(key->!java.util.Set.of("SYSTEMROOT","WINDIR","PATH","LANG","LC_ALL").contains(key.toUpperCase(java.util.Locale.ROOT)));
         env.put("PYTHONPATH",source); env.put("PYTHONNOUSERSITE","1"); env.put("PYTHONUTF8","1");
         env.put("TMP",scratch.toString()); env.put("TEMP",scratch.toString()); env.put("TMPDIR",scratch.toString());
-        var process=builder.start();
-        var reader=new FutureTask<>(()->{
-            try(var input=process.getInputStream()){
-                byte[] bytes=input.readNBytes(MAX_BYTES+1);
-                if(bytes.length>MAX_BYTES){process.destroyForcibly();throw new IOException("Provider output exceeded bound");}
-                return bytes;
-            }
-        });
-        Thread.ofVirtual().start(reader);
-        try {
-            try(var out=process.getOutputStream()){
-                out.write(json.writeValueAsString(request).getBytes(StandardCharsets.UTF_8));
-            }
-            if(!process.waitFor(30,TimeUnit.SECONDS)||process.exitValue()!=0)throw new IOException("Provider process unavailable");
-            return json.readTree(reader.get(1,TimeUnit.SECONDS));
-        } catch(java.util.concurrent.ExecutionException|java.util.concurrent.TimeoutException failure){
-            throw new IOException("Provider output unavailable");
-        } finally {
-            if(process.isAlive()) process.destroyForcibly();
-            reader.cancel(true);
-        }
+        byte[] input=json.writeValueAsString(request).getBytes(StandardCharsets.UTF_8);
+        return json.readTree(BoundedWorkerProcess.run(builder,input,MAX_BYTES,Duration.ofSeconds(30)));
     }
 }

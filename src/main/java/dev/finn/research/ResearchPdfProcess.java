@@ -1,16 +1,14 @@
 
 package dev.finn.research;
 
+import dev.finn.platform.BoundedWorkerProcess;
 import dev.finn.platform.WorkspacePolicy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -42,26 +40,6 @@ class ResearchPdfProcess {
         var env=builder.environment();
         env.keySet().removeIf(key->!Set.of("SYSTEMROOT","WINDIR","PATH","LANG","LC_ALL").contains(key.toUpperCase(Locale.ROOT)));
         env.put("TMP",scratch.toString()); env.put("TEMP",scratch.toString()); env.put("TMPDIR",scratch.toString());
-        var process=builder.start();
-        var writer=new FutureTask<Void>(()->{try(var out=process.getOutputStream()){out.write(bytes);}return null;});
-        var reader=new FutureTask<>(()->{
-            try(var input=process.getInputStream()){
-                byte[] result=input.readNBytes(MAX_OUTPUT+1);
-                if(result.length>MAX_OUTPUT){process.destroyForcibly();throw new IOException("PDF output exceeded limit");}
-                return result;
-            }
-        });
-        Thread.ofVirtual().start(writer);
-        Thread.ofVirtual().start(reader);
-        try {
-            if(!process.waitFor(15,TimeUnit.SECONDS)||process.exitValue()!=0)throw new IOException("PDF extractor unavailable");
-            writer.get(1,TimeUnit.SECONDS);
-            return json.readTree(reader.get(1,TimeUnit.SECONDS));
-        } catch(ExecutionException|TimeoutException unavailable){
-            throw new IOException("PDF extractor unavailable");
-        } finally {
-            if(process.isAlive())process.destroyForcibly();
-            writer.cancel(true);reader.cancel(true);
-        }
+        return json.readTree(BoundedWorkerProcess.run(builder,bytes,MAX_OUTPUT,Duration.ofSeconds(15)));
     }
 }

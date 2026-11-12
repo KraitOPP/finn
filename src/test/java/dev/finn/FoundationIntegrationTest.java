@@ -39,6 +39,9 @@ class FoundationIntegrationTest {
     @Test void releaseFilesEvidenceAndNotificationsRemainPrivateAcrossUsers() throws Exception {
         dev.finn.market.ReleaseIsolationChecks.isolatesTwoAuthenticatedWorkspaces(mvc,importWorker,researchExtraction,deliveryWorker);
     }
+    @Test void providerRecoversAfterAnAbandonedClaimAndStopsAtQuota() throws Exception {
+        dev.finn.market.ReleaseRecoveryChecks.recoversAnInterruptedMarketJobAndEnforcesQuota(mvc,jdbc,jobs,prices,yahoo);
+    }
 
     @Test void discoveryUniverseUsesOnlyReviewedPrivateFacts() throws Exception {
         dev.finn.market.DiscoveryChecks.usesOnlyPrivateReviewedUniverseAndComparableFacts(mvc,researchExtraction);

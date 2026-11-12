@@ -16,7 +16,7 @@ class MarketWorker {
     private final YahooProcess provider;
     MarketWorker(MarketPrices prices,JobQueue jobs,YahooProcess provider){this.prices=prices;this.jobs=jobs;this.provider=provider;}
 
-    @Scheduled(fixedDelay=1500)
+    @Scheduled(fixedDelay=1500,scheduler="ingestionScheduler")
     void tick(){
         var claim=jobs.claim(JobQueue.Kind.YAHOO_DAILY_HISTORY);
         if(claim==null)return;

@@ -13,6 +13,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 class JobsSchedule {
     private final HoldingsImportWorker imports;
     JobsSchedule(HoldingsImportWorker imports){this.imports=imports;}
-    @Scheduled(fixedDelay=1000)
+    @Scheduled(fixedDelay=1000,scheduler="ingestionScheduler")
     void tick(){try{imports.runOne();}catch(RuntimeException failure){LoggerFactory.getLogger(JobsSchedule.class).warn("Job polling is temporarily unavailable");}}
 }

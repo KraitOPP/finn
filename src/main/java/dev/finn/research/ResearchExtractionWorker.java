@@ -41,7 +41,7 @@ public class ResearchExtractionWorker {
     static class Schedule {
         private final ResearchExtractionWorker worker;
         Schedule(ResearchExtractionWorker worker){this.worker=worker;}
-        @Scheduled(fixedDelay=3000)
+        @Scheduled(fixedDelay=3000,scheduler="ingestionScheduler")
         void run() {
             try {worker.processNext();}
             catch(RuntimeException failure){LoggerFactory.getLogger(Schedule.class).warn("Document extraction temporarily unavailable");}
