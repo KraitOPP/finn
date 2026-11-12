@@ -21621,12 +21621,12 @@
           },
           "risks": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 0,
             "maxLength": 1600
           },
           "milestones": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 0,
             "maxLength": 1600
           },
           "decision": {
@@ -21641,8 +21641,9 @@
           },
           "decisionNote": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 1200
+            "minLength": 0,
+            "maxLength": 1200,
+            "description": "May be blank for MONITOR. Other decisions require a note."
           },
           "review": {
             "anyOf": [
@@ -21707,12 +21708,12 @@
           },
           "risks": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 0,
             "maxLength": 1600
           },
           "milestones": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 0,
             "maxLength": 1600
           },
           "decision": {
@@ -21727,8 +21728,9 @@
           },
           "decisionNote": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 1200
+            "minLength": 0,
+            "maxLength": 1200,
+            "description": "May be blank for MONITOR. Other decisions require a note."
           },
           "review": {
             "anyOf": [

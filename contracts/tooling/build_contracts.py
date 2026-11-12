@@ -389,8 +389,9 @@ def definitions() -> dict:
     d["ThesisReviewSchedule"] = obj({"scheduledLocal":text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$"),
         "timeZone":text(minLength=1,maxLength=64)})
     thesis_input = {"title":text(minLength=1,maxLength=100),"rationale":text(minLength=1,maxLength=2400),
-        "risks":text(maxLength=1600),"milestones":text(maxLength=1600),
-        "decision":enum(["MONITOR","REAFFIRM","REVISE","PAUSE","CLOSE"]),"decisionNote":text(maxLength=1200),
+        "risks":text(minLength=0,maxLength=1600),"milestones":text(minLength=0,maxLength=1600),
+        "decision":enum(["MONITOR","REAFFIRM","REVISE","PAUSE","CLOSE"]),
+        "decisionNote":text("May be blank for MONITOR. Other decisions require a note.",minLength=0,maxLength=1200),
         "review":nullable(ref("ThesisReviewSchedule")),"anchorIds":array(ref("OpaqueId"),maxItems=5)}
     thesis_revision = {"type":"integer","minimum":1,"maximum":100}
     d["InvestmentThesisInput"] = obj(thesis_input)
