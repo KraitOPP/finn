@@ -3,7 +3,7 @@ export const contractMetadata = {
   "contractVersion": "0.45.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "113a46e066f09f194f65f331bdeb853e015553e96c66b4f423f43408bae6d955",
+  "sourceSha256": "3cb0bb0e19c75f2cd301dd20c496123f955ca5ba818c7c75610b02733d97058a",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -5428,12 +5428,12 @@ export const contractSchemas = {
       },
       "risks": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 0,
         "maxLength": 1600
       },
       "milestones": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 0,
         "maxLength": 1600
       },
       "decision": {
@@ -5448,8 +5448,9 @@ export const contractSchemas = {
       },
       "decisionNote": {
         "type": "string",
-        "minLength": 1,
-        "maxLength": 1200
+        "minLength": 0,
+        "maxLength": 1200,
+        "description": "May be blank for MONITOR. Other decisions require a note."
       },
       "review": {
         "anyOf": [
@@ -5543,12 +5544,12 @@ export const contractSchemas = {
       },
       "risks": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 0,
         "maxLength": 1600
       },
       "milestones": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 0,
         "maxLength": 1600
       },
       "decision": {
@@ -5563,8 +5564,9 @@ export const contractSchemas = {
       },
       "decisionNote": {
         "type": "string",
-        "minLength": 1,
-        "maxLength": 1200
+        "minLength": 0,
+        "maxLength": 1200,
+        "description": "May be blank for MONITOR. Other decisions require a note."
       },
       "review": {
         "anyOf": [

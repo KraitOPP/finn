@@ -26,12 +26,18 @@ button {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+summary:focus-visible {
   outline: 3px solid #b07519;
   outline-offset: 5px;
 }
 a {
   color: inherit;
+}
+summary {
+  min-block-size: 32px;
+  padding-block: 5px;
+  cursor: pointer;
 }
 .main-navigation {
   display: flex;
@@ -198,7 +204,6 @@ a {
   margin: 28px 0;
 }
 .settings-card summary {
-  cursor: pointer;
   font-weight: 600;
 }
 .settings-card + .detail-card {

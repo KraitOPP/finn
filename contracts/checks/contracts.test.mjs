@@ -14,6 +14,18 @@ const quote = JSON.parse(await readFile(join(directory, 'fixtures/quote.syntheti
 const problem = JSON.parse(await readFile(join(directory, 'fixtures/problem.synthetic.json'), 'utf8'));
 const changed = (mutate) => { const value = structuredClone(quote); mutate(value); return value; };
 
+test('a saved monitoring thesis accepts blank optional text', () => {
+  const thesis = {
+    thesisId: 'c308d6ec-eafa-4faa-9a05-d7e82d51dfa5',
+    companyId: '09d7a968-3445-4dd8-8ea6-ff3f2e48cbc9',
+    revision: 1, title: 'Fictional company thesis', rationale: 'Review the next results.',
+    risks: '', milestones: '', decision: 'MONITOR', decisionNote: '',
+    review: null, anchorIds: [], reminderId: null, savedAt: '2025-07-22T10:00:00Z',
+  };
+  assert.deepEqual(decodeContract('InvestmentTheses', { items: [thesis] }).items, [thesis]);
+  assert.throws(() => decodeContract('InvestmentThesis', { ...thesis, title: '' }), ContractError);
+});
+
 test('valid fictional quote preserves exact decimal text and nullable volume', () => {
   const decoded = decodeContract('QuoteResponse', quote);
   const display = quotePresentation(decoded);
