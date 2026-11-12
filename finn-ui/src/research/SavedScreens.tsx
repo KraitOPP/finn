@@ -1,4 +1,12 @@
-import { useRef, useState } from "react";
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import LinearProgress from "@mui/material/LinearProgress";
+import MenuItem from "@mui/material/MenuItem";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import { useId, useRef, useState } from "react";
 import type {
   DiscoveryMetricSupport,
   DiscoverySector,
@@ -41,72 +49,95 @@ export function SavedScreens({
 }: {
   metrics: DiscoveryMetricSupport[];
 }) {
+  const heading = useId();
   const [id, setId] = useState("");
   const [editing, setEditing] = useState(false);
   const screens = useResource("StockScreenIndex", path);
   const current = screens.value?.items.find((item) => item.screenId === id);
   return (
-    <section className="detail-card">
-      <h2>Saved stock screens</h2>
-      <p>
-        Set thresholds for one sector. Each run saves the company list and
-        figures used, including gaps.
-      </p>
-      {screens.error && <p role="alert">{screens.error}</p>}
-      {screens.loading && <p role="status">Loading screens…</p>}
-      {screens.value && (
-        <>
-          <label>
-            Screen{" "}
-            <select
-              value={id}
-              onChange={(event) => {
-                setId(event.target.value);
-                setEditing(false);
-              }}
-            >
-              <option value="">Choose a saved screen</option>
-              {screens.value.items.map((item) => (
-                <option key={item.screenId} value={item.screenId}>
-                  {item.definition.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            onClick={() => {
-              setId("");
-              setEditing(true);
-            }}
-          >
-            New screen
-          </button>
-          {editing ? (
-            <ScreenEditor
-              key={id}
-              current={current}
-              metrics={metrics}
-              onCancel={() => setEditing(false)}
-              onSaved={(item) => {
-                setId(item.screenId);
-                setEditing(false);
-                screens.reload();
-              }}
-            />
-          ) : (
-            current && (
-              <ScreenHistory
-                key={current.screenId}
+    <Paper
+      component="section"
+      variant="outlined"
+      aria-labelledby={heading}
+      sx={{ mt: 2, p: { xs: 2, sm: 3 } }}
+    >
+      <Stack spacing={2}>
+        <div>
+          <Typography component="h2" variant="h6" id={heading}>
+            Saved stock screens
+          </Typography>
+          <Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
+            Set thresholds for one sector. Each run saves the companies and
+            figures used, including any gaps.
+          </Typography>
+        </div>
+        {screens.error && <Alert severity="error">{screens.error}</Alert>}
+        {screens.loading && (
+          <LinearProgress aria-label="Loading saved stock screens" />
+        )}
+        {screens.value && (
+          <>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <TextField
+                select
+                label="Saved screen"
+                id={`${heading}-screen`}
+                fullWidth
+                value={id}
+                slotProps={{
+                  select: { displayEmpty: true },
+                  inputLabel: { shrink: true },
+                }}
+                onChange={(event) => {
+                  setId(event.target.value);
+                  setEditing(false);
+                }}
+              >
+                <MenuItem value="">Choose a saved screen</MenuItem>
+                {screens.value.items.map((item) => (
+                  <MenuItem key={item.screenId} value={item.screenId}>
+                    {item.definition.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Button
+                type="button"
+                variant="outlined"
+                sx={{ flexShrink: 0 }}
+                onClick={() => {
+                  setId("");
+                  setEditing(true);
+                }}
+              >
+                New screen
+              </Button>
+            </Stack>
+            {editing ? (
+              <ScreenEditor
+                key={id}
                 current={current}
                 metrics={metrics}
-                onEdit={() => setEditing(true)}
+                onCancel={() => setEditing(false)}
+                onSaved={(item) => {
+                  setId(item.screenId);
+                  setEditing(false);
+                  screens.reload();
+                }}
               />
-            )
-          )}
-        </>
-      )}
-    </section>
+            ) : (
+              current && (
+                <ScreenHistory
+                  key={current.screenId}
+                  current={current}
+                  metrics={metrics}
+                  onEdit={() => setEditing(true)}
+                />
+              )
+            )}
+          </>
+        )}
+      </Stack>
+    </Paper>
   );
 }
 
@@ -142,6 +173,7 @@ function ScreenEditor({
   }
   return (
     <form
+      className="workspace-form"
       onSubmit={async (event) => {
         event.preventDefault();
         const screen: StockScreenInput = {
@@ -202,7 +234,7 @@ function ScreenEditor({
       </label>
       <DiscoveryPeriodFields value={period} onChange={setPeriod} />
       {filters.map((item, index) => (
-        <fieldset key={item.key}>
+        <fieldset className="workspace-fieldset" key={item.key}>
           <legend>Filter {index + 1}</legend>
           <label>
             Metric{" "}

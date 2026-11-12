@@ -192,6 +192,7 @@ function ConditionForm({
   });
   return (
     <form
+      className="workspace-form"
       onSubmit={async (event) => {
         event.preventDefault();
         const result = await command.run((csrf) =>

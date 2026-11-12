@@ -66,6 +66,7 @@ export function PeerRankings({
             <p>This run needs at least two companies in the selected sector.</p>
           ) : (
             <form
+              className="workspace-form"
               onSubmit={async (event) => {
                 event.preventDefault();
                 const signature = JSON.stringify({ companyIds, factors });
@@ -110,7 +111,7 @@ export function PeerRankings({
                 {allowed.map(({ metric }) => {
                   const factor = factors.find((item) => item.metric === metric);
                   return (
-                    <div key={metric}>
+                    <div className="workspace-form" key={metric}>
                       <label>
                         <input
                           type="checkbox"

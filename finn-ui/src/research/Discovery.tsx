@@ -1,4 +1,11 @@
-import { useState } from "react";
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import LinearProgress from "@mui/material/LinearProgress";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { useId, useState } from "react";
 import type {
   CatalogueListing,
   DiscoveryCompany,
@@ -23,6 +30,7 @@ import { factReasons } from "./ThesisConditions.tsx";
 
 const path = "/api/v1/discovery";
 export function Discovery() {
+  const id = useId();
   const directory = useResource("DiscoveryDirectory", `${path}/universe`);
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState(emptyPeriod);
@@ -30,81 +38,147 @@ export function Discovery() {
     "DiscoverySnapshot",
     query ? `${path}/universe/coverage?${query}` : null,
   );
+  const activeCount = directory.value?.members.filter(
+    (member) => member.active,
+  ).length;
   return (
     <section className="workspace-section">
       <RouteHeading>Discover</RouteHeading>
-      <section className="detail-card">
-        <h2>Research universe</h2>
-        <p>
-          Coverage comes from your reviewed listings and primary-source
-          financial figures. A capture uses the current saved revisions for a
-          chosen reporting period.
-        </p>
-        {directory.error && <p role="alert">{directory.error}</p>}
-        {directory.loading && (
-          <p role="status">Loading the research universe…</p>
-        )}
-        {directory.value && (
-          <>
-            <p>
-              {directory.value.members.filter((member) => member.active).length}{" "}
-              active companies · up to 30 saved companies
-            </p>
-            <details>
-              <summary>Supported metrics and sectors</summary>
-              <p>
-                Reviewed consolidated figures in INR or percentage points.
-                Balance sheet equity uses the period-end date.
-              </p>
-              <ul>
-                {directory.value.metrics.map((item) => (
-                  <li key={item.metric}>
-                    {metricLabels[item.metric]} ·{" "}
-                    {item.sectors.map((sector) => sectors[sector]).join(", ")}
-                  </li>
-                ))}
-              </ul>
-            </details>
-            <UniverseEditor
-              members={directory.value.members}
-              onSaved={() => {
-                directory.reload();
-                setQuery("");
-              }}
-            />
-          </>
-        )}
-      </section>
-      <section className="detail-card">
-        <h2>Check reporting coverage</h2>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            const next = new URLSearchParams(period).toString();
-            if (next === query) coverage.reload();
-            setQuery(next);
-          }}
+      <Typography color="text.secondary" sx={{ maxWidth: "68ch", mb: 3 }}>
+        Build a stock shortlist from companies you add and financial figures you
+        review in Research. Check a reporting period, save filters for a sector,
+        and compare companies from the same run.
+      </Typography>
+      <Stack spacing={2}>
+        <Paper
+          component="section"
+          variant="outlined"
+          aria-labelledby={`${id}-universe`}
+          sx={{ p: { xs: 2, sm: 3 } }}
         >
-          <DiscoveryPeriodFields value={period} onChange={setPeriod} />
-          <button type="submit">Check covered figures</button>
-        </form>
-        {coverage.error && <p role="alert">{coverage.error}</p>}
-        {coverage.loading && <p role="status">Checking reviewed figures…</p>}
-        {coverage.value && (
-          <>
-            <p>
-              Captured <LocalTime value={coverage.value.capturedAt} /> ·{" "}
-              {coverage.value.period.start} to {coverage.value.period.end}
-            </p>
-            {coverage.value.companies.length === 0 && (
-              <p>Add a reviewed listing to check company coverage.</p>
+          <Stack spacing={2}>
+            <Stack
+              direction="row"
+              spacing={1}
+              useFlexGap
+              sx={{ alignItems: "center", flexWrap: "wrap" }}
+            >
+              <Typography component="h2" variant="h6" id={`${id}-universe`}>
+                Research universe
+              </Typography>
+              {activeCount !== undefined && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`${activeCount} active ${activeCount === 1 ? "company" : "companies"}`}
+                />
+              )}
+            </Stack>
+            {directory.error && (
+              <Alert severity="error">{directory.error}</Alert>
             )}
-            {coverage.value.companies.map((item) => (
-              <CompanyCoverage key={item.member.companyId} item={item} />
-            ))}
-          </>
-        )}
-      </section>
+            {directory.loading && (
+              <LinearProgress aria-label="Loading the research universe" />
+            )}
+            {directory.value && (
+              <>
+                <Typography color="text.secondary" variant="body2">
+                  {directory.value.members.length === 0
+                    ? "Choose a saved exchange listing to add your first company."
+                    : "Include up to 30 companies and assign a sector to each."}
+                </Typography>
+                <UniverseEditor
+                  members={directory.value.members}
+                  onSaved={() => {
+                    directory.reload();
+                    setQuery("");
+                  }}
+                />
+                <details>
+                  <summary>Supported metrics and sectors</summary>
+                  <p>
+                    Coverage uses reviewed consolidated figures. Balance sheet
+                    equity uses the period-end date.
+                  </p>
+                  <ul>
+                    {directory.value.metrics.map((item) => (
+                      <li key={item.metric}>
+                        {metricLabels[item.metric]} ·{" "}
+                        {item.sectors
+                          .map((sector) => sectors[sector])
+                          .join(", ")}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </>
+            )}
+          </Stack>
+        </Paper>
+        <Paper
+          component="section"
+          variant="outlined"
+          aria-labelledby={`${id}-coverage`}
+          sx={{ p: { xs: 2, sm: 3 } }}
+        >
+          <Stack spacing={2.5}>
+            <div>
+              <Typography component="h2" variant="h6" id={`${id}-coverage`}>
+                Check reporting coverage
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.5 }}
+              >
+                See which reviewed figures are available for the same reporting
+                period.
+              </Typography>
+            </div>
+            <Stack
+              component="form"
+              spacing={2}
+              onSubmit={(event) => {
+                event.preventDefault();
+                const next = new URLSearchParams(period).toString();
+                if (next === query) coverage.reload();
+                setQuery(next);
+              }}
+            >
+              <DiscoveryPeriodFields value={period} onChange={setPeriod} />
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={coverage.loading}
+                sx={{ alignSelf: { sm: "start" } }}
+              >
+                Check covered figures
+              </Button>
+            </Stack>
+            {coverage.error && <Alert severity="error">{coverage.error}</Alert>}
+            {coverage.loading && (
+              <LinearProgress aria-label="Checking reviewed figures" />
+            )}
+            {coverage.value && (
+              <Stack spacing={1}>
+                <Typography color="text.secondary" variant="body2">
+                  Captured <LocalTime value={coverage.value.capturedAt} /> ·{" "}
+                  {coverage.value.period.start} to {coverage.value.period.end}
+                </Typography>
+                {coverage.value.companies.length === 0 && (
+                  <Alert severity="info">
+                    Include a company in the research universe to check its
+                    coverage.
+                  </Alert>
+                )}
+                {coverage.value.companies.map((item) => (
+                  <CompanyCoverage key={item.member.companyId} item={item} />
+                ))}
+              </Stack>
+            )}
+          </Stack>
+        </Paper>
+      </Stack>
       {directory.value && <SavedScreens metrics={directory.value.metrics} />}
     </section>
   );
@@ -132,22 +206,24 @@ function UniverseEditor({
   }
   return (
     <>
-      <ul className="security-list">
-        {members.map((member) => (
-          <li key={member.companyId}>
-            <div>
-              <strong>{member.name}</strong>
-              <p>
-                {member.exchange} {member.symbol} · {sectors[member.sector]} ·{" "}
-                {member.active ? "Included" : "Inactive"}
-              </p>
-              <button type="button" onClick={() => edit(member)}>
-                Review membership
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {members.length > 0 && (
+        <Stack component="ul" className="security-list" sx={{ m: 0 }}>
+          {members.map((member) => (
+            <li key={member.companyId}>
+              <div>
+                <strong>{member.name}</strong>
+                <p>
+                  {member.exchange} {member.symbol} · {sectors[member.sector]} ·{" "}
+                  {member.active ? "Included" : "Inactive"}
+                </p>
+                <button type="button" onClick={() => edit(member)}>
+                  Review membership
+                </button>
+              </div>
+            </li>
+          ))}
+        </Stack>
+      )}
       <ListingPicker
         busy={command.busy}
         summary="Choose a listing from Securities"
@@ -159,6 +235,7 @@ function UniverseEditor({
       />
       {listingId && (
         <form
+          className="workspace-form"
           onSubmit={async (event) => {
             event.preventDefault();
             const result = await command.run((csrf) =>
@@ -223,7 +300,7 @@ export function CompanyCoverage({ item }: { item: DiscoveryCompany }) {
   const [anchor, setAnchor] = useState("");
   const ready = item.readings.filter((reading) => reading.fact !== null).length;
   return (
-    <details>
+    <Paper component="details" variant="outlined" sx={{ px: 1.5, py: 0.5 }}>
       <summary>
         {item.member.name} · {sectors[item.member.sector]} · {ready} covered
         figures
@@ -267,6 +344,6 @@ export function CompanyCoverage({ item }: { item: DiscoveryCompany }) {
           </li>
         ))}
       </ul>
-    </details>
+    </Paper>
   );
 }

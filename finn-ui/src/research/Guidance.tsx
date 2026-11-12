@@ -246,6 +246,7 @@ function GuidanceForm({
   }
   return (
     <form
+      className="workspace-form"
       onSubmit={async (event) => {
         event.preventDefault();
         const dimensions =

@@ -138,7 +138,7 @@ function BriefScheduleForm({
   }
   return (
     <form
-      className="settings-card"
+      className="settings-card workspace-form"
       onSubmit={async (event) => {
         event.preventDefault();
         const result = await command.run((csrf) =>

@@ -189,6 +189,7 @@ function Scenario({ path, candidate }: { path: string; candidate?: string }) {
         }}
       />
       <form
+        className="workspace-form"
         onSubmit={async (event) => {
           event.preventDefault();
           const next = await command.run((csrf) =>
@@ -306,6 +307,7 @@ function WeeklyRisk({ path }: { path: string }) {
         external cash-flow date needs a saved valuation for each account.
       </p>
       <form
+        className="workspace-form"
         onSubmit={async (event) => {
           event.preventDefault();
           const next = await command.run((csrf) =>

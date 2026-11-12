@@ -47,6 +47,7 @@ export function PerformancePanel({ portfolio }: { portfolio: string }) {
         span up to 366 days.
       </p>
       <form
+        className="workspace-form"
         onSubmit={async (event) => {
           event.preventDefault();
           const report = await command.run((csrf) =>
@@ -173,7 +174,7 @@ export function PerformanceWindowFields({
   onChange: (value: PortfolioPerformanceInput) => void;
 }) {
   return (
-    <fieldset>
+    <fieldset className="workspace-fieldset">
       <legend>Reviewed valuation window</legend>
       <label>
         Opening valuation date{" "}

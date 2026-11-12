@@ -118,7 +118,7 @@ function NewsForm({ onSave }: { onSave: () => void }) {
   const [validation, setValidation] = useState("");
   return (
     <form
-      className="settings-card"
+      className="settings-card workspace-form"
       onSubmit={async (event) => {
         event.preventDefault();
         setValidation("");

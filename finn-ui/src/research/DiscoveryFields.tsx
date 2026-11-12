@@ -1,3 +1,8 @@
+import Box from "@mui/material/Box";
+import MenuItem from "@mui/material/MenuItem";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import { useId } from "react";
 import type {
   DiscoveryPeriod,
   DiscoverySector,
@@ -25,12 +30,27 @@ export function DiscoveryPeriodFields({
   value: DiscoveryPeriod;
   onChange: (period: DiscoveryPeriod) => void;
 }) {
+  const id = useId();
   return (
-    <fieldset>
-      <legend>Reporting period</legend>
-      <label>
-        Period type{" "}
-        <select
+    <Box component="fieldset" sx={{ m: 0, p: 0, minWidth: 0, border: 0 }}>
+      <Typography component="legend" variant="subtitle2" sx={{ mb: 1.5 }}>
+        Reporting period
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: {
+            xs: "minmax(0, 1fr)",
+            sm: "repeat(3, minmax(0, 1fr))",
+          },
+        }}
+      >
+        <TextField
+          id={`${id}-kind`}
+          select
+          fullWidth
+          label="Period type"
           value={value.kind}
           onChange={(event) =>
             onChange({
@@ -39,32 +59,38 @@ export function DiscoveryPeriodFields({
             })
           }
         >
-          <option value="FULL_YEAR">Full year</option>
-          <option value="QUARTER">Quarter</option>
-        </select>
-      </label>
-      <label>
-        Start date{" "}
-        <input
+          <MenuItem value="FULL_YEAR">Full year</MenuItem>
+          <MenuItem value="QUARTER">Quarter</MenuItem>
+        </TextField>
+        <TextField
+          id={`${id}-start`}
+          fullWidth
+          label="Start date"
           required
           type="date"
           value={value.start}
-          max={value.end || undefined}
+          slotProps={{
+            inputLabel: { shrink: true },
+            htmlInput: { max: value.end || undefined },
+          }}
           onChange={(event) =>
             onChange({ ...value, start: event.target.value })
           }
         />
-      </label>
-      <label>
-        End date{" "}
-        <input
+        <TextField
+          id={`${id}-end`}
+          fullWidth
+          label="End date"
           required
           type="date"
           value={value.end}
-          min={value.start || undefined}
+          slotProps={{
+            inputLabel: { shrink: true },
+            htmlInput: { min: value.start || undefined },
+          }}
           onChange={(event) => onChange({ ...value, end: event.target.value })}
         />
-      </label>
-    </fieldset>
+      </Box>
+    </Box>
   );
 }

@@ -4,6 +4,7 @@
   --ink: #162437;
   --muted: #4d5f72;
   --border: #d7e0e8;
+  --control-border: #8496a8;
   --accent: #09594d;
   --accent-soft: #e5f2ed;
   color: var(--ink);
@@ -147,6 +148,143 @@ main {
 .primary-button:disabled {
   opacity: 0.62;
   cursor: default;
+}
+
+/* These selectors target native label/control pairs and leave Material UI outlines to the theme. */
+:where(.workspace-section, .stock-workspace, .workspace-tools, .settings-card)
+  label:where(
+    :has(> :is(input:not([type="checkbox"], [type="radio"]), select, textarea)),
+    :has(
+      + :is(
+          input:not([type="checkbox"], [type="radio"]),
+          select,
+          textarea,
+          .form-actions
+        )
+    )
+  ) {
+  display: grid;
+  gap: 6px;
+  min-inline-size: 0;
+  margin-block: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+:where(.workspace-section, .stock-workspace, .workspace-tools, .settings-card)
+  :where(label > *, label + *, .form-actions > *):is(
+    input:not([type="checkbox"], [type="radio"], [type="hidden"]),
+    select,
+    textarea
+  ) {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--control-border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+}
+:where(.workspace-section, .stock-workspace, .workspace-tools, .settings-card)
+  label:where(:has(> :is(input[type="checkbox"], input[type="radio"]))) {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-block: 6px;
+  line-height: 1.5;
+}
+:where(.workspace-section, .stock-workspace, .workspace-tools, .settings-card)
+  label
+  > :where(input[type="checkbox"], input[type="radio"]) {
+  flex: none;
+  margin: 4px 0 0;
+  accent-color: var(--accent);
+}
+:where(.workspace-section, .stock-workspace, .workspace-tools, .settings-card)
+  fieldset:where(:not([class]), .workspace-fieldset):has(> legend) {
+  min-inline-size: 0;
+  margin: 8px 0;
+  padding: 12px 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+:where(.workspace-section, .stock-workspace, .workspace-tools, .settings-card)
+  fieldset:where(:not([class]), .workspace-fieldset)
+  > legend {
+  padding-inline: 5px;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.workspace-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+.workspace-form > label {
+  flex: 1 1 13rem;
+  min-inline-size: 0;
+  margin: 0;
+}
+.workspace-form > :where(h3, h4, fieldset, details, div, p, section),
+.workspace-form
+  > label:has(> :is(textarea, input[type="checkbox"], input[type="radio"])) {
+  flex: 1 0 100%;
+}
+.workspace-form > :where(h3, h4, p) {
+  margin-block: 0;
+}
+.workspace-fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: end;
+  gap: 12px 16px;
+}
+.workspace-fieldset > label {
+  margin: 0;
+}
+.workspace-fieldset > :where(button, div, p),
+.workspace-fieldset
+  > label:has(> :is(input[type="checkbox"], input[type="radio"])) {
+  grid-column: 1 / -1;
+}
+.workspace-fieldset > button {
+  justify-self: start;
+}
+:where(.detail-card, .settings-card, .workspace-form, .review-card)
+  button:not([class]) {
+  min-block-size: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  text-align: start;
+}
+:where(.detail-card, .settings-card, .workspace-form, .review-card)
+  button[type="submit"]:not([class]) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--surface);
+}
+:where(.detail-card, .settings-card, .workspace-form, .review-card)
+  button:not([class]):hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+:where(.detail-card, .settings-card, .workspace-form, .review-card)
+  button:not([class]):disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.market-filters {
+  align-items: flex-end;
+}
+.market-filters > label {
+  margin: 0;
 }
 .page-footer {
   border-color: var(--border);

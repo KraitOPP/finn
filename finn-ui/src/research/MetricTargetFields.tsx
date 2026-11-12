@@ -64,7 +64,7 @@ export function MetricTargetFields({
     );
   }
   return (
-    <fieldset>
+    <fieldset className="workspace-fieldset">
       <legend>Reporting context</legend>
       <label>
         Metric{" "}

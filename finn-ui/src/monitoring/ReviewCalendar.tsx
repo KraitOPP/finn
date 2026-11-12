@@ -111,6 +111,7 @@ function ReminderActions({
     <details>
       <summary>Reschedule or cancel {item.settings.title}</summary>
       <form
+        className="workspace-form"
         onSubmit={(event) => {
           event.preventDefault();
           void save(until);
@@ -170,7 +171,7 @@ function ReminderForm({
   }
   return (
     <form
-      className="settings-card"
+      className="settings-card workspace-form"
       onSubmit={async (event) => {
         event.preventDefault();
         const result = await command.run((csrf) =>
@@ -239,7 +240,7 @@ function ReminderForm({
           ))}
         </select>
       </label>
-      <fieldset>
+      <fieldset className="workspace-fieldset">
         <legend>Quiet hours (optional)</legend>
         <label>
           Start{" "}
