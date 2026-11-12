@@ -1,0 +1,26 @@
+{
+  "importId": "fictional-import",
+  "jobId": "fictional-import-job",
+  "ledgerRevisionAtPreview": 0,
+  "metadata": {
+    "profile": "groww-holdings-xlsx-v1",
+    "asOfDate": "2020-11-09",
+    "reportedSummary": {"buyValue": "50.00", "closingValue": "49.50", "unrealisedPnl": "-0.50"},
+    "detailTotals": {"buyValue": "48.75", "closingValue": "49.50", "unrealisedPnl": "0.75"},
+    "comparisons": [
+      {"field": "BUY_VALUE", "reported": "50.00", "detailSum": "48.75", "difference": "1.25", "status": "MISMATCH"},
+      {"field": "CLOSING_VALUE", "reported": "49.50", "detailSum": "49.50", "difference": "0.00", "status": "MATCH"},
+      {"field": "UNREALISED_PNL", "reported": "-0.50", "detailSum": "0.75", "difference": "-1.25", "status": "MISMATCH"}
+    ],
+    "warnings": ["HOLDINGS_SNAPSHOT_ONLY", "INR_CONFIRMATION_REQUIRED", "LISTINGS_NOT_PROVIDED", "SUMMARY_TOTAL_MISMATCH"],
+    "rowCount": 2
+  },
+  "rows": [
+    {"source": {"rowNumber": 12, "reportedName": "Fictional Alpha Equity", "isin": "ZZ0000000016", "quantity": "3", "averageCost": "10.25", "buyValue": "30.75", "closingPrice": "11", "closingValue": "33", "unrealisedPnl": "2.25", "issues": []}, "matchedSecurityId": null, "mappingStatus": "UNRESOLVED_SECURITY"},
+    {"source": {"rowNumber": 14, "reportedName": "Fictional Beta Equity", "isin": "ZZ0000000024", "quantity": "2", "averageCost": "9.00", "buyValue": "18.00", "closingPrice": "8.25", "closingValue": "16.50", "unrealisedPnl": "-1.50", "issues": []}, "matchedSecurityId": null, "mappingStatus": "UNRESOLVED_SECURITY"}
+  ],
+  "nextOffset": null,
+  "requiresInrConfirmation": true,
+  "commitAvailable": true,
+  "review": {"state": "READY", "currentLedgerRevision": 0, "eligibleRows": 2, "duplicateRows": 0, "conflictRows": 0, "reportedCostAvailable": true, "differencesRequireAcknowledgement": true, "receipt": null}
+}

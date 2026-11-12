@@ -1,0 +1,37 @@
+name: Verify frontend
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+      - name: Prepare external working directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/finn-workspace"
+          echo "FINN_WORKSPACE_ROOT=$RUNNER_TEMP/finn-workspace" >> "$GITHUB_ENV"
+      - name: Install locked dependencies
+        run: node scripts/install.mjs
+      - name: Verify reviewed contract snapshot
+        run: node contracts/generate.mjs --check
+      - name: Lint, typecheck, test and build
+        run: npm run check
+      - name: Build standalone fictional walkthrough
+        run: npm run build:demo
+      - name: Audit production dependencies
+        env:
+          npm_config_cache: ${{ runner.temp }}/finn-workspace/cache/npm
+        run: npm audit --omit=dev --audit-level=moderate

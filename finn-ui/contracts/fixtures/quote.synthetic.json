@@ -1,0 +1,97 @@
+{
+  "contractVersion": "0.46.0",
+  "requestId": "synthetic-request-001",
+  "listing": {
+    "listingId": "synthetic-listing-001",
+    "securityId": "synthetic-security-001",
+    "companyId": "synthetic-company-001",
+    "exchange": "NSE",
+    "segment": "CASH_EQUITY",
+    "series": "EQ",
+    "symbol": "FINN-FICTIONAL",
+    "currency": "INR",
+    "isin": null
+  },
+  "freshness": {
+    "state": "FRESH",
+    "evaluatedAt": "2026-11-06T12:00:02Z",
+    "expectedSessionDate": "2026-11-06",
+    "latestSessionDate": "2026-11-06",
+    "reasonCode": "SYNTHETIC_EXPECTED_SESSION"
+  },
+  "selectionReason": "SYNTHETIC_FIXTURE_ONLY",
+  "warnings": [],
+  "availability": "AVAILABLE",
+  "observation": {
+    "observationId": "synthetic-observation-001",
+    "listing": {
+      "listingId": "synthetic-listing-001",
+      "securityId": "synthetic-security-001",
+      "companyId": "synthetic-company-001",
+      "exchange": "NSE",
+      "segment": "CASH_EQUITY",
+      "series": "EQ",
+      "symbol": "FINN-FICTIONAL",
+      "currency": "INR",
+      "isin": null
+    },
+    "sessionDate": "2026-11-06",
+    "interval": "ONE_DAY",
+    "open": null,
+    "high": null,
+    "low": null,
+    "close": "123.450000000000000001",
+    "adjustedClose": null,
+    "volume": null,
+    "turnover": null,
+    "basis": {
+      "ohlcPrice": "AS_REPORTED_EXCHANGE",
+      "adjustedClose": null,
+      "volume": "AS_REPORTED",
+      "adjustmentAsOf": null
+    },
+    "finality": "FINAL",
+    "provenance": {
+      "provider": "SYNTHETIC",
+      "providerInstrumentId": "FINN-FICTIONAL.NS",
+      "mappingVersion": "synthetic-mapping-v1",
+      "adapterVersion": "synthetic-v1",
+      "sourceName": "FINN fictional contract fixture",
+      "sourceLocator": null,
+      "artifactSha256": null,
+      "sourceRevision": "synthetic-v1",
+      "parserVersion": "synthetic-v1",
+      "sourceTimezone": "Asia/Kolkata",
+      "times": {
+        "observedAt": null,
+        "publishedAt": null,
+        "providerAvailableAt": null,
+        "firstSeenAt": "2026-11-06T12:00:00Z",
+        "ingestedAt": "2026-11-06T12:00:01Z",
+        "acceptedAt": "2026-11-06T12:00:02Z",
+        "unknownTimeReasons": [
+          "OBSERVATION_TIME_NOT_PROVIDED",
+          "PUBLICATION_TIME_NOT_PROVIDED",
+          "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED"
+        ]
+      },
+      "delay": {
+        "kind": "UNKNOWN",
+        "seconds": null,
+        "basis": "UNKNOWN"
+      },
+      "rights": {
+        "policyId": "synthetic-fixture-policy",
+        "reviewedAt": "2026-11-06T12:00:00Z",
+        "retentionUntil": null,
+        "attribution": "Entirely fictional contract test data",
+        "mode": "SYNTHETIC_PUBLIC_DEMO",
+        "reviewStatus": "VERIFIED",
+        "publicDisplayAllowed": true,
+        "externalAiAllowed": false
+      },
+      "quality": "VALIDATED",
+      "qualityFlags": []
+    }
+  }
+}

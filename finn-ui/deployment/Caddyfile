@@ -1,0 +1,27 @@
+{
+	admin off
+	persist_config off
+	storage file_system "{$FINN_CADDY_STORAGE}"
+}
+
+{$FINN_WEB_ORIGIN} {
+	bind {$FINN_WEB_BIND}
+	header Strict-Transport-Security "max-age=31536000"
+	@backend path /api/* /oauth2/* /login/oauth2/*
+	handle @backend {
+		reverse_proxy {$FINN_BACKEND_UPSTREAM}
+	}
+	handle {
+		root * "{$FINN_STATIC_ROOT}"
+		header {
+			Content-Security-Policy "default-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self' {$FINN_IDENTITY_ORIGIN}"
+			Referrer-Policy "no-referrer"
+			X-Content-Type-Options "nosniff"
+		}
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@entry path / /index.html
+		header @entry Cache-Control "no-cache"
+		file_server
+	}
+}

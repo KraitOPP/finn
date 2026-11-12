@@ -1,0 +1,52 @@
+# Local secrets and personal configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Dependency and generated directories
+node_modules/
+.cache/
+.vite/
+.turbo/
+.next/
+.eslintcache
+*.tsbuildinfo
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# Work belongs outside this repository
+project-workspace/
+plans/
+memory/
+findings/
+tmp/
+temp/
+logs/
+downloads/
+uploads/
+screenshots/
+recordings/
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+
+# Machine and agent state
+.idea/
+.vscode/
+.agents/
+.codex/
+.DS_Store
+Thumbs.db
+desktop.ini

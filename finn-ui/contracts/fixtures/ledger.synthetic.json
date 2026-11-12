@@ -1,0 +1,20 @@
+{
+  "revision": 0,
+  "calculationVersion": "MOVING_AVERAGE_1",
+  "currency": "INR",
+  "positions": [],
+  "cashBalance": null,
+  "recordedCashComponents": "0",
+  "cashMovementsComplete": true,
+  "realisedPnl": "0",
+  "knownRealisedPnl": "0",
+  "recordedFees": "0",
+  "recordedFeesComplete": true,
+  "standaloneFees": "0",
+  "recordedDividends": "0",
+  "netContributions": "0",
+  "cashBaselineDate": null,
+  "coverageStart": null,
+  "historyStatus": "UNKNOWN",
+  "warnings": ["STARTING_CASH_UNKNOWN", "COMPLETE_HISTORICAL_RETURNS_UNAVAILABLE"]
+}
