@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.47.0",
+  "contractVersion": "0.48.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "bfc579b5c055a1b92c4c0e4edf1ab5c40ff857db96285eb4f89ec3bc1ae0aa23",
+  "sourceSha256": "8f5bab65743d01167e1154a01e2c8094255832b1fb354e205f401beafca43ba2",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -234,9 +234,15 @@ export const contractMetadata = {
     "SourceTimes",
     "StagedResearchPdf",
     "StagedResearchPdfs",
+    "StockAiCapability",
+    "StockAiResult",
     "StockLookupOpened",
     "StockLookupResults",
     "StockLookupSelection",
+    "StockResearchInput",
+    "StockResearchListings",
+    "StockResearchPreset",
+    "StockResearchReport",
     "StockScreen",
     "StockScreenCheck",
     "StockScreenEdit",
@@ -2354,7 +2360,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.47.0"
+    "const": "0.48.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3868,159 +3874,16 @@ export const contractSchemas = {
     "additionalProperties": false
   },
   "GeminiInput": {
-    "type": "object",
-    "properties": {
-      "listingId": {
-        "$ref": "#/components/schemas/OpaqueId"
-      },
-      "preset": {
-        "$ref": "#/components/schemas/GeminiPreset"
-      }
-    },
-    "required": [
-      "listingId",
-      "preset"
-    ],
-    "additionalProperties": false
+    "$ref": "#/components/schemas/StockResearchInput"
   },
   "GeminiListings": {
-    "type": "object",
-    "properties": {
-      "items": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CatalogueListing"
-        },
-        "maxItems": 100
-      }
-    },
-    "required": [
-      "items"
-    ],
-    "additionalProperties": false
+    "$ref": "#/components/schemas/StockResearchListings"
   },
   "GeminiPreset": {
-    "type": "string",
-    "enum": [
-      "DEEP_DIVE",
-      "FINANCIALS",
-      "VALUATION",
-      "RISKS",
-      "NEWS"
-    ]
+    "$ref": "#/components/schemas/StockResearchPreset"
   },
   "GeminiReport": {
-    "type": "object",
-    "properties": {
-      "preset": {
-        "$ref": "#/components/schemas/GeminiPreset"
-      },
-      "model": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 77
-      },
-      "asOf": {
-        "$ref": "#/components/schemas/SessionDate"
-      },
-      "items": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "title": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 180
-            },
-            "detail": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2400
-            },
-            "publishedOn": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/SessionDate"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "sourceIds": {
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 99
-              },
-              "maxItems": 100
-            }
-          },
-          "required": [
-            "title",
-            "detail",
-            "publishedOn",
-            "sourceIds"
-          ],
-          "additionalProperties": false
-        },
-        "maxItems": 8
-      },
-      "sources": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 99
-            },
-            "title": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 240
-            },
-            "url": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 4000,
-              "pattern": "^https://"
-            }
-          },
-          "required": [
-            "id",
-            "title",
-            "url"
-          ],
-          "additionalProperties": false
-        },
-        "maxItems": 100
-      },
-      "searchSuggestions": {
-        "anyOf": [
-          {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64000
-          },
-          {
-            "type": "null"
-          }
-        ]
-      }
-    },
-    "required": [
-      "preset",
-      "model",
-      "asOf",
-      "items",
-      "sources",
-      "searchSuggestions"
-    ],
-    "additionalProperties": false
+    "$ref": "#/components/schemas/StockResearchReport"
   },
   "GuidanceCandidates": {
     "type": "object",
@@ -11250,6 +11113,59 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "StockAiCapability": {
+    "type": "object",
+    "properties": {
+      "provider": {
+        "type": "string",
+        "enum": [
+          "GROQ",
+          "GEMINI"
+        ]
+      },
+      "configured": {
+        "type": "boolean"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 77
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "provider",
+      "configured",
+      "model"
+    ],
+    "additionalProperties": false
+  },
+  "StockAiResult": {
+    "type": "object",
+    "properties": {
+      "provider": {
+        "type": "string",
+        "enum": [
+          "GROQ",
+          "GEMINI"
+        ]
+      },
+      "report": {
+        "$ref": "#/components/schemas/StockResearchReport"
+      }
+    },
+    "required": [
+      "provider",
+      "report"
+    ],
+    "additionalProperties": false
+  },
   "StockLookupOpened": {
     "type": "object",
     "properties": {
@@ -11315,6 +11231,161 @@ export const contractSchemas = {
     "required": [
       "exchange",
       "symbol"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchInput": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "preset": {
+        "$ref": "#/components/schemas/StockResearchPreset"
+      }
+    },
+    "required": [
+      "listingId",
+      "preset"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchListings": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CatalogueListing"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchPreset": {
+    "type": "string",
+    "enum": [
+      "DEEP_DIVE",
+      "FINANCIALS",
+      "VALUATION",
+      "RISKS",
+      "NEWS"
+    ]
+  },
+  "StockResearchReport": {
+    "type": "object",
+    "properties": {
+      "preset": {
+        "$ref": "#/components/schemas/StockResearchPreset"
+      },
+      "model": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 77
+      },
+      "asOf": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 180
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2400
+            },
+            "publishedOn": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionDate"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sourceIds": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 99
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "title",
+            "detail",
+            "publishedOn",
+            "sourceIds"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 8
+      },
+      "sources": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000,
+              "pattern": "^https://"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "url"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 100
+      },
+      "searchSuggestions": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "preset",
+      "model",
+      "asOf",
+      "items",
+      "sources",
+      "searchSuggestions"
     ],
     "additionalProperties": false
   },

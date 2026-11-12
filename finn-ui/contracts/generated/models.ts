@@ -404,7 +404,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.47.0") & (string);
+export type ContractVersion = ("0.48.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -672,34 +672,13 @@ export type GeminiCapability = ({
   "model": (((string)) | ((null)));
 });
 
-export type GeminiInput = ({
-  "listingId": (OpaqueId);
-  "preset": (GeminiPreset);
-});
+export type GeminiInput = (StockResearchInput);
 
-export type GeminiListings = ({
-  "items": (Array<(CatalogueListing)>);
-});
+export type GeminiListings = (StockResearchListings);
 
-export type GeminiPreset = ("DEEP_DIVE" | "FINANCIALS" | "VALUATION" | "RISKS" | "NEWS") & (string);
+export type GeminiPreset = (StockResearchPreset);
 
-export type GeminiReport = ({
-  "preset": (GeminiPreset);
-  "model": (string);
-  "asOf": (SessionDate);
-  "items": (Array<({
-  "title": (string);
-  "detail": (string);
-  "publishedOn": (((SessionDate)) | ((null)));
-  "sourceIds": (Array<(number)>);
-})>);
-  "sources": (Array<({
-  "id": (number);
-  "title": (string);
-  "url": (string);
-})>);
-  "searchSuggestions": (((string)) | ((null)));
-});
+export type GeminiReport = (StockResearchReport);
 
 export type GuidanceCandidates = ({
   "evidence": (ResearchLocation);
@@ -1973,6 +1952,17 @@ export type StagedResearchPdfs = ({
   "items": (Array<(StagedResearchPdf)>);
 });
 
+export type StockAiCapability = ({
+  "provider": ("GROQ" | "GEMINI") & (string);
+  "configured": (boolean);
+  "model": (((string)) | ((null)));
+});
+
+export type StockAiResult = ({
+  "provider": ("GROQ" | "GEMINI") & (string);
+  "report": (StockResearchReport);
+});
+
 export type StockLookupOpened = ({
   "listing": (CatalogueListing);
   "refreshStatus": ("QUEUED" | "RECENT" | "UNAVAILABLE") & (string);
@@ -1986,6 +1976,35 @@ export type StockLookupResults = ({
 export type StockLookupSelection = ({
   "exchange": ("NSE" | "BSE") & (string);
   "symbol": (string);
+});
+
+export type StockResearchInput = ({
+  "listingId": (OpaqueId);
+  "preset": (StockResearchPreset);
+});
+
+export type StockResearchListings = ({
+  "items": (Array<(CatalogueListing)>);
+});
+
+export type StockResearchPreset = ("DEEP_DIVE" | "FINANCIALS" | "VALUATION" | "RISKS" | "NEWS") & (string);
+
+export type StockResearchReport = ({
+  "preset": (StockResearchPreset);
+  "model": (string);
+  "asOf": (SessionDate);
+  "items": (Array<({
+  "title": (string);
+  "detail": (string);
+  "publishedOn": (((SessionDate)) | ((null)));
+  "sourceIds": (Array<(number)>);
+})>);
+  "sources": (Array<({
+  "id": (number);
+  "title": (string);
+  "url": (string);
+})>);
+  "searchSuggestions": (((string)) | ((null)));
 });
 
 export type StockScreen = ({
@@ -2523,9 +2542,15 @@ export interface ContractTypes {
   SourceTimes: SourceTimes;
   StagedResearchPdf: StagedResearchPdf;
   StagedResearchPdfs: StagedResearchPdfs;
+  StockAiCapability: StockAiCapability;
+  StockAiResult: StockAiResult;
   StockLookupOpened: StockLookupOpened;
   StockLookupResults: StockLookupResults;
   StockLookupSelection: StockLookupSelection;
+  StockResearchInput: StockResearchInput;
+  StockResearchListings: StockResearchListings;
+  StockResearchPreset: StockResearchPreset;
+  StockResearchReport: StockResearchReport;
   StockScreen: StockScreen;
   StockScreenCheck: StockScreenCheck;
   StockScreenEdit: StockScreenEdit;

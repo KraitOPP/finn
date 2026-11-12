@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.47.0"
+VERSION = "0.48.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -111,13 +111,16 @@ def definitions() -> dict:
         "high": nullable(ref("PositiveDecimalString")), "today": ref("ExchangeSession"),
         "calendarEvents": array(ref("ExchangeSession"), maxItems=29),
     })
-    d["GeminiPreset"] = enum(["DEEP_DIVE","FINANCIALS","VALUATION","RISKS","NEWS"])
+    d["StockResearchPreset"] = enum(["DEEP_DIVE","FINANCIALS","VALUATION","RISKS","NEWS"])
+    d["GeminiPreset"] = ref("StockResearchPreset")
     d["GeminiCapability"] = obj({"configured":{"type":"boolean"},"model":nullable(text(maxLength=77))})
-    d["GeminiListings"] = obj({"items": array(ref("CatalogueListing"), maxItems=100)})
-    d["GeminiInput"] = obj({"listingId": ref("OpaqueId"), "preset": ref("GeminiPreset")})
+    d["StockResearchListings"] = obj({"items": array(ref("CatalogueListing"), maxItems=100)})
+    d["GeminiListings"] = ref("StockResearchListings")
+    d["StockResearchInput"] = obj({"listingId": ref("OpaqueId"), "preset": ref("StockResearchPreset")})
+    d["GeminiInput"] = ref("StockResearchInput")
     source_index = {"type":"integer","minimum":0,"maximum":99}
-    d["GeminiReport"] = obj({
-        "preset": ref("GeminiPreset"), "model": text(maxLength=77), "asOf": ref("SessionDate"),
+    d["StockResearchReport"] = obj({
+        "preset": ref("StockResearchPreset"), "model": text(maxLength=77), "asOf": ref("SessionDate"),
         "items": array(obj({"title": text(maxLength=180), "detail": text(maxLength=2400),
                             "publishedOn": nullable(ref("SessionDate")),
                             "sourceIds": array(source_index, maxItems=100)}), maxItems=8),
@@ -125,6 +128,10 @@ def definitions() -> dict:
                               "url": text(pattern=r"^https://",maxLength=4000)}), maxItems=100),
         "searchSuggestions": nullable(text(maxLength=64000)),
     })
+    d["GeminiReport"] = ref("StockResearchReport")
+    provider = enum(["GROQ","GEMINI"])
+    d["StockAiCapability"] = obj({"provider":provider,"configured":{"type":"boolean"},"model":nullable(text(maxLength=77))})
+    d["StockAiResult"] = obj({"provider":provider,"report":ref("StockResearchReport")})
     d["ReviewCloseInput"] = obj({
         "sessionDate": ref("SessionDate"), "close": ref("PositiveDecimalString"), "sourceReference": text(maxLength=240),
         "reviewed": {"type":"boolean","const":True},
@@ -1065,6 +1072,10 @@ def public_api_document() -> dict:
         "/api/v1/research/gemini/listings":{"get": maintained("getGeminiListings","Read owned listings for a company","GeminiListings",[
             parameter("company","query",text(format="uuid"),True)])},
         "/api/v1/research/gemini":{"post": maintained("runGeminiResearch","Run a temporary Google Search grounded report on an owned listing","GeminiReport",(),"GeminiInput")},
+        "/api/v1/research/stock-ai/capability":{"get": maintained("getStockAiCapability","Read the active stock research provider and setup status","StockAiCapability")},
+        "/api/v1/research/stock-ai/listings":{"get": maintained("getStockAiListings","Read owned listings for stock research","StockResearchListings",[
+            parameter("company","query",text(format="uuid"),True)])},
+        "/api/v1/research/stock-ai":{"post": maintained("runStockAiResearch","Run temporary source-backed research or news on an owned listing","StockAiResult",(),"StockResearchInput")},
         "/api/v1/research/sources":{
             "get": maintained("listCompanySources","List private primary source records","CompanySourcePage",[
                 parameter("offset","query",{"type":"integer","minimum":0,"maximum":200}),parameter("companyId","query",text(format="uuid"))]),

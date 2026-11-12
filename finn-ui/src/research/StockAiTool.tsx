@@ -12,8 +12,8 @@ import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import type {
   CatalogueListing,
-  GeminiPreset,
-  GeminiReport,
+  StockAiResult,
+  StockResearchPreset,
 } from "../../contracts/generated/models.ts";
 import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
@@ -24,7 +24,7 @@ import {
   searchSuggestionsFragment,
 } from "./GoogleSearchSuggestions.tsx";
 
-const endpoint = "/api/v1/research/gemini";
+const endpoint = "/api/v1/research/stock-ai";
 const presets = {
   DEEP_DIVE: {
     label: "Complete stock analysis",
@@ -49,25 +49,26 @@ const presets = {
 } as const;
 type ResearchPreset = keyof typeof presets;
 
-export function GeminiStockTool({
+export function StockAiTool({
   listing,
   news = false,
 }: {
   listing: CatalogueListing;
   news?: boolean;
 }) {
-  const capability = useResource("GeminiCapability", `${endpoint}/capability`);
+  const capability = useResource("StockAiCapability", `${endpoint}/capability`);
   const command = usePrivateCommand();
   const [preset, setPreset] = useState<ResearchPreset>("DEEP_DIVE");
-  const [report, setReport] = useState<GeminiReport | null>(null);
+  const [result, setResult] = useState<StockAiResult | null>(null);
   const [invalidSuggestions, setInvalidSuggestions] = useState(false);
-  const selected: GeminiPreset = news ? "NEWS" : preset;
+  const selected: StockResearchPreset = news ? "NEWS" : preset;
+  const usesGemini = capability.value?.provider === "GEMINI";
 
   async function run() {
-    setReport(null);
+    setResult(null);
     setInvalidSuggestions(false);
     const next = await command.run((csrf) =>
-      requestContract("GeminiReport", endpoint, {
+      requestContract("StockAiResult", endpoint, {
         method: "POST",
         csrf,
         timeoutMs: 60000,
@@ -76,13 +77,13 @@ export function GeminiStockTool({
     );
     if (!next) return;
     if (
-      next.searchSuggestions &&
-      !searchSuggestionsFragment(next.searchSuggestions)
+      next.report.searchSuggestions &&
+      !searchSuggestionsFragment(next.report.searchSuggestions)
     ) {
       setInvalidSuggestions(true);
       return;
     }
-    setReport(next);
+    setResult(next);
   }
 
   return (
@@ -124,7 +125,7 @@ export function GeminiStockTool({
               helperText={presets[preset].description}
               onChange={(event) => {
                 setPreset(event.target.value as ResearchPreset);
-                setReport(null);
+                setResult(null);
                 setInvalidSuggestions(false);
               }}
             >
@@ -136,7 +137,7 @@ export function GeminiStockTool({
             </TextField>
           )}
           {capability.loading && (
-            <LinearProgress aria-label="Checking Gemini setup" />
+            <LinearProgress aria-label="Checking research provider" />
           )}
           {capability.error && (
             <Alert
@@ -152,8 +153,8 @@ export function GeminiStockTool({
           )}
           {capability.value?.configured === false && (
             <Alert severity="info">
-              Gemini needs an API key. Set <code>GEMINI_API_KEY</code> on the
-              FINN backend and restart it.
+              Set <code>{usesGemini ? "GEMINI_API_KEY" : "GROQ_API_KEY"}</code>{" "}
+              on the FINN backend and restart it.
             </Alert>
           )}
           <Button
@@ -166,9 +167,9 @@ export function GeminiStockTool({
           </Button>
           {command.busy && (
             <>
-              <LinearProgress aria-label="Gemini working" />
+              <LinearProgress aria-label="Searching public sources" />
               <Typography role="status" variant="body2">
-                Gemini is checking public sources…
+                Checking public sources…
               </Typography>
             </>
           )}
@@ -180,9 +181,9 @@ export function GeminiStockTool({
           )}
         </Stack>
       </Paper>
-      {report && (
+      {result && (
         <>
-          <GroundedReport report={report} />
+          <GroundedReport result={result} />
           {!news && <StockHistoryChart listing={listing} initialRange="Y1" />}
         </>
       )}
@@ -190,7 +191,8 @@ export function GeminiStockTool({
   );
 }
 
-function GroundedReport({ report }: { report: GeminiReport }) {
+function GroundedReport({ result }: { result: StockAiResult }) {
+  const { provider, report } = result;
   const news = report.preset === "NEWS";
   const date = new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
@@ -206,13 +208,16 @@ function GroundedReport({ report }: { report: GeminiReport }) {
               : presets[report.preset as ResearchPreset].label}
           </Typography>
           <Typography color="text.secondary" variant="body2">
-            Gemini with Google Search · {date.format(new Date(report.asOf))}
+            {provider === "GROQ"
+              ? "GPT-OSS 120B via Groq Browser Search"
+              : "Gemini with Google Search"}{" "}
+            · {date.format(new Date(report.asOf))}
           </Typography>
         </Stack>
         {report.items.length === 0 && (
           <Alert severity="info">
-            Gemini found no recent items with a publication date and a matching
-            source.
+            No recent items with a publication date and a matching source were
+            found.
           </Alert>
         )}
         <Box
@@ -250,7 +255,7 @@ function GroundedReport({ report }: { report: GeminiReport }) {
                 </Typography>
                 {item.sourceIds.length === 0 && (
                   <Typography variant="caption" color="text.secondary">
-                    Gemini supplied no citation for this section.
+                    No citation was supplied for this section.
                   </Typography>
                 )}
                 <Stack

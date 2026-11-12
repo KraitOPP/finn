@@ -27,7 +27,7 @@ class GeminiResearchTest {
         var support = Map.of("segment",Map.of("partIndex",1,"startIndex",start,
                 "endIndex",start+detail.getBytes(StandardCharsets.UTF_8).length),
                 "groundingChunkIndices",List.of(0,1));
-        var result = research.decode(response(raw,List.of(support)),GeminiResearch.Preset.NEWS,"gemini-3.8-flash",today);
+        var result = research.decode(response(raw,List.of(support)),StockResearch.Preset.NEWS,"gemini-3.8-flash",today);
         assertEquals(1,result.items().size());
         assertEquals("Results",result.items().getFirst().title());
         assertEquals(List.of(0),result.items().getFirst().sourceIds());
@@ -37,13 +37,13 @@ class GeminiResearchTest {
 
     @Test
     void requestsStructuredSearchAndRequiresProviderSourcesForAnalysis() {
-        var body = json.valueToTree(GeminiResearch.request("NSE","INFY",GeminiResearch.Preset.VALUATION,today));
+        var body = json.valueToTree(GeminiResearch.request("NSE","INFY",StockResearch.Preset.VALUATION,today));
         assertTrue(body.at("/tools/0/googleSearch").isObject());
         assertEquals("APPLICATION_JSON",body.at("/generationConfig/responseFormat/text/mimeType").asText());
         assertTrue(body.at("/contents/0/parts/0/text").asText().contains("INFY on NSE"));
         var error = assertThrows(ApiFailure.class,() -> research.decode(
                 json.readTree("{\"candidates\":[{\"finishReason\":\"STOP\"}]}"),
-                GeminiResearch.Preset.VALUATION,"gemini-3.8-flash",today));
+                StockResearch.Preset.VALUATION,"gemini-3.8-flash",today));
         assertEquals("GEMINI_NO_SOURCES",error.code());
     }
 

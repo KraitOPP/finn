@@ -24,6 +24,20 @@ const safeMessages: Record<string, string> = {
   GEMINI_NO_RESULT: "Gemini did not return a complete report. Try again.",
   GEMINI_NO_SOURCES:
     "Gemini did not return usable Google Search sources. Try again.",
+  GROQ_NOT_CONFIGURED:
+    "Set GROQ_API_KEY on the FINN backend and restart it to use Groq.",
+  GROQ_ACCESS_REJECTED:
+    "Groq rejected access. Check the API key and your project’s model permissions.",
+  GROQ_REQUEST_REJECTED:
+    "Groq couldn’t complete this request. Check your project’s Browser Search access and try again.",
+  GROQ_QUOTA:
+    "Groq’s usage limit has been reached. Check your Groq project’s limits.",
+  GROQ_RATE_LIMIT: "Stock research is busy. Try again in a moment.",
+  GROQ_TIMEOUT: "Groq took too long to respond. Try again.",
+  GROQ_UNAVAILABLE: "Groq is temporarily unavailable.",
+  GROQ_NO_RESULT: "Groq did not return a complete report. Try again.",
+  GROQ_NO_SOURCES:
+    "Groq did not return source links that could be matched to the report. Try again.",
   STOCK_IDENTITY_REVIEW_REQUIRED:
     "This ticker is already saved for a different security. Check the existing listing before using it.",
   UNSUPPORTED_SHORT_POSITION:

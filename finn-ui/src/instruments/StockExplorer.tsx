@@ -9,8 +9,8 @@ import type {
 } from "../../contracts/generated/models.ts";
 import { ListingMarketDetail } from "../market/ListingHistory.tsx";
 import { RouteHeading } from "../Navigation.tsx";
-import { GeminiStockTool } from "../research/GeminiStockTool.tsx";
 import { News } from "../research/News.tsx";
+import { StockAiTool } from "../research/StockAiTool.tsx";
 import { StockSearch } from "./StockSearch.tsx";
 
 type DetailView = "prices" | "news";
@@ -113,11 +113,7 @@ export function StockExplorer({ home = false }: { home?: boolean }) {
             {view === "news" && (
               <>
                 <div className="stock-news-panel">
-                  <GeminiStockTool
-                    key={listing.listingId}
-                    listing={listing}
-                    news
-                  />
+                  <StockAiTool key={listing.listingId} listing={listing} news />
                 </div>
                 <details className="workspace-tools">
                   <summary>Saved news links</summary>

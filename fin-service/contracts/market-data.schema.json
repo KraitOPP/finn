@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.47.0",
+  "$id": "urn:finn:contracts:market-data:0.48.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.47.0"
+      "const": "0.48.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -476,7 +476,7 @@
       ],
       "additionalProperties": false
     },
-    "GeminiPreset": {
+    "StockResearchPreset": {
       "type": "string",
       "enum": [
         "DEEP_DIVE",
@@ -485,6 +485,9 @@
         "RISKS",
         "NEWS"
       ]
+    },
+    "GeminiPreset": {
+      "$ref": "#/$defs/StockResearchPreset"
     },
     "GeminiCapability": {
       "type": "object",
@@ -511,7 +514,7 @@
       ],
       "additionalProperties": false
     },
-    "GeminiListings": {
+    "StockResearchListings": {
       "type": "object",
       "properties": {
         "items": {
@@ -527,14 +530,17 @@
       ],
       "additionalProperties": false
     },
-    "GeminiInput": {
+    "GeminiListings": {
+      "$ref": "#/$defs/StockResearchListings"
+    },
+    "StockResearchInput": {
       "type": "object",
       "properties": {
         "listingId": {
           "$ref": "#/$defs/OpaqueId"
         },
         "preset": {
-          "$ref": "#/$defs/GeminiPreset"
+          "$ref": "#/$defs/StockResearchPreset"
         }
       },
       "required": [
@@ -543,11 +549,14 @@
       ],
       "additionalProperties": false
     },
-    "GeminiReport": {
+    "GeminiInput": {
+      "$ref": "#/$defs/StockResearchInput"
+    },
+    "StockResearchReport": {
       "type": "object",
       "properties": {
         "preset": {
-          "$ref": "#/$defs/GeminiPreset"
+          "$ref": "#/$defs/StockResearchPreset"
         },
         "model": {
           "type": "string",
@@ -653,6 +662,62 @@
         "items",
         "sources",
         "searchSuggestions"
+      ],
+      "additionalProperties": false
+    },
+    "GeminiReport": {
+      "$ref": "#/$defs/StockResearchReport"
+    },
+    "StockAiCapability": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "GROQ",
+            "GEMINI"
+          ]
+        },
+        "configured": {
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 77
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "provider",
+        "configured",
+        "model"
+      ],
+      "additionalProperties": false
+    },
+    "StockAiResult": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "GROQ",
+            "GEMINI"
+          ]
+        },
+        "report": {
+          "$ref": "#/$defs/StockResearchReport"
+        }
+      },
+      "required": [
+        "provider",
+        "report"
       ],
       "additionalProperties": false
     },
