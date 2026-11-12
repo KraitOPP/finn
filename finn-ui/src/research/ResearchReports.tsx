@@ -1,7 +1,5 @@
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
-import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -33,7 +31,6 @@ const states: Record<ResearchReport["state"], string> = {
 
 export function ResearchReports({ company }: { company: string }) {
   const [question, setQuestion] = useState("");
-  const [rankLocally, setRankLocally] = useState(false);
   const [id, setId] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -51,7 +48,6 @@ export function ResearchReports({ company }: { company: string }) {
   );
   function saved(report: ResearchReport) {
     setId(report.reportId);
-    setRankLocally(false);
     setOffset(0);
     history.reload();
   }
@@ -66,6 +62,11 @@ export function ResearchReports({ company }: { company: string }) {
       <form
         onSubmit={async (event) => {
           event.preventDefault();
+          const submitter = (event.nativeEvent as SubmitEvent).submitter;
+          const rankLocally =
+            localAvailable &&
+            submitter instanceof HTMLButtonElement &&
+            submitter.value === "ai";
           const report = await command.run((csrf) =>
             requestContract(
               "ResearchReport",
@@ -73,7 +74,7 @@ export function ResearchReports({ company }: { company: string }) {
               {
                 method: "POST",
                 csrf,
-                body: { question, rankLocally: localAvailable && rankLocally },
+                body: { question, rankLocally },
               },
             ),
           );
@@ -90,15 +91,9 @@ export function ResearchReports({ company }: { company: string }) {
           placeholder="What changed in quarterly revenue?"
         />
         {localAvailable ? (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={rankLocally}
-                onChange={(event) => setRankLocally(event.target.checked)}
-              />
-            }
-            label="Use the local AI model to rank matching evidence"
-          />
+          <p className="muted-copy">
+            Ask AI to rank matching evidence on this computer.
+          </p>
         ) : (
           <p className="muted-copy">
             Source search is available. AI answers need a configured model.
@@ -110,16 +105,23 @@ export function ResearchReports({ company }: { company: string }) {
           spacing={1}
           sx={{ flexWrap: "wrap", my: 1 }}
         >
+          {localAvailable && (
+            <Button
+              variant="contained"
+              type="submit"
+              value="ai"
+              disabled={command.busy || !question.trim()}
+            >
+              {command.busy ? "Searching…" : "Ask AI"}
+            </Button>
+          )}
           <Button
-            variant="contained"
+            variant={localAvailable ? "outlined" : "contained"}
             type="submit"
+            value="sources"
             disabled={command.busy || !question.trim()}
           >
-            {command.busy
-              ? "Searching…"
-              : rankLocally
-                ? "Ask AI"
-                : "Search sources"}
+            {!localAvailable && command.busy ? "Searching…" : "Search sources"}
           </Button>
           <Button
             type="button"
