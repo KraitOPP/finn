@@ -476,6 +476,186 @@
       ],
       "additionalProperties": false
     },
+    "GeminiPreset": {
+      "type": "string",
+      "enum": [
+        "DEEP_DIVE",
+        "FINANCIALS",
+        "VALUATION",
+        "RISKS",
+        "NEWS"
+      ]
+    },
+    "GeminiCapability": {
+      "type": "object",
+      "properties": {
+        "configured": {
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 77
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "configured",
+        "model"
+      ],
+      "additionalProperties": false
+    },
+    "GeminiListings": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogueListing"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "GeminiInput": {
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "preset": {
+          "$ref": "#/$defs/GeminiPreset"
+        }
+      },
+      "required": [
+        "listingId",
+        "preset"
+      ],
+      "additionalProperties": false
+    },
+    "GeminiReport": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "$ref": "#/$defs/GeminiPreset"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 77
+        },
+        "asOf": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 180
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2400
+              },
+              "publishedOn": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SessionDate"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sourceIds": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 99
+                },
+                "maxItems": 100
+              }
+            },
+            "required": [
+              "title",
+              "detail",
+              "publishedOn",
+              "sourceIds"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 8
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 99
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000,
+                "pattern": "^https://"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100
+        },
+        "searchSuggestions": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "preset",
+        "model",
+        "asOf",
+        "items",
+        "sources",
+        "searchSuggestions"
+      ],
+      "additionalProperties": false
+    },
     "ReviewCloseInput": {
       "type": "object",
       "properties": {

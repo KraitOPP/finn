@@ -3,7 +3,7 @@ export const contractMetadata = {
   "contractVersion": "0.47.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "74fed08814daa18d95a2bd8e923fd8b81cc4328bf1791883c4d5c63570beb5c9",
+  "sourceSha256": "bfc579b5c055a1b92c4c0e4edf1ab5c40ff857db96285eb4f89ec3bc1ae0aa23",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -83,6 +83,11 @@ export const contractMetadata = {
     "FinancialFactPage",
     "FinancialOperand",
     "Freshness",
+    "GeminiCapability",
+    "GeminiInput",
+    "GeminiListings",
+    "GeminiPreset",
+    "GeminiReport",
     "GuidanceCandidates",
     "GuidanceDelivery",
     "HistoryCoverage",
@@ -3836,6 +3841,186 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Calendar-aware age/eligibility assessment. A weekend does not make the newest expected completed session stale. FRESH requires equal known latest/expected sessions."
+  },
+  "GeminiCapability": {
+    "type": "object",
+    "properties": {
+      "configured": {
+        "type": "boolean"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 77
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "configured",
+      "model"
+    ],
+    "additionalProperties": false
+  },
+  "GeminiInput": {
+    "type": "object",
+    "properties": {
+      "listingId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "preset": {
+        "$ref": "#/components/schemas/GeminiPreset"
+      }
+    },
+    "required": [
+      "listingId",
+      "preset"
+    ],
+    "additionalProperties": false
+  },
+  "GeminiListings": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CatalogueListing"
+        },
+        "maxItems": 100
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "GeminiPreset": {
+    "type": "string",
+    "enum": [
+      "DEEP_DIVE",
+      "FINANCIALS",
+      "VALUATION",
+      "RISKS",
+      "NEWS"
+    ]
+  },
+  "GeminiReport": {
+    "type": "object",
+    "properties": {
+      "preset": {
+        "$ref": "#/components/schemas/GeminiPreset"
+      },
+      "model": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 77
+      },
+      "asOf": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 180
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2400
+            },
+            "publishedOn": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionDate"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sourceIds": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 99
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "title",
+            "detail",
+            "publishedOn",
+            "sourceIds"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 8
+      },
+      "sources": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000,
+              "pattern": "^https://"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "url"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 100
+      },
+      "searchSuggestions": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "preset",
+      "model",
+      "asOf",
+      "items",
+      "sources",
+      "searchSuggestions"
+    ],
+    "additionalProperties": false
   },
   "GuidanceCandidates": {
     "type": "object",

@@ -10,6 +10,20 @@ const safeMessages: Record<string, string> = {
   CHART_BUSY: "Price history is busy. Try again in a moment.",
   CHART_UNAVAILABLE:
     "Yahoo couldn’t return this range. Try again or select another range.",
+  GEMINI_NOT_CONFIGURED:
+    "Set GEMINI_API_KEY on the FINN backend and restart it to use Gemini.",
+  GEMINI_ACCESS_REJECTED:
+    "Gemini rejected access. Check the backend API key and Google project access.",
+  GEMINI_REQUEST_REJECTED:
+    "Gemini rejected this request. Check the API key, model and Google Search access.",
+  GEMINI_QUOTA:
+    "Google’s Gemini or Search quota has been reached. Check your Google project’s quota and billing.",
+  GEMINI_RATE_LIMIT: "Gemini is busy. Try again in a moment.",
+  GEMINI_TIMEOUT: "Gemini took too long to respond. Try again.",
+  GEMINI_UNAVAILABLE: "Gemini is temporarily unavailable.",
+  GEMINI_NO_RESULT: "Gemini did not return a complete report. Try again.",
+  GEMINI_NO_SOURCES:
+    "Gemini did not return usable Google Search sources. Try again.",
   STOCK_IDENTITY_REVIEW_REQUIRED:
     "This ticker is already saved for a different security. Check the existing listing before using it.",
   UNSUPPORTED_SHORT_POSITION:

@@ -667,6 +667,40 @@ export type Freshness = ({
   "reasonCode": (OpaqueId);
 });
 
+export type GeminiCapability = ({
+  "configured": (boolean);
+  "model": (((string)) | ((null)));
+});
+
+export type GeminiInput = ({
+  "listingId": (OpaqueId);
+  "preset": (GeminiPreset);
+});
+
+export type GeminiListings = ({
+  "items": (Array<(CatalogueListing)>);
+});
+
+export type GeminiPreset = ("DEEP_DIVE" | "FINANCIALS" | "VALUATION" | "RISKS" | "NEWS") & (string);
+
+export type GeminiReport = ({
+  "preset": (GeminiPreset);
+  "model": (string);
+  "asOf": (SessionDate);
+  "items": (Array<({
+  "title": (string);
+  "detail": (string);
+  "publishedOn": (((SessionDate)) | ((null)));
+  "sourceIds": (Array<(number)>);
+})>);
+  "sources": (Array<({
+  "id": (number);
+  "title": (string);
+  "url": (string);
+})>);
+  "searchSuggestions": (((string)) | ((null)));
+});
+
 export type GuidanceCandidates = ({
   "evidence": (ResearchLocation);
   "printedNumbers": (Array<(string)>);
@@ -2338,6 +2372,11 @@ export interface ContractTypes {
   FinancialFactPage: FinancialFactPage;
   FinancialOperand: FinancialOperand;
   Freshness: Freshness;
+  GeminiCapability: GeminiCapability;
+  GeminiInput: GeminiInput;
+  GeminiListings: GeminiListings;
+  GeminiPreset: GeminiPreset;
+  GeminiReport: GeminiReport;
   GuidanceCandidates: GuidanceCandidates;
   GuidanceDelivery: GuidanceDelivery;
   HistoryCoverage: HistoryCoverage;

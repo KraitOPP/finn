@@ -38,6 +38,10 @@ public class Catalogue {
     public Listing listing(UUID owner,UUID id) {
         return jdbc.query(LISTING_SQL+"WHERE l.owner_id=? AND l.listing_id=?",this::listingRow,owner,id).stream().findFirst().orElseThrow(ApiFailure::notFound);
     }
+    public List<Listing> companyListings(UUID owner,UUID company) {
+        return jdbc.query(LISTING_SQL+"WHERE l.owner_id=? AND s.company_id=? ORDER BY l.exchange,h.symbol,l.listing_id LIMIT 100",
+                this::listingRow,owner,company);
+    }
     public UUID resolveReviewedHolding(UUID owner,String reportedName,String isin){
         if(!Isin.valid(isin))throw ApiFailure.invalid();
         var existing=jdbc.query("SELECT security_id FROM finn.security WHERE owner_id=? AND isin=?",(row,index)->row.getObject(1,UUID.class),owner,isin).stream().findFirst();

@@ -1,4 +1,8 @@
-import { type ChangeEvent, useState } from "react";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
+import { type ChangeEvent, useId, useState } from "react";
 import type {
   CompanySource,
   CompanySourceDetail,
@@ -16,28 +20,83 @@ import { FilingCalendar } from "./FilingCalendar.tsx";
 import { News } from "./News.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 import { StagedPdfs } from "./StagedPdfs.tsx";
+import { StockResearch } from "./StockResearch.tsx";
 
 const path = "/api/v1/research/sources";
 export function Research() {
   const [generation, setGeneration] = useState(0);
+  const query = window.location.hash.split("?")[1] ?? "";
+  const params = new URLSearchParams(query);
+  const id = useId();
+  const [selection, setSelection] = useState<{
+    query: string;
+    tab: string;
+  } | null>(null);
+  const tab =
+    selection?.query === query
+      ? selection.tab
+      : params.has("thesis") || params.has("event") || params.has("review")
+        ? "saved"
+        : "gemini";
   return (
     <section className="workspace-section">
       <RouteHeading>Research</RouteHeading>
-      <CompanyWorkspace generation={generation} />
-      <details className="workspace-tools">
-        <summary>Sources and filings</summary>
-        <PrimarySources onEvent={() => setGeneration((value) => value + 1)} />
-        <CompanyEvents generation={generation} />
-        <FilingCalendar generation={generation} />
-      </details>
-      <details className="workspace-tools">
-        <summary>Stock news and saved links</summary>
-        <News />
-      </details>
-      <details className="workspace-tools">
-        <summary>Practice with a fictional event</summary>
-        <EventReplay />
-      </details>
+      <Paper variant="outlined" sx={{ mb: 2 }}>
+        <Tabs
+          value={tab}
+          aria-label="Research views"
+          onChange={(_, next: string) => setSelection({ query, tab: next })}
+        >
+          <Tab
+            value="gemini"
+            label="Stock analysis"
+            id={`${id}-gemini-tab`}
+            aria-controls={`${id}-gemini`}
+          />
+          <Tab
+            value="saved"
+            label="Saved research"
+            id={`${id}-saved-tab`}
+            aria-controls={`${id}-saved`}
+          />
+        </Tabs>
+      </Paper>
+      <div
+        role="tabpanel"
+        id={`${id}-gemini`}
+        aria-labelledby={`${id}-gemini-tab`}
+        hidden={tab !== "gemini"}
+      >
+        {tab === "gemini" && <StockResearch key={query} params={params} />}
+      </div>
+      <div
+        role="tabpanel"
+        id={`${id}-saved`}
+        aria-labelledby={`${id}-saved-tab`}
+        hidden={tab !== "saved"}
+      >
+        {tab === "saved" && (
+          <Stack spacing={2}>
+            <CompanyWorkspace key={query} generation={generation} />
+            <details className="workspace-tools">
+              <summary>Sources and filings</summary>
+              <PrimarySources
+                onEvent={() => setGeneration((value) => value + 1)}
+              />
+              <CompanyEvents generation={generation} />
+              <FilingCalendar generation={generation} />
+            </details>
+            <details className="workspace-tools">
+              <summary>Saved news links</summary>
+              <News />
+            </details>
+            <details className="workspace-tools">
+              <summary>Practice with a fictional event</summary>
+              <EventReplay />
+            </details>
+          </Stack>
+        )}
+      </div>
     </section>
   );
 }

@@ -111,6 +111,20 @@ def definitions() -> dict:
         "high": nullable(ref("PositiveDecimalString")), "today": ref("ExchangeSession"),
         "calendarEvents": array(ref("ExchangeSession"), maxItems=29),
     })
+    d["GeminiPreset"] = enum(["DEEP_DIVE","FINANCIALS","VALUATION","RISKS","NEWS"])
+    d["GeminiCapability"] = obj({"configured":{"type":"boolean"},"model":nullable(text(maxLength=77))})
+    d["GeminiListings"] = obj({"items": array(ref("CatalogueListing"), maxItems=100)})
+    d["GeminiInput"] = obj({"listingId": ref("OpaqueId"), "preset": ref("GeminiPreset")})
+    source_index = {"type":"integer","minimum":0,"maximum":99}
+    d["GeminiReport"] = obj({
+        "preset": ref("GeminiPreset"), "model": text(maxLength=77), "asOf": ref("SessionDate"),
+        "items": array(obj({"title": text(maxLength=180), "detail": text(maxLength=2400),
+                            "publishedOn": nullable(ref("SessionDate")),
+                            "sourceIds": array(source_index, maxItems=100)}), maxItems=8),
+        "sources": array(obj({"id": source_index, "title": text(maxLength=240),
+                              "url": text(pattern=r"^https://",maxLength=4000)}), maxItems=100),
+        "searchSuggestions": nullable(text(maxLength=64000)),
+    })
     d["ReviewCloseInput"] = obj({
         "sessionDate": ref("SessionDate"), "close": ref("PositiveDecimalString"), "sourceReference": text(maxLength=240),
         "reviewed": {"type":"boolean","const":True},
@@ -1047,6 +1061,10 @@ def public_api_document() -> dict:
         "/api/v1/monitoring/briefs/schedule":{"post": maintained("saveBriefSchedule","Configure the owner's local brief schedule","BriefSchedule",input_name="BriefScheduleInput")},
         "/api/v1/monitoring/briefs/preview":{"get": maintained("previewPortfolioBrief","Preview a closed reporting window","PortfolioBrief",[parameter("windowEnd","query",ref("SessionDate"))])},
         "/api/v1/monitoring/briefs/{id}":{"get": maintained("getPortfolioBrief","Inspect an owned immutable brief run","PortfolioBrief",identifier)},
+        "/api/v1/research/gemini/capability":{"get": maintained("getGeminiCapability","Read server-side Gemini setup status","GeminiCapability")},
+        "/api/v1/research/gemini/listings":{"get": maintained("getGeminiListings","Read owned listings for a company","GeminiListings",[
+            parameter("company","query",text(format="uuid"),True)])},
+        "/api/v1/research/gemini":{"post": maintained("runGeminiResearch","Run a temporary Google Search grounded report on an owned listing","GeminiReport",(),"GeminiInput")},
         "/api/v1/research/sources":{
             "get": maintained("listCompanySources","List private primary source records","CompanySourcePage",[
                 parameter("offset","query",{"type":"integer","minimum":0,"maximum":200}),parameter("companyId","query",text(format="uuid"))]),

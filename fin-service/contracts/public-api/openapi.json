@@ -3211,6 +3211,302 @@
         }
       }
     },
+    "/api/v1/research/gemini/capability": {
+      "get": {
+        "operationId": "getGeminiCapability",
+        "summary": "Read server-side Gemini setup status",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiCapability"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/gemini/listings": {
+      "get": {
+        "operationId": "getGeminiListings",
+        "summary": "Read owned listings for a company",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiListings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/research/gemini": {
+      "post": {
+        "operationId": "runGeminiResearch",
+        "summary": "Run a temporary Google Search grounded report on an owned listing",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/research/sources": {
       "get": {
         "operationId": "listCompanySources",
@@ -18350,6 +18646,186 @@
           "high",
           "today",
           "calendarEvents"
+        ],
+        "additionalProperties": false
+      },
+      "GeminiPreset": {
+        "type": "string",
+        "enum": [
+          "DEEP_DIVE",
+          "FINANCIALS",
+          "VALUATION",
+          "RISKS",
+          "NEWS"
+        ]
+      },
+      "GeminiCapability": {
+        "type": "object",
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 77
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "configured",
+          "model"
+        ],
+        "additionalProperties": false
+      },
+      "GeminiListings": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogueListing"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "GeminiInput": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "preset": {
+            "$ref": "#/components/schemas/GeminiPreset"
+          }
+        },
+        "required": [
+          "listingId",
+          "preset"
+        ],
+        "additionalProperties": false
+      },
+      "GeminiReport": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "$ref": "#/components/schemas/GeminiPreset"
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 77
+          },
+          "asOf": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 180
+                },
+                "detail": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2400
+                },
+                "publishedOn": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionDate"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sourceIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "maxItems": 100
+                }
+              },
+              "required": [
+                "title",
+                "detail",
+                "publishedOn",
+                "sourceIds"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 99
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240
+                },
+                "url": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000,
+                  "pattern": "^https://"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100
+          },
+          "searchSuggestions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "preset",
+          "model",
+          "asOf",
+          "items",
+          "sources",
+          "searchSuggestions"
         ],
         "additionalProperties": false
       },
