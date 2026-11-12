@@ -2,7 +2,9 @@ package dev.finn.research;
 
 import static dev.finn.research.StockResearch.text;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import dev.finn.market.MarketCharts.ResearchSnapshot;
+import dev.finn.platform.ApiFailure;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.*;
@@ -15,12 +17,16 @@ final class StockDecision {
     enum Verdict { SUPPORTED, CHALLENGED, UNSUPPORTED }
     enum Stance { RESEARCH_FURTHER, WATCH, CAUTION, INSUFFICIENT_EVIDENCE }
     enum Status { REVIEWED, ANALYSIS_UNAVAILABLE, REVIEW_INCOMPLETE }
+    enum Stage { SEARCH, ANALYST, CRITIC }
+    enum Reason { QUOTA, BUSY, TIMEOUT, ACCESS, UNAVAILABLE, NO_EVIDENCE }
 
+    record Issue(Stage stage, Reason reason, Integer retryAfterSeconds) {}
     record Assessment(int itemIndex, Signal signal, String rationale, String watchFor) {}
     record Check(int itemIndex, Verdict verdict, String concern, String verify) {}
     record Article(String title, String detail, String impact, LocalDate publishedOn, int sourceId) {}
     record Brief(Stance stance, Status status, List<Article> news, List<Assessment> assessments,
-                 List<Check> checks, ResearchSnapshot market) {}
+                 List<Check> checks, ResearchSnapshot market,
+                 @JsonInclude(JsonInclude.Include.NON_NULL) Issue issue) {}
     record Excerpt(int sourceId, String text) {}
     record Evidence(String listing, LocalDate asOf, List<StockResearch.Item> items,
                     List<StockResearch.Source> sources, List<Excerpt> excerpts,
@@ -51,6 +57,18 @@ final class StockDecision {
             """;
 
     private StockDecision() {}
+
+    static Issue issue(Stage stage, ApiFailure failure) {
+        var reason = switch (failure.code()) {
+            case "GROQ_QUOTA" -> Reason.QUOTA;
+            case "GROQ_RATE_LIMIT" -> Reason.BUSY;
+            case "GROQ_TIMEOUT" -> Reason.TIMEOUT;
+            case "GROQ_ACCESS_REJECTED" -> Reason.ACCESS;
+            case "GROQ_NO_SOURCES", "GROQ_NO_RESULT" -> Reason.NO_EVIDENCE;
+            default -> Reason.UNAVAILABLE;
+        };
+        return new Issue(stage,reason,failure.retryAfterSeconds());
+    }
 
     static String collectionInstructions(LocalDate today) {
         return """
@@ -131,10 +149,14 @@ final class StockDecision {
     }
 
     static Brief finish(Evidence evidence, List<Assessment> assessments, List<Check> checks) {
+        return finish(evidence,assessments,checks,null);
+    }
+
+    static Brief finish(Evidence evidence, List<Assessment> assessments, List<Check> checks, Issue issue) {
         var status = assessments.isEmpty() ? Status.ANALYSIS_UNAVAILABLE :
                 assessments.size() == checks.size() ? Status.REVIEWED : Status.REVIEW_INCOMPLETE;
         var stance = status == Status.REVIEWED ? stance(evidence,assessments,checks) : Stance.INSUFFICIENT_EVIDENCE;
-        return new Brief(stance,status,evidence.news(),assessments,checks,evidence.market());
+        return new Brief(stance,status,evidence.news(),assessments,checks,evidence.market(),issue);
     }
 
     private static Stance stance(Evidence evidence, List<Assessment> assessments, List<Check> checks) {

@@ -404,7 +404,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.49.0") & (string);
+export type ContractVersion = ("0.50.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1644,7 +1644,7 @@ export type Problem = ({
   "status": (number);
   "detail": (string);
   "instance": (string);
-  "code": ("MALFORMED_REQUEST" | "VALIDATION_FAILED" | "AUTHENTICATION_REQUIRED" | "RESOURCE_NOT_FOUND" | "OPERATION_FORBIDDEN" | "CONFLICT" | "RATE_LIMITED" | "DATA_SOURCE_UNAVAILABLE" | "INTERNAL_ERROR") & (string);
+  "code": ("MALFORMED_REQUEST" | "VALIDATION_FAILED" | "AUTHENTICATION_REQUIRED" | "RESOURCE_NOT_FOUND" | "OPERATION_FORBIDDEN" | "CONFLICT" | "RATE_LIMITED" | "DATA_SOURCE_UNAVAILABLE" | "INTERNAL_ERROR" | "GROQ_SEARCH_FAILED" | "GROQ_NOT_CONFIGURED" | "GROQ_ACCESS_REJECTED" | "GROQ_REQUEST_REJECTED" | "GROQ_QUOTA" | "GROQ_RATE_LIMIT" | "GROQ_TIMEOUT" | "GROQ_UNAVAILABLE" | "GROQ_NO_RESULT" | "GROQ_NO_SOURCES" | "GEMINI_NOT_CONFIGURED" | "GEMINI_ACCESS_REJECTED" | "GEMINI_REQUEST_REJECTED" | "GEMINI_QUOTA" | "GEMINI_RATE_LIMIT" | "GEMINI_TIMEOUT" | "GEMINI_UNAVAILABLE" | "GEMINI_NO_RESULT" | "GEMINI_NO_SOURCES") & (string);
   "traceId": (OpaqueId);
   "errors"?: (Array<(ProblemField)>);
 });
@@ -2007,6 +2007,7 @@ export type StockResearchDecision = ({
   "assessments": (Array<(StockResearchAssessment)>);
   "checks": (Array<(StockResearchCheck)>);
   "market": (((StockResearchMarket)) | ((null)));
+  "issue"?: (StockResearchIssue);
 });
 
 export type StockResearchFactor = ("BUSINESS" | "FINANCIALS" | "VALUATION" | "RISKS" | "CATALYSTS") & (string);
@@ -2014,6 +2015,12 @@ export type StockResearchFactor = ("BUSINESS" | "FINANCIALS" | "VALUATION" | "RI
 export type StockResearchInput = ({
   "listingId": (OpaqueId);
   "preset": (StockResearchPreset);
+});
+
+export type StockResearchIssue = ({
+  "stage": ("SEARCH" | "ANALYST" | "CRITIC") & (string);
+  "reason": ("QUOTA" | "BUSY" | "TIMEOUT" | "ACCESS" | "UNAVAILABLE" | "NO_EVIDENCE") & (string);
+  "retryAfterSeconds": (((number)) | ((null)));
 });
 
 export type StockResearchListings = ({
@@ -2595,6 +2602,7 @@ export interface ContractTypes {
   StockResearchDecision: StockResearchDecision;
   StockResearchFactor: StockResearchFactor;
   StockResearchInput: StockResearchInput;
+  StockResearchIssue: StockResearchIssue;
   StockResearchListings: StockResearchListings;
   StockResearchMarket: StockResearchMarket;
   StockResearchPreset: StockResearchPreset;

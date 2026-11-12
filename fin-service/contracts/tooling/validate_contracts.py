@@ -22,7 +22,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 from openapi_spec_validator import validate as validate_openapi
 from rfc3986_validator import validate_rfc3986
 
-from build_contracts import CONTRACT_ROOT, definitions, openapi_refs, public_api_document, schema_document
+from build_contracts import CONTRACT_ROOT, PROBLEM_STATUSES, definitions, openapi_refs, public_api_document, schema_document
 
 
 FORMATS = FormatChecker()
@@ -210,11 +210,7 @@ def semantic_errors(definition: str, value: dict) -> list[str]:
         if updated < created or (started is not None and not created <= started <= updated) or (finished is not None and not created <= finished <= updated) or (started is not None and finished is not None and finished < started):
             fail("JOB_TIME_ORDER")
     elif definition == "Problem":
-        expected = {"MALFORMED_REQUEST": 400, "AUTHENTICATION_REQUIRED": 401,
-                    "RESOURCE_NOT_FOUND": 404, "OPERATION_FORBIDDEN": 403,
-                    "VALIDATION_FAILED": 422, "CONFLICT": 409, "RATE_LIMITED": 429,
-                    "DATA_SOURCE_UNAVAILABLE": 503, "INTERNAL_ERROR": 500}
-        if value["status"] != expected[value["code"]]:
+        if value["status"] not in PROBLEM_STATUSES[value["code"]]:
             fail("PROBLEM_STATUS_CODE_MISMATCH")
         if value["code"] == "VALIDATION_FAILED" and not value.get("errors"):
             fail("VALIDATION_FIELDS_MISSING")

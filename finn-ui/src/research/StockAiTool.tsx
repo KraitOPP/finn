@@ -53,15 +53,26 @@ export function StockAiTool({
   news?: boolean;
 }) {
   const capability = useResource("StockAiCapability", `${endpoint}/capability`);
-  const command = usePrivateCommand();
+  const command = usePrivateCommand(
+    "The research request was interrupted. Check your connection and retry.",
+  );
   const [preset, setPreset] = useState<ResearchPreset>("DEEP_DIVE");
   const [result, setResult] = useState<StockAiResult | null>(null);
   const [invalidSuggestions, setInvalidSuggestions] = useState(false);
   const selected: StockResearchPreset = news ? "NEWS" : preset;
   const usesGemini = capability.value?.provider === "GEMINI";
+  const failure = invalidSuggestions
+    ? "Google Search returned an unreadable suggestions panel."
+    : command.error;
+  const actionLabel = news
+    ? failure
+      ? "Retry news search"
+      : "Find recent news"
+    : failure
+      ? "Retry analysis"
+      : "Run analysis";
 
   async function run() {
-    setResult(null);
     setInvalidSuggestions(false);
     const next = await command.run((csrf) =>
       requestContract("StockAiResult", endpoint, {
@@ -123,6 +134,7 @@ export function StockAiTool({
                 setPreset(event.target.value as ResearchPreset);
                 setResult(null);
                 setInvalidSuggestions(false);
+                command.clearError();
               }}
             >
               {Object.entries(presets).map(([id, option]) => (
@@ -159,7 +171,7 @@ export function StockAiTool({
             sx={{ alignSelf: "start" }}
             onClick={() => void run()}
           >
-            {news ? "Find recent news" : "Run analysis"}
+            {actionLabel}
           </Button>
           {command.busy && (
             <>
@@ -168,19 +180,21 @@ export function StockAiTool({
                 {!news && selected === "DEEP_DIVE" && !usesGemini
                   ? "Gathering sources, assessing the stock and reviewing the draft. This can take up to 90 seconds…"
                   : "Checking public sources…"}
+                {result && " Your previous report is still shown below."}
               </Typography>
             </>
           )}
-          {command.error && <Alert severity="warning">{command.error}</Alert>}
-          {invalidSuggestions && (
+          {failure && (
             <Alert severity="warning">
-              Google Search returned an unreadable suggestions panel. Try again.
+              {failure}
+              {result && " Your previous report is still shown below."}
             </Alert>
           )}
         </Stack>
       </Paper>
       {result && (
         <StockResearchReportView
+          key={result.report.decision ? "decision" : "standard"}
           result={result}
           heading={news ? "News results" : presets[preset].label}
           chart={

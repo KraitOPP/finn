@@ -30,7 +30,10 @@ class ApiErrors {
     }
     @ExceptionHandler(ApiFailure.class)
     ResponseEntity<Map<String, Object>> application(ApiFailure error, HttpServletRequest request) {
-        return Problems.response(request, error.status(), error.code());
+        var response = Problems.response(request,error.status(),error.code());
+        if (error.retryAfterSeconds() == null) return response;
+        return ResponseEntity.status(response.getStatusCode()).headers(response.getHeaders())
+                .header("Retry-After",error.retryAfterSeconds().toString()).body(response.getBody());
     }
     @ExceptionHandler({MethodArgumentNotValidException.class, HandlerMethodValidationException.class,
             MethodArgumentTypeMismatchException.class, IllegalArgumentException.class})

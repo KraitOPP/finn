@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.49.0"
+VERSION = "0.50.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -23,6 +23,22 @@ BASES = [
     "AS_REPORTED_EXCHANGE", "SPLIT_ADJUSTED", "TOTAL_RETURN_ADJUSTED",
     "PROVIDER_DEFINED", "UNKNOWN",
 ]
+PROBLEM_STATUSES = {
+    "MALFORMED_REQUEST": (400,), "VALIDATION_FAILED": (422,),
+    "AUTHENTICATION_REQUIRED": (401,), "RESOURCE_NOT_FOUND": (404,),
+    "OPERATION_FORBIDDEN": (403,), "CONFLICT": (409,), "RATE_LIMITED": (429,),
+    "DATA_SOURCE_UNAVAILABLE": (503,), "INTERNAL_ERROR": (500,),
+    "GROQ_SEARCH_FAILED": (502,),
+    **{
+        f"{provider}_{reason}": statuses
+        for provider in ("GROQ", "GEMINI")
+        for reason, statuses in {
+            "NOT_CONFIGURED": (503,), "ACCESS_REJECTED": (502,), "REQUEST_REJECTED": (502,),
+            "QUOTA": (429,), "RATE_LIMIT": (429,), "TIMEOUT": (504,),
+            "UNAVAILABLE": (502, 503), "NO_RESULT": (502,), "NO_SOURCES": (502,),
+        }.items()
+    },
+}
 
 
 def ref(name: str) -> dict:
@@ -137,6 +153,11 @@ def definitions() -> dict:
         "firstSession": ref("SessionDate"), "lastSession": ref("SessionDate"),
         "close": ref("PositiveDecimalString"), "changePercent": nullable(ref("DecimalString")),
     })
+    d["StockResearchIssue"] = obj({
+        "stage": enum(["SEARCH", "ANALYST", "CRITIC"]),
+        "reason": enum(["QUOTA", "BUSY", "TIMEOUT", "ACCESS", "UNAVAILABLE", "NO_EVIDENCE"]),
+        "retryAfterSeconds": nullable({"type": "integer", "minimum": 1, "maximum": 86400}),
+    })
     d["StockResearchDecision"] = obj({
         "stance": enum(["RESEARCH_FURTHER","WATCH","CAUTION","INSUFFICIENT_EVIDENCE"]),
         "status": enum(["REVIEWED","ANALYSIS_UNAVAILABLE","REVIEW_INCOMPLETE"]),
@@ -144,7 +165,8 @@ def definitions() -> dict:
         "assessments": array(ref("StockResearchAssessment"), maxItems=5),
         "checks": array(ref("StockResearchCheck"), maxItems=5),
         "market": nullable(ref("StockResearchMarket")),
-    })
+        "issue": ref("StockResearchIssue"),
+    }, optional=("issue",))
     d["StockResearchReport"] = obj({
         "preset": ref("StockResearchPreset"), "model": text(maxLength=77), "asOf": ref("SessionDate"),
         "items": array(obj({"title": text(maxLength=180), "detail": text(maxLength=2400),
@@ -823,9 +845,7 @@ def definitions() -> dict:
         "type": text(format="uri", maxLength=256), "title": text(maxLength=128),
         "status": {"type": "integer", "minimum": 400, "maximum": 599},
         "detail": text(maxLength=512), "instance": text(maxLength=512),
-        "code": enum(["MALFORMED_REQUEST", "VALIDATION_FAILED", "AUTHENTICATION_REQUIRED",
-                      "RESOURCE_NOT_FOUND", "OPERATION_FORBIDDEN", "CONFLICT", "RATE_LIMITED",
-                      "DATA_SOURCE_UNAVAILABLE", "INTERNAL_ERROR"]),
+        "code": enum(list(PROBLEM_STATUSES)),
         "traceId": ref("OpaqueId"), "errors": array(ref("ProblemField"), maxItems=100),
     }, "RFC9457 problem response. Do not expose stack traces, private rows, tokens, or upstream cookies.", optional=("errors",))
     page_common = {"contractVersion": ref("ContractVersion"), "requestId": ref("OpaqueId")}

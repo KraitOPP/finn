@@ -13,8 +13,10 @@ import type {
   StockResearchArticle,
   StockResearchDecision,
   StockResearchFactor,
+  StockResearchIssue,
   StockResearchReport,
 } from "../../contracts/generated/models.ts";
+import { formatRetryDelay } from "../api/request.ts";
 import { GoogleSearchSuggestions } from "./GoogleSearchSuggestions.tsx";
 
 type Item = StockResearchReport["items"][number];
@@ -122,6 +124,12 @@ export function StockResearchReportView({
             {date(report.asOf)}
           </Typography>
         </Box>
+        {decision?.issue && (
+          <ResearchIssue
+            issue={decision.issue}
+            hasMarket={Boolean(decision.market)}
+          />
+        )}
         <Tabs
           value={tab}
           onChange={(_, next: ReportTab) => setTab(next)}
@@ -192,6 +200,46 @@ export function StockResearchReportView({
   );
 }
 
+const issueStages = {
+  SEARCH: "Source search paused",
+  ANALYST: "Stock assessment incomplete",
+  CRITIC: "Critic review incomplete",
+} as const;
+
+const issueReasons = {
+  QUOTA: "Groq’s usage limit has been reached.",
+  BUSY: "Stock research is busy. Try again in a moment.",
+  TIMEOUT: "Groq took too long to respond. Try again in a moment.",
+  ACCESS:
+    "Groq denied access. Check the backend API key and model permissions.",
+  UNAVAILABLE:
+    "Groq’s research service is temporarily unavailable. Try again in a moment.",
+  NO_EVIDENCE: "Groq returned too little verifiable evidence for this step.",
+} as const;
+
+function ResearchIssue({
+  issue,
+  hasMarket,
+}: {
+  issue: StockResearchIssue;
+  hasMarket: boolean;
+}) {
+  return (
+    <Alert severity="warning" role="status">
+      <Typography component="div" variant="subtitle2">
+        {issueStages[issue.stage]}
+      </Typography>
+      {issueReasons[issue.reason]}
+      {issue.retryAfterSeconds && (
+        <> Try again in about {formatRetryDelay(issue.retryAfterSeconds)}.</>
+      )}
+      {issue.stage === "SEARCH" && hasMarket && (
+        <> Yahoo price history is still available in Analysis.</>
+      )}
+    </Alert>
+  );
+}
+
 function Decision({
   decision,
   report,
@@ -219,7 +267,7 @@ function Decision({
         </Typography>
         {recommendation.description}
       </Alert>
-      {decision.status !== "REVIEWED" && (
+      {decision.status !== "REVIEWED" && !decision.issue && (
         <Typography variant="body2" color="text.secondary">
           {decision.status === "ANALYSIS_UNAVAILABLE"
             ? "The analyst returned no usable assessments. The collected evidence is available in Analysis and Sources."
@@ -290,7 +338,7 @@ function Decision({
           );
         })}
       </Box>
-      {missing.length > 0 && (
+      {missing.length > 0 && decision.issue?.stage !== "SEARCH" && (
         <Typography variant="body2" color="text.secondary">
           Still needs evidence for{" "}
           {missing.map(([, label]) => label.toLowerCase()).join(", ")}.
@@ -322,6 +370,13 @@ function Analysis({ items, sources }: { items: Item[]; sources: Source[] }) {
 }
 
 function NewsBrief({ report }: { report: StockResearchReport }) {
+  if (report.decision?.issue?.stage === "SEARCH") {
+    return (
+      <Alert severity="info">
+        News will appear here after source search succeeds.
+      </Alert>
+    );
+  }
   const articles = report.decision?.news;
   if (!articles) {
     return report.items.length ? (

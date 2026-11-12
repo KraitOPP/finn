@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.49.0",
+  "contractVersion": "0.50.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "fd75ea5e797e4cd98b3a3aeac3396f9c0204485ddcb05f0bac6e24b4815a76eb",
+  "sourceSha256": "bf6ef8338ffa857fa93107964ecf9956142551d9f8e89d19dfbfed52b00353ab",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -245,6 +245,7 @@ export const contractMetadata = {
     "StockResearchDecision",
     "StockResearchFactor",
     "StockResearchInput",
+    "StockResearchIssue",
     "StockResearchListings",
     "StockResearchMarket",
     "StockResearchPreset",
@@ -2366,7 +2367,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.49.0"
+    "const": "0.50.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -9487,7 +9488,26 @@ export const contractSchemas = {
           "CONFLICT",
           "RATE_LIMITED",
           "DATA_SOURCE_UNAVAILABLE",
-          "INTERNAL_ERROR"
+          "INTERNAL_ERROR",
+          "GROQ_SEARCH_FAILED",
+          "GROQ_NOT_CONFIGURED",
+          "GROQ_ACCESS_REJECTED",
+          "GROQ_REQUEST_REJECTED",
+          "GROQ_QUOTA",
+          "GROQ_RATE_LIMIT",
+          "GROQ_TIMEOUT",
+          "GROQ_UNAVAILABLE",
+          "GROQ_NO_RESULT",
+          "GROQ_NO_SOURCES",
+          "GEMINI_NOT_CONFIGURED",
+          "GEMINI_ACCESS_REJECTED",
+          "GEMINI_REQUEST_REJECTED",
+          "GEMINI_QUOTA",
+          "GEMINI_RATE_LIMIT",
+          "GEMINI_TIMEOUT",
+          "GEMINI_UNAVAILABLE",
+          "GEMINI_NO_RESULT",
+          "GEMINI_NO_SOURCES"
         ]
       },
       "traceId": {
@@ -11396,6 +11416,9 @@ export const contractSchemas = {
             "type": "null"
           }
         ]
+      },
+      "issue": {
+        "$ref": "#/components/schemas/StockResearchIssue"
       }
     },
     "required": [
@@ -11431,6 +11454,48 @@ export const contractSchemas = {
     "required": [
       "listingId",
       "preset"
+    ],
+    "additionalProperties": false
+  },
+  "StockResearchIssue": {
+    "type": "object",
+    "properties": {
+      "stage": {
+        "type": "string",
+        "enum": [
+          "SEARCH",
+          "ANALYST",
+          "CRITIC"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "QUOTA",
+          "BUSY",
+          "TIMEOUT",
+          "ACCESS",
+          "UNAVAILABLE",
+          "NO_EVIDENCE"
+        ]
+      },
+      "retryAfterSeconds": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "stage",
+      "reason",
+      "retryAfterSeconds"
     ],
     "additionalProperties": false
   },

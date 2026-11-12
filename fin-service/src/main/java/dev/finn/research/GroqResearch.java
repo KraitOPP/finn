@@ -53,7 +53,16 @@ class GroqResearch {
         var market = new FutureTask<>(() -> charts.researchSnapshot(listing,today));
         Thread.startVirtualThread(market);
         try {
-            var collected = decode(post(owner,collection,44),preset,today);
+            Collected collected;
+            try {
+                collected = collect(owner,listing,officialName,today,collection);
+            } catch (ApiFailure failure) {
+                var issue = StockDecision.issue(StockDecision.Stage.SEARCH,failure);
+                var brief = new StockDecision.Brief(StockDecision.Stance.INSUFFICIENT_EVIDENCE,
+                        StockDecision.Status.ANALYSIS_UNAVAILABLE,List.of(),List.of(),List.of(),
+                        marketSnapshot(market),issue);
+                return new Report(preset,MODEL,today,List.of(),List.of(),null,brief);
+            }
             var report = collected.report();
             var evidence = new StockDecision.Evidence(listing.symbol()+" on "+listing.exchange(),today,report.items(),
                     report.sources(),collected.excerpts(),report.decision().news(),marketSnapshot(market));
@@ -61,6 +70,22 @@ class GroqResearch {
             return new Report(preset,MODEL,today,report.items(),report.sources(),null,brief);
         } finally {
             market.cancel(true);
+        }
+    }
+
+    private Collected collect(UUID owner, Catalogue.Listing listing, String officialName, LocalDate today,
+                              Object collection) {
+        try {
+            return decode(post(owner,collection,29),Preset.DEEP_DIVE,today);
+        } catch (ApiFailure failure) {
+            switch (failure.code()) {
+                case "GROQ_SEARCH_FAILED", "GROQ_REQUEST_REJECTED", "GROQ_UNAVAILABLE", "GROQ_TIMEOUT",
+                     "GROQ_NO_RESULT", "GROQ_NO_SOURCES" -> {
+                    var fallback = request(listing.exchange(),listing.symbol(),officialName,Preset.DEEP_DIVE,today,true);
+                    return decode(post(owner,fallback,14),Preset.DEEP_DIVE,today);
+                }
+                default -> throw failure;
+            }
         }
     }
 
@@ -82,6 +107,8 @@ class GroqResearch {
     private StockDecision.Brief review(UUID owner, StockDecision.Evidence evidence) {
         List<StockDecision.Assessment> assessments = List.of();
         List<StockDecision.Check> checks = List.of();
+        var stage = StockDecision.Stage.ANALYST;
+        StockDecision.Issue issue = null;
         try {
             if (evidence.items().stream().anyMatch(item -> item.factor() != null)) {
                 var analysis = structured(owner,"stock_assessment",StockDecision.ANALYST,
@@ -89,14 +116,15 @@ class GroqResearch {
                 assessments = StockDecision.assessments(analysis,evidence.items());
             }
             if (!assessments.isEmpty()) {
+                stage = StockDecision.Stage.CRITIC;
                 var critique = structured(owner,"stock_critique",StockDecision.CRITIC,
                         Map.of("evidence",evidence,"draft",assessments),StockDecision.criticSchema());
                 checks = StockDecision.checks(critique,assessments);
             }
         } catch (ApiFailure unavailable) {
-            // Preserve collected evidence on a timed-out, rate-limited or malformed later stage.
+            issue = StockDecision.issue(stage,unavailable);
         }
-        return StockDecision.finish(evidence,assessments,checks);
+        return StockDecision.finish(evidence,assessments,checks,issue);
     }
 
     private JsonNode structured(UUID owner, String name, String instruction, Object data, Map<String,Object> schema) {
@@ -109,6 +137,11 @@ class GroqResearch {
     }
 
     static Map<String,Object> request(String exchange, String symbol, String officialName, Preset preset, LocalDate today) {
+        return request(exchange,symbol,officialName,preset,today,false);
+    }
+
+    private static Map<String,Object> request(String exchange, String symbol, String officialName, Preset preset,
+                                               LocalDate today, boolean retrySearch) {
         boolean news = preset == Preset.NEWS;
         boolean deepDive = preset == Preset.DEEP_DIVE;
         String issuer = officialName == null ? symbol+" on "+exchange : officialName;
@@ -120,8 +153,8 @@ class GroqResearch {
             """.formatted(issuer,NEWS_DATE.format(today.minusDays(29)),NEWS_DATE.format(today)).replace('\n',' ').strip()
                 : prompt(exchange,symbol,preset,today,"Browser Search") + (deepDive ? """
             Issuer search name: %s.
-            Use up to three focused searches spanning reported results, dated peer valuation, downside or
-            upcoming events, and recent issuer news. Open at most one page when an excerpt is insufficient.
+            %s
+            Use search-result snippets. Omit claims that need a full page or further verification.
             %s
             Respond with one JSON object in this shape:
             {"items":[{"title":"Short heading","detail":"Sourced findings","factor":"FINANCIALS",
@@ -131,7 +164,10 @@ class GroqResearch {
             Use one exact source URL per news item, and up to three per analysis item.
             Keep each detail to two or three short sentences. Use exact HTTPS URLs returned by Browser
             Search. Do not use Markdown, code fences or inline citation markers.
-            """.formatted(issuer,StockDecision.collectionInstructions(today)) : """
+            """.formatted(issuer,retrySearch
+                    ? "Use one search for recent issuer results, valuation and announcements."
+                    : "Use up to two searches for reported results, peer valuation, risks and recent announcements.",
+                    StockDecision.collectionInstructions(today)) : """
             Start with up to four targeted searches. Use a search result when it contains enough evidence.
             Respond with a single JSON object in this shape:
             {"items":[{"title":"Short heading","detail":"Plain-text evidence and context","publishedOn":null,"sourceUrls":["https://exact-url-from-the-browser-tool"]}]}
@@ -142,7 +178,7 @@ class GroqResearch {
             """);
         return Map.of("model",MODEL,"messages",List.of(Map.of("role","user","content",prompt)),
                 "tools",List.of(Map.of("type","browser_search")),"reasoning_effort","low",
-                "max_completion_tokens",news ? 3072 : 4096);
+                "max_completion_tokens",news || retrySearch ? 3072 : 4096);
     }
 
     Collected decode(JsonNode response, Preset preset, LocalDate today) {
@@ -188,7 +224,7 @@ class GroqResearch {
                     usedSources.put(source.id(),source);
             }
             decision = new StockDecision.Brief(StockDecision.Stance.INSUFFICIENT_EVIDENCE,
-                    StockDecision.Status.ANALYSIS_UNAVAILABLE,articles,List.of(),List.of(),null);
+                    StockDecision.Status.ANALYSIS_UNAVAILABLE,articles,List.of(),List.of(),null,null);
         }
         if (preset == Preset.NEWS) items.sort(Comparator.comparing(Item::publishedOn).reversed());
         else if (items.isEmpty() && (decision == null || decision.news().isEmpty()))

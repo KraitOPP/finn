@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.49.0",
+    "version": "0.50.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -18476,7 +18476,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.49.0"
+        "const": "0.50.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -19168,6 +19168,48 @@
         ],
         "additionalProperties": false
       },
+      "StockResearchIssue": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "SEARCH",
+              "ANALYST",
+              "CRITIC"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "QUOTA",
+              "BUSY",
+              "TIMEOUT",
+              "ACCESS",
+              "UNAVAILABLE",
+              "NO_EVIDENCE"
+            ]
+          },
+          "retryAfterSeconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 86400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "stage",
+          "reason",
+          "retryAfterSeconds"
+        ],
+        "additionalProperties": false
+      },
       "StockResearchDecision": {
         "type": "object",
         "properties": {
@@ -19218,6 +19260,9 @@
                 "type": "null"
               }
             ]
+          },
+          "issue": {
+            "$ref": "#/components/schemas/StockResearchIssue"
           }
         },
         "required": [
@@ -27771,7 +27816,26 @@
               "CONFLICT",
               "RATE_LIMITED",
               "DATA_SOURCE_UNAVAILABLE",
-              "INTERNAL_ERROR"
+              "INTERNAL_ERROR",
+              "GROQ_SEARCH_FAILED",
+              "GROQ_NOT_CONFIGURED",
+              "GROQ_ACCESS_REJECTED",
+              "GROQ_REQUEST_REJECTED",
+              "GROQ_QUOTA",
+              "GROQ_RATE_LIMIT",
+              "GROQ_TIMEOUT",
+              "GROQ_UNAVAILABLE",
+              "GROQ_NO_RESULT",
+              "GROQ_NO_SOURCES",
+              "GEMINI_NOT_CONFIGURED",
+              "GEMINI_ACCESS_REJECTED",
+              "GEMINI_REQUEST_REJECTED",
+              "GEMINI_QUOTA",
+              "GEMINI_RATE_LIMIT",
+              "GEMINI_TIMEOUT",
+              "GEMINI_UNAVAILABLE",
+              "GEMINI_NO_RESULT",
+              "GEMINI_NO_SOURCES"
             ]
           },
           "traceId": {

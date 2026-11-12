@@ -83,6 +83,56 @@ class StockDecisionTest {
         assertEquals(5,report.decision().assessments().size());
         assertEquals(5,report.items().size());
         assertEquals(1,report.decision().news().size());
+        assertEquals(new StockDecision.Issue(StockDecision.Stage.CRITIC,StockDecision.Reason.TIMEOUT,null),
+                report.decision().issue());
+    }
+
+    @Test
+    void returnsMarketContextAndSkipsRetriesWhenSearchQuotaIsReached() {
+        var market = new MarketCharts.ResearchSnapshot(TODAY.minusDays(25),TODAY.minusDays(1),"203.10","1.80");
+        when(charts.researchSnapshot(eq(listing),any())).thenReturn(market);
+        when(client.post(eq(owner),any(),anyString(),anyString(),any(),eq("GROQ"),any(Duration.class)))
+                .thenThrow(new ApiFailure(429,"GROQ_QUOTA",61));
+
+        var report = research.run(owner,listing,StockResearch.Preset.DEEP_DIVE);
+
+        assertEquals(market,report.decision().market());
+        assertEquals(StockDecision.Stance.INSUFFICIENT_EVIDENCE,report.decision().stance());
+        assertEquals(new StockDecision.Issue(StockDecision.Stage.SEARCH,StockDecision.Reason.QUOTA,61),
+                report.decision().issue());
+        assertTrue(report.items().isEmpty());
+        assertTrue(report.sources().isEmpty());
+        verify(client).post(eq(owner),any(),anyString(),anyString(),any(),eq("GROQ"),any(Duration.class));
+    }
+
+    @Test
+    void retriesASearchFailureOnceThenPreservesEvidenceIfAnalysisIsRateLimited() {
+        var stages = new ArrayList<String>();
+        when(client.post(eq(owner),any(),anyString(),anyString(),any(),eq("GROQ"),any(Duration.class)))
+                .thenAnswer(call -> {
+                    JsonNode body = json.valueToTree(call.getArgument(4));
+                    if (body.has("tools")) {
+                        var prompt = body.at("/messages/0/content").asText();
+                        if (stages.isEmpty()) {
+                            assertTrue(prompt.contains("Use up to two searches"));
+                            stages.add("search");
+                            throw new ApiFailure(502,"GROQ_SEARCH_FAILED");
+                        }
+                        assertTrue(prompt.contains("Use one search"));
+                        stages.add("fallback");
+                        return collection();
+                    }
+                    stages.add("analyst");
+                    throw new ApiFailure(429,"GROQ_QUOTA",15);
+                });
+
+        var report = research.run(owner,listing,StockResearch.Preset.DEEP_DIVE);
+
+        assertEquals(List.of("search","fallback","analyst"),stages);
+        assertEquals(new StockDecision.Issue(StockDecision.Stage.ANALYST,StockDecision.Reason.QUOTA,15),
+                report.decision().issue());
+        assertEquals(5,report.items().size());
+        assertEquals(1,report.decision().news().size());
     }
 
     @Test

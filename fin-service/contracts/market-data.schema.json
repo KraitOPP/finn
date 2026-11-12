@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.49.0",
+  "$id": "urn:finn:contracts:market-data:0.50.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.49.0"
+      "const": "0.50.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -699,6 +699,48 @@
       ],
       "additionalProperties": false
     },
+    "StockResearchIssue": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": [
+            "SEARCH",
+            "ANALYST",
+            "CRITIC"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "QUOTA",
+            "BUSY",
+            "TIMEOUT",
+            "ACCESS",
+            "UNAVAILABLE",
+            "NO_EVIDENCE"
+          ]
+        },
+        "retryAfterSeconds": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "stage",
+        "reason",
+        "retryAfterSeconds"
+      ],
+      "additionalProperties": false
+    },
     "StockResearchDecision": {
       "type": "object",
       "properties": {
@@ -749,6 +791,9 @@
               "type": "null"
             }
           ]
+        },
+        "issue": {
+          "$ref": "#/$defs/StockResearchIssue"
         }
       },
       "required": [
@@ -9302,7 +9347,26 @@
             "CONFLICT",
             "RATE_LIMITED",
             "DATA_SOURCE_UNAVAILABLE",
-            "INTERNAL_ERROR"
+            "INTERNAL_ERROR",
+            "GROQ_SEARCH_FAILED",
+            "GROQ_NOT_CONFIGURED",
+            "GROQ_ACCESS_REJECTED",
+            "GROQ_REQUEST_REJECTED",
+            "GROQ_QUOTA",
+            "GROQ_RATE_LIMIT",
+            "GROQ_TIMEOUT",
+            "GROQ_UNAVAILABLE",
+            "GROQ_NO_RESULT",
+            "GROQ_NO_SOURCES",
+            "GEMINI_NOT_CONFIGURED",
+            "GEMINI_ACCESS_REJECTED",
+            "GEMINI_REQUEST_REJECTED",
+            "GEMINI_QUOTA",
+            "GEMINI_RATE_LIMIT",
+            "GEMINI_TIMEOUT",
+            "GEMINI_UNAVAILABLE",
+            "GEMINI_NO_RESULT",
+            "GEMINI_NO_SOURCES"
           ]
         },
         "traceId": {

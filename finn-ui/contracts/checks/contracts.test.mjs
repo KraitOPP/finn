@@ -171,6 +171,32 @@ test('problem response validates code/status/trace shape and maps plain text fie
   assert.throws(() => decodeContract('Problem', { ...problem, stack: 'internal details' }), ContractError);
 });
 
+test('research problem responses preserve their public error codes', () => {
+  for (const [code, status] of [
+    ['GROQ_QUOTA', 429], ['GROQ_SEARCH_FAILED', 502], ['GEMINI_ACCESS_REJECTED', 502],
+  ]) {
+    const researchProblem = { ...problem, code, status };
+    assert.deepEqual(decodeContract('Problem', researchProblem), researchProblem);
+  }
+  assert.throws(() => decodeContract('Problem', { ...problem, code: 'raw provider error' }), ContractError);
+});
+
+test('partial research decision accepts a bounded retry interval', () => {
+  const decision = {
+    stance: 'INSUFFICIENT_EVIDENCE', status: 'REVIEW_INCOMPLETE',
+    news: [], assessments: [], checks: [], market: null,
+  };
+  assert.deepEqual(decodeContract('StockResearchDecision', decision), decision);
+  for (const retryAfterSeconds of [1, 86400, null]) {
+    const result = { ...decision, issue: { stage: 'CRITIC', reason: 'QUOTA', retryAfterSeconds } };
+    assert.deepEqual(decodeContract('StockResearchDecision', result), result);
+  }
+  for (const retryAfterSeconds of [0, 1.5, 86401]) {
+    const result = { ...decision, issue: { stage: 'CRITIC', reason: 'QUOTA', retryAfterSeconds } };
+    assert.throws(() => decodeContract('StockResearchDecision', result), ContractError);
+  }
+});
+
 test('background job snapshots distinguish unfinished, failed and terminal outcomes', async () => {
   const jobs = JSON.parse(await readFile(join(directory, 'fixtures/jobs.synthetic.json'), 'utf8'));
   for (const job of jobs) assert.deepEqual(decodeContract('AsyncJobStatus', job), job);

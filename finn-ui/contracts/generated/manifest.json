@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.49.0",
+  "contractVersion": "0.50.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "fd75ea5e797e4cd98b3a3aeac3396f9c0204485ddcb05f0bac6e24b4815a76eb",
+  "sourceSha256": "bf6ef8338ffa857fa93107964ecf9956142551d9f8e89d19dfbfed52b00353ab",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -244,6 +244,7 @@
     "StockResearchDecision",
     "StockResearchFactor",
     "StockResearchInput",
+    "StockResearchIssue",
     "StockResearchListings",
     "StockResearchMarket",
     "StockResearchPreset",

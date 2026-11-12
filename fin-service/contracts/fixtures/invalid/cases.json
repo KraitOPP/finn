@@ -500,6 +500,17 @@
     "expectedError": "PROBLEM_STATUS_CODE_MISMATCH"
   },
   {
+    "caseId": "reject-research-quota-status-mismatch",
+    "baseCaseId": "problem-research-quota",
+    "changes": [
+      {
+        "path": ["status"],
+        "value": 502
+      }
+    ],
+    "expectedError": "PROBLEM_STATUS_CODE_MISMATCH"
+  },
+  {
     "caseId": "reject-token-in-source-link",
     "baseCaseId": "acquisition-complete",
     "changes": [

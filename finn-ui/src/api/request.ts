@@ -29,9 +29,10 @@ const safeMessages: Record<string, string> = {
   GROQ_ACCESS_REJECTED:
     "Groq rejected access. Check the API key and your project’s model permissions.",
   GROQ_REQUEST_REJECTED:
-    "Groq couldn’t complete this request. Check your project’s Browser Search access and try again.",
-  GROQ_QUOTA:
-    "Groq’s usage limit has been reached. Check your Groq project’s limits.",
+    "Groq rejected the research request. Check your project’s model and Browser Search access.",
+  GROQ_SEARCH_FAILED:
+    "Groq Browser Search couldn’t collect sources for this request.",
+  GROQ_QUOTA: "Groq’s usage limit has been reached.",
   GROQ_RATE_LIMIT: "Stock research is busy. Try again in a moment.",
   GROQ_TIMEOUT: "Groq took too long to respond. Try again.",
   GROQ_UNAVAILABLE: "Groq is temporarily unavailable.",
@@ -90,22 +91,36 @@ const safeMessages: Record<string, string> = {
     "Review the original action and its journal reversal before recording a linked correction.",
 };
 
+export function formatRetryDelay(seconds: number) {
+  const unit = seconds >= 3600 ? "hour" : seconds >= 60 ? "minute" : "second";
+  const secondsPerUnit = { hour: 3600, minute: 60, second: 1 };
+  const amount = Math.ceil(seconds / secondsPerUnit[unit]);
+  return `${amount} ${unit}${amount === 1 ? "" : "s"}`;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     public reference: string | null = null,
     public code: string | null = null,
+    retryAfterSeconds: number | null = null,
   ) {
-    super(
+    const message =
       (code && Object.hasOwn(safeMessages, code) ? safeMessages[code] : null) ??
-        (status === 409
-          ? "This changed since you opened it. Reload and review before saving."
-          : status === 401 || status === 403
-            ? "Your session needs to reconnect. Sign in again if requested."
-            : status === 422 || status === 400
-              ? "Check the entered values and try again."
-              : "We couldn’t complete this request. Try again."),
-    );
+      (status === 409
+        ? "This changed since you opened it. Reload and review before saving."
+        : status === 401 || status === 403
+          ? "Your session needs to reconnect. Sign in again if requested."
+          : status === 422 || status === 400
+            ? "Check the entered values and try again."
+            : "We couldn’t complete this request. Try again.");
+    let retryAdvice = "";
+    if (code === "GROQ_QUOTA") {
+      retryAdvice = retryAfterSeconds
+        ? ` Try again in about ${formatRetryDelay(retryAfterSeconds)}.`
+        : " Retry after the quota resets or check your project’s usage limits.";
+    }
+    super(`${message}${retryAdvice}`);
   }
 }
 
@@ -189,7 +204,16 @@ export async function requestContract<K extends keyof ContractTypes>(
     } catch {
       /* Untrusted error details stay hidden. */
     }
-    throw new ApiError(response.status, reference, code);
+    const retryAfter =
+      response.status === 429 ? response.headers.get("Retry-After") : null;
+    const delay =
+      retryAfter && /^\d{1,5}$/.test(retryAfter) ? Number(retryAfter) : 0;
+    throw new ApiError(
+      response.status,
+      reference,
+      code,
+      delay > 0 && delay <= 86400 ? delay : null,
+    );
   }
   try {
     return decodeContract(name, body);
