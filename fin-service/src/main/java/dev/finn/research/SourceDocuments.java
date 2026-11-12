@@ -66,10 +66,15 @@ class SourceDocuments {
     }
 
     List<Entry> allCurrent(UUID owner,String kind) {
+        return allCurrent(owner,kind,null);
+    }
+
+    List<Entry> allCurrent(UUID owner,String kind,UUID company) {
         return jdbc.query(SELECT+"""
                 WHERE d.owner_id=? AND d.source_type=? AND d.revision=v.revision
+                  AND (?::uuid IS NULL OR d.company_id=?)
                 ORDER BY coalesce(v.published_at,v.ingested_at) DESC,d.document_id LIMIT 200
-                """, SourceDocuments::entry, owner,kind);
+                """, SourceDocuments::entry, owner,kind,company,company);
     }
 
     List<Entry> search(UUID owner,UUID company,String terms,EvidenceSearch.Scope scope,int offset){

@@ -16,6 +16,10 @@ public final class NewsChecks {
         read(mvc,path,owner).andExpect(status().isOk()).andExpect(jsonPath("$.coverage").value("MANUAL_LINKS"))
                 .andExpect(jsonPath("$.items.length()").value(1)).andExpect(jsonPath("$.items[0].sources.length()").value(2))
                 .andExpect(jsonPath("$.items[0].sources[0].hasAttachment").value(false));
+        read(mvc,path+"?companyId="+company,owner).andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].companyId").value(company));
+        read(mvc,path+"?companyId="+company,"fictional-news-other").andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty());
         read(mvc,"/api/v1/research/sources",owner).andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
         submit(mvc,"/api/v1/research/events",owner,event(first,null,null,"Fictional news","OTHER","UNKNOWN","UNKNOWN"))
                 .andExpect(status().isUnprocessableContent());

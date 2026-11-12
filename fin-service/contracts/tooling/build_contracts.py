@@ -1172,7 +1172,7 @@ def public_api_document() -> dict:
         "/api/v1/research/attention/{id}":{"post": maintained("saveAttentionFeedback","Set read, mute, or snooze state on an owned event","AttentionState",identifier,"AttentionFeedback")},
         "/api/v1/research/news":{
             "get": maintained("listNewsContext","List clusters of owner-recorded news links and source metadata","CompanyNewsPage",[
-                parameter("offset","query",{"type":"integer","minimum":0,"maximum":200})]),
+                parameter("companyId","query",ref("OpaqueId")),parameter("offset","query",{"type":"integer","minimum":0,"maximum":200})]),
             "post": maintained("registerNewsLink","Register a headline and link as secondary news context","CompanySource",input_name="CompanyNewsInput"),
         },
         "/api/v1/research/filing-rules":{

@@ -10688,6 +10688,14 @@
         "x-finn-implementation-status": "IMPLEMENTED",
         "parameters": [
           {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          },
+          {
             "name": "offset",
             "in": "query",
             "required": false,

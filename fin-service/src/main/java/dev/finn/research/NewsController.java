@@ -14,7 +14,10 @@ class NewsController {
     private final NewsContext news;
     NewsController(NewsContext news) { this.news=news; }
 
-    @GetMapping NewsContext.Page list(@RequestParam(defaultValue="0") @Min(0) @Max(200) int offset) { return news.list(offset); }
+    @GetMapping NewsContext.Page list(@RequestParam(required=false) UUID companyId,
+                                     @RequestParam(defaultValue="0") @Min(0) @Max(200) int offset) {
+        return news.list(companyId,offset);
+    }
     @PostMapping SourceDocuments.Entry add(@Valid @RequestBody Input input) {
         return news.save(input.companyId(),input.headline(),input.publisher(),input.url(),input.publishedAt());
     }

@@ -29,9 +29,9 @@ class NewsContext {
         return sources.createFor(users.requireId(),"NEWS",new SourceDocuments.Input(company,headline,publisher,url,null,publishedAt));
     }
 
-    @Transactional public Page list(int offset) {
+    @Transactional public Page list(UUID company,int offset) {
         var grouped=new LinkedHashMap<String,List<SourceDocuments.Entry>>();
-        for(var source:sources.allCurrent(users.requireId(),"NEWS")){
+        for(var source:sources.allCurrent(users.requireId(),"NEWS",company)){
             String key=SourceDocuments.checksum(source.companyId()+"|"+date(source)+"|"+CompanyEvents.normalize(source.title()));
             grouped.computeIfAbsent(key,ignored->new ArrayList<>()).add(source);
         }

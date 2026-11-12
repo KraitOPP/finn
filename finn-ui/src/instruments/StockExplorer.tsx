@@ -8,6 +8,7 @@ import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { ListingMarketDetail } from "../market/ListingHistory.tsx";
 import { RouteHeading } from "../Navigation.tsx";
+import { News } from "../research/News.tsx";
 
 const lookup = "/api/v1/catalog/lookup";
 const examples = ["Infosys", "Reliance", "TCS", "HDFC Bank"];
@@ -18,6 +19,7 @@ export function StockExplorer({ home = false }: { home?: boolean }) {
   const [exchange, setExchange] = useState<"NSE" | "BSE">("NSE");
   const [active, setActive] = useState(-1);
   const [expanded, setExpanded] = useState(true);
+  const [view, setView] = useState<"prices" | "news">("prices");
   const [opened, setOpened] = useState<{
     name: string;
     value: StockLookupOpened;
@@ -49,6 +51,7 @@ export function StockExplorer({ home = false }: { home?: boolean }) {
     );
     if (value) {
       setOpened({ name: stock.name, value });
+      setView("prices");
       setQuery(stock.name);
       setExpanded(false);
       setActive(-1);
@@ -218,11 +221,34 @@ export function StockExplorer({ home = false }: { home?: boolean }) {
               Open research
             </a>
           </div>
-          <ListingMarketDetail
-            key={opened.value.listing.listingId}
-            listing={opened.value.listing}
-            compact
-          />
+          <div className="stock-exchange">
+            <button
+              type="button"
+              aria-pressed={view === "prices"}
+              onClick={() => setView("prices")}
+            >
+              Prices
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === "news"}
+              onClick={() => setView("news")}
+            >
+              News
+            </button>
+          </div>
+          {view === "prices" ? (
+            <ListingMarketDetail
+              key={opened.value.listing.listingId}
+              listing={opened.value.listing}
+              compact
+            />
+          ) : (
+            <News
+              key={opened.value.listing.companyId}
+              companyId={opened.value.listing.companyId}
+            />
+          )}
         </section>
       )}
     </section>

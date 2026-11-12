@@ -193,7 +193,7 @@ test('generated registry and manifest identify the same schema snapshot', async 
 });
 
 test('canonical backend contract drift is detected when its checkout is available', async (context) => {
-  const source = resolve(directory, '../../finn-backend/contracts/public-api/openapi.json');
+  const source = resolve(directory, '../../fin-service/contracts/public-api/openapi.json');
   try { await access(source); } catch { context.skip('Separate backend checkout not supplied; run generate.mjs --check with --source in integration checks.'); return; }
   const bytes = await readFile(source);
   assert.equal(createHash('sha256').update(bytes).digest('hex'), contractMetadata.sourceSha256);

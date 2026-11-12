@@ -6,13 +6,15 @@ import { LocalTime } from "../monitoring/LocalTime.tsx";
 
 const path = "/api/v1/research/news";
 
-export function News() {
+export function News({ companyId }: { companyId?: string }) {
   const [offset, setOffset] = useState(0);
   const [notice, setNotice] = useState("");
-  const data = useResource("CompanyNewsPage", `${path}?offset=${offset}`);
+  const filters = new URLSearchParams({ offset: String(offset) });
+  if (companyId) filters.set("companyId", companyId);
+  const data = useResource("CompanyNewsPage", `${path}?${filters}`);
   return (
     <section className="detail-card">
-      <h2>News context</h2>
+      <h2>{companyId ? "Saved stock news" : "News context"}</h2>
       <p>
         Manually saved headlines and publisher links. Primary company filings
         appear in the sources section.
@@ -28,7 +30,11 @@ export function News() {
       ) : !data.value ? (
         <p role="status">Loading news context…</p>
       ) : data.value.items.length === 0 ? (
-        <p>No news links on this page.</p>
+        <p>
+          {companyId
+            ? "No news links saved for this company."
+            : "No news links on this page."}
+        </p>
       ) : (
         <ul className="security-list">
           {data.value.items.map((cluster) => (
@@ -84,13 +90,15 @@ export function News() {
           </button>
         </div>
       )}
-      <NewsForm
-        onSave={() => {
-          setOffset(0);
-          setNotice("News link saved.");
-          data.reload();
-        }}
-      />
+      {!companyId && (
+        <NewsForm
+          onSave={() => {
+            setOffset(0);
+            setNotice("News link saved.");
+            data.reload();
+          }}
+        />
+      )}
     </section>
   );
 }

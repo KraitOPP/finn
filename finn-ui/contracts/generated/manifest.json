@@ -1,8 +1,8 @@
 {
   "contractVersion": "0.46.0",
   "openapiVersion": "3.1.1",
-  "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "08cc874454e47f0bb4ceab54fa001726da378fa650b3adf5b1bb607338ecef0e",
+  "source": "fin-service/contracts/public-api/openapi.json",
+  "sourceSha256": "6d2737ef6d11029b92755eae7c17e4a67015e79e32f7a16bc66fcad2cabd3ade",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",

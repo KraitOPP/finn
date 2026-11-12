@@ -6,7 +6,7 @@ import { dirname, resolve } from 'node:path';
 const directory = dirname(fileURLToPath(import.meta.url));
 const sourceArgument = process.argv.find((arg) => arg.startsWith('--source='))?.slice(9);
 const sourcePath = resolve(sourceArgument
-  ?? resolve(directory, '../../finn-backend/contracts/public-api/openapi.json'));
+  ?? resolve(directory, '../../fin-service/contracts/public-api/openapi.json'));
 const check = process.argv.includes('--check');
 let source;
 try { source = await readFile(sourcePath); }
@@ -89,7 +89,7 @@ for (const name of names) {
 const metadata = {
   contractVersion: document.info.version,
   openapiVersion: document.openapi,
-  source: 'finn-backend/contracts/public-api/openapi.json',
+  source: 'fin-service/contracts/public-api/openapi.json',
   sourceSha256: createHash('sha256').update(source).digest('hex'),
   schemaNames: names,
 };
