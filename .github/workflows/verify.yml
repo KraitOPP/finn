@@ -29,6 +29,8 @@ jobs:
         run: node contracts/generate.mjs --check
       - name: Lint, typecheck, test and build
         run: npm run check
+      - name: Build standalone fictional walkthrough
+        run: npm run build:demo
       - name: Audit production dependencies
         env:
           npm_config_cache: ${{ runner.temp }}/finn-workspace/cache/npm

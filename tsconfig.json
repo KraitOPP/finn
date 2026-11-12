@@ -6,5 +6,5 @@
     "allowImportingTsExtensions": true, "resolveJsonModule": true,
     "allowJs": true, "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "contracts/**/*.ts", "vite.config.ts", "scripts/*.mjs"]
+  "include": ["src", "demo", "contracts/**/*.ts", "vite.config.ts", "vite.demo.config.ts", "scripts/*.mjs"]
 }

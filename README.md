@@ -4,7 +4,7 @@ React 19 and TypeScript frontend for an India-first portfolio intelligence and i
 
 ## Repository status
 
-The application provides OIDC sign-in, private portfolios, Groww holdings review, journal corrections and export, current and historical valuation, price charts, watchlists, and market data status. The public overview is fictional.
+The application provides OIDC sign-in, private portfolios, Groww holdings review, journal corrections and export, valuation and risk analysis, watchlists, alerts and reminders, source-linked company research, thesis reviews, and stock screening. The public overview uses fictional data.
 
 ## Run locally
 
@@ -54,6 +54,12 @@ Use **Investment theses** to save a rationale, risks, milestones, and a review r
 Use **Discover** to register reviewed listings, inspect fundamental coverage, run saved screens, save matches to watchlists, and compare peers with adjustable weights. Open company research or model the candidate in a portfolio. **Portfolio** shows conditional XIRR, time-weighted return, concentration, weekly drawdown and volatility, and hypothetical allocation or price shocks.
 
 ## Verification
+
+### Standalone fictional walkthrough
+
+Run `npm run build:demo` with an external `FINN_WORKSPACE_ROOT`. Preview it locally with `npm run preview:demo` at `http://127.0.0.1:5180`. For static hosting, publish the contents of `FINN_WORKSPACE_ROOT/build/public-demo`. The walkthrough bundles only the fictional import, guidance, results, and thesis decision. Its browser makes no API or sign-in requests. The backend's `deployment/DEMO.md` explains how to replay the scenario through the actual application and database.
+
+For a private release, serve the production build using `deployment/Caddyfile`. Set `FINN_WEB_ORIGIN` to the site's exact HTTPS origin, `FINN_WEB_BIND` to the intended listening interface, `FINN_BACKEND_UPSTREAM` to the loopback backend address, `FINN_IDENTITY_ORIGIN` to the sign-in provider's HTTPS origin, `FINN_STATIC_ROOT` to the immutable frontend build directory, and `FINN_CADDY_STORAGE` to a private directory for the proxy. Use forward slashes in Windows paths. Start Caddy with `caddy run --config deployment/Caddyfile --adapter caddyfile`. API and sign-in routes proxy to the backend. Only the frontend build directory is served as static content. [Caddy reverse proxy documentation](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
 
 `npm run check` runs Biome lint, strict TypeScript, contract checks, component interaction tests and a production build. `node contracts/generate.mjs --check` verifies the pinned contract artifacts. Tests exercise loading, keyboard retry, safe errors, sign-in/out controls, CSRF form fields, expired-session clearing and rejection of private/incompatible demo responses.
 
