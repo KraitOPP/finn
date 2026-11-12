@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.36.0",
+  "contractVersion": "0.37.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "3c48d9a25d2136e5a47cb4542c6eff47817b3fdf1e1317920559a4de04036498",
+  "sourceSha256": "d72002ceb43ab990491371ead8868a1ffc4f2c56c8de959497af7be6716fe542",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -71,6 +71,7 @@ export const contractMetadata = {
     "FinancialFactPage",
     "FinancialOperand",
     "Freshness",
+    "GuidanceCandidates",
     "HistoryCoverage",
     "HistoryResponse",
     "HoldingsAcceptanceInput",
@@ -116,6 +117,10 @@ export const contractMetadata = {
     "LedgerView",
     "ListingIdentity",
     "ListingInput",
+    "ManagementGuidance",
+    "ManagementGuidanceEdit",
+    "ManagementGuidanceInput",
+    "ManagementGuidanceList",
     "MarketDiagnostics",
     "MarketFeed",
     "NonNegativeDecimalString",
@@ -2264,7 +2269,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.36.0"
+    "const": "0.37.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3427,6 +3432,28 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Calendar-aware age/eligibility assessment. A weekend does not make the newest expected completed session stale. FRESH requires equal known latest/expected sessions."
+  },
+  "GuidanceCandidates": {
+    "type": "object",
+    "properties": {
+      "evidence": {
+        "$ref": "#/components/schemas/ResearchLocation"
+      },
+      "printedNumbers": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "maxItems": 12
+      }
+    },
+    "required": [
+      "evidence",
+      "printedNumbers"
+    ],
+    "additionalProperties": false
   },
   "HistoryCoverage": {
     "type": "object",
@@ -5965,6 +5992,267 @@ export const contractSchemas = {
       "providerSymbol",
       "validFrom",
       "confirmed"
+    ],
+    "additionalProperties": false
+  },
+  "ManagementGuidance": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "QUALITATIVE",
+          "AT_LEAST",
+          "AT_MOST",
+          "RANGE"
+        ]
+      },
+      "stage": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "CONFIRMED",
+          "WITHDRAWN"
+        ]
+      },
+      "statementDate": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "dimensions": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FinancialDimensions"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "lower": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "upper": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "caveats": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1200
+      },
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "guidanceId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "savedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "title",
+      "kind",
+      "stage",
+      "statementDate",
+      "dimensions",
+      "lower",
+      "upper",
+      "scale",
+      "caveats",
+      "anchorId",
+      "guidanceId",
+      "companyId",
+      "revision",
+      "publishedAt",
+      "savedAt"
+    ],
+    "additionalProperties": false
+  },
+  "ManagementGuidanceEdit": {
+    "type": "object",
+    "properties": {
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "guidance": {
+        "$ref": "#/components/schemas/ManagementGuidanceInput"
+      }
+    },
+    "required": [
+      "expectedRevision",
+      "guidance"
+    ],
+    "additionalProperties": false
+  },
+  "ManagementGuidanceInput": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "QUALITATIVE",
+          "AT_LEAST",
+          "AT_MOST",
+          "RANGE"
+        ]
+      },
+      "stage": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "CONFIRMED",
+          "WITHDRAWN"
+        ]
+      },
+      "statementDate": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "dimensions": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FinancialDimensions"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "lower": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "upper": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "caveats": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1200
+      },
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      }
+    },
+    "required": [
+      "title",
+      "kind",
+      "stage",
+      "statementDate",
+      "dimensions",
+      "lower",
+      "upper",
+      "scale",
+      "caveats",
+      "anchorId"
+    ],
+    "additionalProperties": false
+  },
+  "ManagementGuidanceList": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ManagementGuidance"
+        },
+        "maxItems": 50
+      }
+    },
+    "required": [
+      "items"
     ],
     "additionalProperties": false
   },

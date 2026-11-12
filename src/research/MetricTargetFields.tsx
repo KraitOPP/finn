@@ -34,10 +34,12 @@ export function MetricTargetFields({
   value,
   scale,
   onChange,
+  required = true,
 }: {
   value: FinancialDimensions;
   scale: TargetScale;
   onChange: (value: FinancialDimensions, scale: TargetScale) => void;
+  required?: boolean;
 }) {
   const stock =
     value.metric === "TOTAL_DEBT" || value.metric === "TOTAL_EQUITY";
@@ -125,7 +127,7 @@ export function MetricTargetFields({
         <label>
           Period start{" "}
           <input
-            required
+            required={required}
             type="date"
             value={value.periodStart}
             onChange={(event) =>
@@ -137,7 +139,7 @@ export function MetricTargetFields({
       <label>
         {stock ? "As-of date" : "Period end"}{" "}
         <input
-          required
+          required={required}
           type="date"
           value={value.periodEnd}
           onChange={(event) => {

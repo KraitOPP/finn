@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.36.0") & (string);
+export type ContractVersion = ("0.37.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -596,6 +596,11 @@ export type Freshness = ({
   "expectedSessionDate": (((SessionDate)) | ((null)));
   "latestSessionDate": (((SessionDate)) | ((null)));
   "reasonCode": (OpaqueId);
+});
+
+export type GuidanceCandidates = ({
+  "evidence": (ResearchLocation);
+  "printedNumbers": (Array<(string)>);
 });
 
 export type HistoryCoverage = ({
@@ -1017,6 +1022,46 @@ export type ListingInput = ({
   "providerSymbol": (((string)) | ((null)));
   "validFrom": (SessionDate);
   "confirmed": (true);
+});
+
+export type ManagementGuidance = ({
+  "title": (string);
+  "kind": ("QUALITATIVE" | "AT_LEAST" | "AT_MOST" | "RANGE") & (string);
+  "stage": ("DRAFT" | "CONFIRMED" | "WITHDRAWN") & (string);
+  "statementDate": (((SessionDate)) | ((null)));
+  "dimensions": (((FinancialDimensions)) | ((null)));
+  "lower": (((DecimalString)) | ((null)));
+  "upper": (((DecimalString)) | ((null)));
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "caveats": (string);
+  "anchorId": (OpaqueId);
+  "guidanceId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "revision": (number);
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "savedAt": (UtcInstant);
+});
+
+export type ManagementGuidanceEdit = ({
+  "expectedRevision": (number);
+  "guidance": (ManagementGuidanceInput);
+});
+
+export type ManagementGuidanceInput = ({
+  "title": (string);
+  "kind": ("QUALITATIVE" | "AT_LEAST" | "AT_MOST" | "RANGE") & (string);
+  "stage": ("DRAFT" | "CONFIRMED" | "WITHDRAWN") & (string);
+  "statementDate": (((SessionDate)) | ((null)));
+  "dimensions": (((FinancialDimensions)) | ((null)));
+  "lower": (((DecimalString)) | ((null)));
+  "upper": (((DecimalString)) | ((null)));
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "caveats": (string);
+  "anchorId": (OpaqueId);
+});
+
+export type ManagementGuidanceList = ({
+  "items": (Array<(ManagementGuidance)>);
 });
 
 export type MarketDiagnostics = ({
@@ -1835,6 +1880,7 @@ export interface ContractTypes {
   FinancialFactPage: FinancialFactPage;
   FinancialOperand: FinancialOperand;
   Freshness: Freshness;
+  GuidanceCandidates: GuidanceCandidates;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;
   HoldingsAcceptanceInput: HoldingsAcceptanceInput;
@@ -1880,6 +1926,10 @@ export interface ContractTypes {
   LedgerView: LedgerView;
   ListingIdentity: ListingIdentity;
   ListingInput: ListingInput;
+  ManagementGuidance: ManagementGuidance;
+  ManagementGuidanceEdit: ManagementGuidanceEdit;
+  ManagementGuidanceInput: ManagementGuidanceInput;
+  ManagementGuidanceList: ManagementGuidanceList;
   MarketDiagnostics: MarketDiagnostics;
   MarketFeed: MarketFeed;
   NonNegativeDecimalString: NonNegativeDecimalString;

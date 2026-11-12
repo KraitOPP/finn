@@ -9,6 +9,7 @@ import { useResource } from "../api/useResource.ts";
 import { EventHistory } from "./Events.tsx";
 import { AnchorEvidence, EvidencePanel } from "./Evidence.tsx";
 import { CompanyFacts, EvidencePicker } from "./FinancialFacts.tsx";
+import { GuidancePanel } from "./Guidance.tsx";
 import { ResearchReports } from "./ResearchReports.tsx";
 import { SearchEvidence } from "./SearchEvidence.tsx";
 import { ThesisNotebook } from "./ThesisNotebook.tsx";
@@ -87,6 +88,7 @@ function Overview({
     <div>
       <h3>{companyName}</h3>
       <ThesisNotebook company={company} />
+      <GuidancePanel company={company} />
       <p>
         {indexedSources} of {primarySources} current primary sources have
         extracted evidence.
