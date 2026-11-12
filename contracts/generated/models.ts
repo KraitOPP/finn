@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.39.0") & (string);
+export type ContractVersion = ("0.40.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -482,6 +482,66 @@ export type DeriveFinancialFact = ({
   "operatingCash": (FinancialOperand);
   "capitalExpenditure": (FinancialOperand);
   "reviewed": (true);
+});
+
+export type DiscoveryCompany = ({
+  "member": (DiscoveryMember);
+  "readings": (Array<(DiscoveryReading)>);
+});
+
+export type DiscoveryDirectory = ({
+  "source": ("MANUAL_CURRENT");
+  "members": (Array<(DiscoveryMember)>);
+  "metrics": (Array<(DiscoveryMetricSupport)>);
+});
+
+export type DiscoveryMember = ({
+  "listingId": (OpaqueId);
+  "sector": (DiscoverySector);
+  "active": (boolean);
+  "companyId": (OpaqueId);
+  "name": (string);
+  "exchange": ("NSE" | "BSE") & (string);
+  "symbol": (string);
+  "revision": (number);
+  "registeredAt": (UtcInstant);
+  "reviewedAt": (UtcInstant);
+});
+
+export type DiscoveryMemberInput = ({
+  "listingId": (OpaqueId);
+  "sector": (DiscoverySector);
+  "active": (boolean);
+  "expectedRevision": (((number)) | ((null)));
+});
+
+export type DiscoveryMetric = ("REVENUE" | "PROFIT_AFTER_TAX" | "EPS_BASIC" | "OPERATING_MARGIN" | "FREE_CASH_FLOW" | "TOTAL_EQUITY") & (string);
+
+export type DiscoveryMetricSupport = ({
+  "metric": (DiscoveryMetric);
+  "unit": ("MONEY" | "PER_SHARE" | "PERCENT") & (string);
+  "sectors": (Array<(DiscoverySector)>);
+});
+
+export type DiscoveryPeriod = ({
+  "kind": ("QUARTER" | "FULL_YEAR") & (string);
+  "start": (SessionDate);
+  "end": (SessionDate);
+});
+
+export type DiscoveryReading = ({
+  "metric": (DiscoveryMetric);
+  "reason": ("PERIOD_OPEN" | "FACT_MISSING" | "DIMENSIONS_MISMATCH" | "PUBLICATION_UNKNOWN" | "PUBLISHED_AFTER_CUTOFF" | "PERIOD_PUBLICATION_INVALID" | "SOURCE_REVISED" | "DERIVATION_REVIEW_REQUIRED" | "COMPARABLE_FACT" | "SECTOR_INELIGIBLE") & (string);
+  "fact": (((FinancialFact)) | ((null)));
+});
+
+export type DiscoverySector = ("BANKING" | "FINANCIAL_SERVICES" | "MANUFACTURING" | "TECHNOLOGY" | "CONSUMER" | "ENERGY" | "OTHER") & (string);
+
+export type DiscoverySnapshot = ({
+  "source": ("MANUAL_CURRENT");
+  "capturedAt": (UtcInstant);
+  "period": (DiscoveryPeriod);
+  "companies": (Array<(DiscoveryCompany)>);
 });
 
 export type EventReplay = ({
@@ -1941,6 +2001,16 @@ export interface ContractTypes {
   DecimalString: DecimalString;
   Delay: Delay;
   DeriveFinancialFact: DeriveFinancialFact;
+  DiscoveryCompany: DiscoveryCompany;
+  DiscoveryDirectory: DiscoveryDirectory;
+  DiscoveryMember: DiscoveryMember;
+  DiscoveryMemberInput: DiscoveryMemberInput;
+  DiscoveryMetric: DiscoveryMetric;
+  DiscoveryMetricSupport: DiscoveryMetricSupport;
+  DiscoveryPeriod: DiscoveryPeriod;
+  DiscoveryReading: DiscoveryReading;
+  DiscoverySector: DiscoverySector;
+  DiscoverySnapshot: DiscoverySnapshot;
   EventReplay: EventReplay;
   EventSuggestion: EventSuggestion;
   FilingRule: FilingRule;

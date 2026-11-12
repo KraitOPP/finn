@@ -37,6 +37,11 @@ const Research = lazy(() =>
     default: module.Research,
   })),
 );
+const Discovery = lazy(() =>
+  import("./research/Discovery.tsx").then((module) => ({
+    default: module.Discovery,
+  })),
+);
 const Inbox = lazy(() =>
   import("./monitoring/Inbox.tsx").then((module) => ({
     default: module.Inbox,
@@ -261,6 +266,10 @@ function WorkspaceApp() {
               </Suspense>
             ) : route === "settings" ? (
               <Settings />
+            ) : route === "discover" ? (
+              <Suspense fallback={<p role="status">Loading Discover…</p>}>
+                <Discovery />
+              </Suspense>
             ) : (
               <Suspense fallback={<p role="status">Loading research…</p>}>
                 <Research />

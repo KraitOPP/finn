@@ -8,6 +8,7 @@ export const destinations = [
   ["watchlists", "Watchlists"],
   ["inbox", "Inbox"],
   ["research", "Research"],
+  ["discover", "Discover"],
   ["settings", "Settings"],
 ] as const;
 export type Route = (typeof destinations)[number][0];
