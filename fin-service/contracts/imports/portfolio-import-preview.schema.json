@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:finn:contracts:portfolio-import-preview:0.2.0",
+  "title": "FINN normalized portfolio import preview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "previewOnly", "accountId", "sourceKind", "sourceFormat", "reportKind", "sourceMappingStatus", "mappingVersion", "parserVersion", "batchStatus", "sourceArtifact", "rows", "warnings"],
+  "properties": {
+    "contractVersion": {"const": "0.2.0"},
+    "previewOnly": {"const": true},
+    "accountId": {"$ref": "#/$defs/nonempty"},
+    "sourceKind": {"enum": ["GROWW_REPORT", "MANUAL", "SYNTHETIC"]},
+    "sourceFormat": {"enum": ["XLSX", "MANUAL", "SYNTHETIC"]},
+    "reportKind": {"enum": ["EXECUTED_TRADES", "ORDER_HISTORY", "HOLDINGS_SNAPSHOT", "CASH_STATEMENT", "UNCLASSIFIED"]},
+    "sourceMappingStatus": {"enum": ["UNVERIFIED", "VALIDATED"]},
+    "mappingVersion": {"type": ["string", "null"], "minLength": 1},
+    "parserVersion": {"type": ["string", "null"], "minLength": 1},
+    "batchStatus": {"enum": ["MAPPING_REQUIRED", "READY_FOR_REVIEW", "VALIDATION_FAILED"]},
+    "sourceArtifact": {"$ref": "#/$defs/sourceArtifact"},
+    "reportedHoldingsSummary": {"$ref": "#/$defs/holdingValues"},
+    "rows": {"type": "array", "maxItems": 100000, "items": {"oneOf": [{"$ref": "#/$defs/tradeRow"}, {"$ref": "#/$defs/holdingRow"}, {"$ref": "#/$defs/cashRow"}, {"$ref": "#/$defs/orderRow"}, {"$ref": "#/$defs/rejectedRow"}]}},
+    "warnings": {"type": "array", "items": {"$ref": "#/$defs/code"}}
+  },
+  "allOf": [
+    {"if": {"required": ["reportedHoldingsSummary"]}, "then": {"properties": {"reportKind": {"const": "HOLDINGS_SNAPSHOT"}}}},
+    {"if": {"properties": {"sourceKind": {"const": "GROWW_REPORT"}}, "required": ["sourceKind"]}, "then": {"properties": {"sourceFormat": {"const": "XLSX"}}}},
+    {
+      "if": {"properties": {"sourceMappingStatus": {"const": "UNVERIFIED"}}, "required": ["sourceMappingStatus"]},
+      "then": {"properties": {"batchStatus": {"const": "MAPPING_REQUIRED"}, "rows": {"items": {"properties": {"status": {"enum": ["REVIEW_REQUIRED", "REJECTED", "NON_POSTING"]}}}}}}
+    },
+    {
+      "if": {"properties": {"sourceMappingStatus": {"const": "VALIDATED"}}, "required": ["sourceMappingStatus"]},
+      "then": {"properties": {"mappingVersion": {"$ref": "#/$defs/nonempty"}, "parserVersion": {"$ref": "#/$defs/nonempty"}}}
+    },
+    {"if": {"properties": {"reportKind": {"const": "HOLDINGS_SNAPSHOT"}}}, "then": {"properties": {"rows": {"items": {"oneOf": [{"$ref": "#/$defs/holdingRow"}, {"$ref": "#/$defs/rejectedRow"}]}}}}},
+    {"if": {"properties": {"reportKind": {"const": "EXECUTED_TRADES"}}}, "then": {"properties": {"rows": {"items": {"oneOf": [{"$ref": "#/$defs/tradeRow"}, {"$ref": "#/$defs/rejectedRow"}]}}}}},
+    {"if": {"properties": {"reportKind": {"const": "CASH_STATEMENT"}}}, "then": {"properties": {"rows": {"items": {"oneOf": [{"$ref": "#/$defs/cashRow"}, {"$ref": "#/$defs/rejectedRow"}]}}}}},
+    {"if": {"properties": {"reportKind": {"const": "ORDER_HISTORY"}}}, "then": {"properties": {"rows": {"items": {"oneOf": [{"$ref": "#/$defs/orderRow"}, {"$ref": "#/$defs/rejectedRow"}]}}}}}
+  ],
+  "$defs": {
+    "nonempty": {"type": "string", "minLength": 1, "maxLength": 200},
+    "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,79}$"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "decimal": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+    "signedDecimal": {"type": "string", "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+    "positiveDecimal": {"type": "string", "pattern": "^(0\\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\\.[0-9]+)?)$", "maxLength": 80},
+    "date": {"type": "string", "format": "date"},
+    "nullableDate": {"oneOf": [{"$ref": "#/$defs/date"}, {"type": "null"}]},
+    "nullableInstant": {"oneOf": [{"type": "string", "format": "date-time", "pattern": "Z$"}, {"type": "null"}]},
+    "sourceArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sha256", "displayName", "asOfDate", "periodStart", "periodEnd"],
+      "properties": {
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "displayName": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\/\\\\\\u0000-\\u001f]+$"},
+        "asOfDate": {"$ref": "#/$defs/nullableDate"},
+        "periodStart": {"$ref": "#/$defs/nullableDate"},
+        "periodEnd": {"$ref": "#/$defs/nullableDate"}
+      }
+    },
+    "listingReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["listingId", "exchange", "symbol", "isin"],
+      "properties": {
+        "listingId": {"type": ["string", "null"], "minLength": 1},
+        "exchange": {"enum": ["NSE", "BSE", null]},
+        "symbol": {"type": ["string", "null"], "minLength": 1, "maxLength": 100},
+        "isin": {"oneOf": [{"type": "string", "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"}, {"type": "null"}]}
+      }
+    },
+    "rowBase": {
+      "type": "object",
+      "required": ["rowId", "sourceRowNumber", "sourceFingerprint", "status", "issues"],
+      "properties": {
+        "rowId": {"$ref": "#/$defs/nonempty"},
+        "sourceRowNumber": {"type": "integer", "minimum": 1},
+        "sourceSheet": {"oneOf": [{"type": "string", "minLength": 1, "maxLength": 31}, {"type": "null"}]},
+        "sourceFingerprint": {"$ref": "#/$defs/sha256"},
+        "status": {"enum": ["ACCEPTABLE", "REVIEW_REQUIRED", "REJECTED", "DUPLICATE", "NON_POSTING"]},
+        "issues": {"type": "array", "items": {"$ref": "#/$defs/code"}}
+      }
+    },
+    "tradeRow": {
+      "allOf": [
+        {"$ref": "#/$defs/rowBase"},
+        {"required": ["kind", "listing", "side", "tradeDate", "executedAt", "quantity", "price", "currency", "charges", "sourceExecutionId", "sourceOrderId"],
+         "properties": {
+           "kind": {"const": "TRADE"}, "listing": {"$ref": "#/$defs/listingReference"},
+           "side": {"enum": ["BUY", "SELL"]}, "tradeDate": {"$ref": "#/$defs/date"}, "executedAt": {"$ref": "#/$defs/nullableInstant"},
+           "quantity": {"$ref": "#/$defs/positiveDecimal"}, "price": {"$ref": "#/$defs/positiveDecimal"}, "currency": {"const": "INR"},
+           "charges": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+           "sourceExecutionId": {"type": ["string", "null"], "minLength": 1}, "sourceOrderId": {"type": ["string", "null"], "minLength": 1}
+         }}
+      ], "unevaluatedProperties": false
+    },
+    "holdingValues": {
+      "description": "Source-reported snapshot amounts, not live prices, recomputed accounting or historical returns. Null means absent. Reconciliation is a Java domain check; source discrepancies must remain visible.",
+      "type": "object", "additionalProperties": false,
+      "required": ["buyValue", "closingValue", "unrealisedPnl"],
+      "properties": {
+        "buyValue": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "closingValue": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "unrealisedPnl": {"oneOf": [{"$ref": "#/$defs/signedDecimal"}, {"type": "null"}]}
+      }
+    },
+    "holdingRow": {
+      "allOf": [
+        {"$ref": "#/$defs/rowBase"},
+        {"required": ["kind", "listing", "asOfDate", "quantity", "averageCost", "currency", "historyCoverage"],
+         "properties": {
+           "kind": {"const": "OPENING_HOLDING"}, "listing": {"$ref": "#/$defs/listingReference"}, "asOfDate": {"$ref": "#/$defs/date"},
+           "quantity": {"$ref": "#/$defs/decimal"}, "averageCost": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+           "reportedName": {"type": "string", "minLength": 1, "maxLength": 256},
+           "reportedValues": {"$ref": "#/$defs/holdingValues"},
+           "reportedClosingPrice": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+           "currency": {"const": "INR"}, "historyCoverage": {"const": "SNAPSHOT_ONLY"}
+         }}
+      ], "unevaluatedProperties": false
+    },
+    "cashRow": {
+      "allOf": [
+        {"$ref": "#/$defs/rowBase"},
+        {"required": ["kind", "valueDate", "direction", "amount", "currency", "cashCategory", "sourceTransactionId"],
+         "properties": {
+           "kind": {"const": "CASH_MOVEMENT"}, "valueDate": {"$ref": "#/$defs/date"}, "direction": {"enum": ["CREDIT", "DEBIT"]},
+           "amount": {"$ref": "#/$defs/positiveDecimal"}, "currency": {"const": "INR"},
+           "cashCategory": {"enum": ["DEPOSIT", "WITHDRAWAL", "FEE", "DIVIDEND", "UNCLASSIFIED"]},
+           "sourceTransactionId": {"type": ["string", "null"], "minLength": 1}
+         }}
+      ], "unevaluatedProperties": false
+    },
+    "rejectedRow": {
+      "allOf": [
+        {"$ref": "#/$defs/rowBase"},
+        {"required": ["kind"], "properties": {"kind": {"const": "REJECTED_INPUT"}, "status": {"const": "REJECTED"}, "issues": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/code"}}}}
+      ], "unevaluatedProperties": false
+    },
+    "orderRow": {
+      "allOf": [
+        {"$ref": "#/$defs/rowBase"},
+        {"required": ["kind", "listing", "sourceOrderId", "orderStatus", "postingEligibility"],
+         "properties": {
+           "kind": {"const": "ORDER_RECORD"}, "listing": {"$ref": "#/$defs/listingReference"},
+           "sourceOrderId": {"type": ["string", "null"], "minLength": 1}, "orderStatus": {"$ref": "#/$defs/nonempty"},
+           "postingEligibility": {"const": "NON_POSTING"}, "status": {"const": "NON_POSTING"}
+         }}
+      ], "unevaluatedProperties": false
+    }
+  }
+}

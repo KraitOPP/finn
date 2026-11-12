@@ -1,0 +1,36 @@
+{
+  "profileId": "groww-holdings-xlsx-v1",
+  "profileVersion": "1.0.0",
+  "layoutEvidence": "OBSERVED_SINGLE_SAMPLE",
+  "runtimeParserImplemented": true,
+  "automaticPostingAllowed": false,
+  "sourceKind": "GROWW_REPORT",
+  "sourceFormat": "XLSX",
+  "reportKind": "HOLDINGS_SNAPSHOT",
+  "worksheet": "Sheet1",
+  "caption": {"cell": "A4", "prefix": "Holdings statement for stocks as on ", "dateFormat": "dd-MM-uuuu", "authority": "WORKBOOK_CONTENT_NOT_FILENAME"},
+  "headerRow": 11,
+  "firstDataRow": 12,
+  "columns": [
+    {"column": "A", "header": "Stock Name", "target": "reportedName", "use": "DISPLAY_ONLY_NOT_IDENTITY"},
+    {"column": "B", "header": "ISIN", "target": "listing.isin", "use": "SECURITY_LOOKUP_NOT_EXCHANGE_SELECTION"},
+    {"column": "C", "header": "Quantity", "target": "quantity", "use": "NONNEGATIVE_WHOLE_UNITS"},
+    {"column": "D", "header": "Average buy price", "target": "averageCost", "use": "REPORTED_AVERAGE_NOT_TAX_LOTS"},
+    {"column": "E", "header": "Buy value", "target": "reportedValues.buyValue", "use": "RECONCILIATION_EVIDENCE"},
+    {"column": "F", "header": "Closing price", "target": "reportedClosingPrice", "use": "REPORT_DATE_ONLY_NOT_LIVE"},
+    {"column": "G", "header": "Closing value", "target": "reportedValues.closingValue", "use": "RECONCILIATION_EVIDENCE"},
+    {"column": "H", "header": "Unrealised P&L", "target": "reportedValues.unrealisedPnl", "use": "SIGNED_REPORTED_AMOUNT_NOT_RETURN"}
+  ],
+  "summary": [
+    {"labelCell": "A7", "label": "Invested Value", "valueCell": "B7", "target": "reportedHoldingsSummary.buyValue", "detailColumn": "E"},
+    {"labelCell": "A8", "label": "Closing Value", "valueCell": "B8", "target": "reportedHoldingsSummary.closingValue", "detailColumn": "G"},
+    {"labelCell": "A9", "label": "Unrealised P&L", "valueCell": "B9", "target": "reportedHoldingsSummary.unrealisedPnl", "detailColumn": "H"}
+  ],
+  "identity": {"exchangeProvided": false, "symbolProvided": false, "unresolvedListingPolicy": "REVIEW_REQUIRED"},
+  "currency": {"sourceProvidesExplicitCode": false, "requiredAccountCurrency": "INR", "confirmationRequired": true},
+  "numericInput": {"encoding": "OOXML_NUMERIC_TEXT", "javaType": "BigDecimal", "preserveSourcePrecision": true, "binaryFloatConversionAllowed": false},
+  "historyCoverage": "SNAPSHOT_ONLY",
+  "reconciliation": {"required": true, "comparisonTolerance": "0.01", "toleranceCurrency": "INR", "toleranceStatus": "PROVISIONAL_REVIEW_POLICY", "mismatchPolicy": "BLOCK_ACCEPTANCE_REQUIRE_REVIEW_PRESERVE_SOURCE"},
+  "excludedMetadataRanges": ["A1:B2"],
+  "requiredSafetyPolicy": "../README.md#xlsx-acceptance-policy"
+}

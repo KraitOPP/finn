@@ -1,0 +1,919 @@
+[
+  {
+    "caseId": "reject-number-price",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "close"
+        ],
+        "value": 102.5
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-zero-price",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "close"
+        ],
+        "value": "0"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-negative-volume",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "volume"
+        ],
+        "value": "-1"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-decimal-exponent",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "close"
+        ],
+        "value": "1e2"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-impossible-date",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "sessionDate"
+        ],
+        "value": "2030-02-30"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-non-utc-time",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "requestedAt"
+        ],
+        "value": "2030-01-02T15:28:00+05:30"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-unavailable-with-observation",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "availability"
+        ],
+        "value": "TEMPORARILY_UNAVAILABLE"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-unknown-delay-zero",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "provenance",
+          "delay"
+        ],
+        "value": {
+          "kind": "UNKNOWN",
+          "seconds": 0,
+          "basis": "UNKNOWN"
+        }
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-real-public-rights",
+    "baseCaseId": "capabilities-unverified",
+    "changes": [
+      {
+        "path": [
+          "rights",
+          "publicDisplayAllowed"
+        ],
+        "value": true
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-invented-metric",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "buyConfidence"
+        ],
+        "value": "0.99"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ohlc-range",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "close"
+        ],
+        "value": "106.00"
+      }
+    ],
+    "expectedError": "OHLC_RANGE"
+  },
+  {
+    "caseId": "reject-ohlc-order",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "low"
+        ],
+        "value": "110.00"
+      }
+    ],
+    "expectedError": "OHLC_ORDER"
+  },
+  {
+    "caseId": "reject-adjusted-without-basis",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "adjustedClose"
+        ],
+        "value": "101.00"
+      }
+    ],
+    "expectedError": "ADJUSTED_PRICE_BASIS_MISMATCH"
+  },
+  {
+    "caseId": "reject-enveloped-outcome",
+    "baseCaseId": "acquisition-partial",
+    "changes": [
+      {
+        "path": [
+          "outcome"
+        ],
+        "value": "COMPLETE"
+      }
+    ],
+    "expectedError": "ENVELOPE_OUTCOME_MISMATCH"
+  },
+  {
+    "caseId": "reject-source-provider-mismatch",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "provider"
+        ],
+        "value": "YAHOO_YFINANCE"
+      }
+    ],
+    "expectedError": "PROVIDER_IDENTITY_MISMATCH"
+  },
+  {
+    "caseId": "reject-real-in-demo-mode",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "provenance",
+          "provider"
+        ],
+        "value": "YAHOO_YFINANCE"
+      }
+    ],
+    "expectedError": "REAL_SOURCE_IN_SYNTHETIC_MODE"
+  },
+  {
+    "caseId": "reject-cross-exchange-identity",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "listing",
+          "exchange"
+        ],
+        "value": "BSE"
+      }
+    ],
+    "expectedError": "LISTING_IDENTITY_COLLISION"
+  },
+  {
+    "caseId": "reject-source-exchange-mismatch",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "provenance",
+          "provider"
+        ],
+        "value": "BSE_EOD_FILE"
+      }
+    ],
+    "expectedError": "SOURCE_EXCHANGE_MISMATCH"
+  },
+  {
+    "caseId": "reject-fabricated-missing-time",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "provenance",
+          "times",
+          "unknownTimeReasons"
+        ],
+        "value": []
+      }
+    ],
+    "expectedError": "UNKNOWN_TIME_REASON_MISMATCH"
+  },
+  {
+    "caseId": "reject-acquisition-time-reversal",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "completedAt"
+        ],
+        "value": "2030-01-02T09:57:00Z"
+      }
+    ],
+    "expectedError": "ACQUISITION_TIME_ORDER"
+  },
+  {
+    "caseId": "reject-source-time-in-future",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "provenance",
+          "times",
+          "publishedAt"
+        ],
+        "value": "2030-01-02T10:01:00Z"
+      }
+    ],
+    "expectedError": "SOURCE_TIME_AFTER_FIRST_SEEN"
+  },
+  {
+    "caseId": "reject-fresh-with-stale-session",
+    "baseCaseId": "quote-stale",
+    "changes": [
+      {
+        "path": [
+          "freshness",
+          "state"
+        ],
+        "value": "FRESH"
+      }
+    ],
+    "expectedError": "FRESHNESS_NOT_ESTABLISHED"
+  },
+  {
+    "caseId": "reject-unavailable-as-quote-zero",
+    "baseCaseId": "quote-unavailable",
+    "changes": [
+      {
+        "path": [
+          "observation"
+        ],
+        "value": {
+          "close": "0"
+        }
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-history-fake-complete",
+    "baseCaseId": "history-partial",
+    "changes": [
+      {
+        "path": [
+          "coverage",
+          "state"
+        ],
+        "value": "COMPLETE"
+      }
+    ],
+    "expectedError": "HISTORY_COVERAGE_NOT_ESTABLISHED"
+  },
+  {
+    "caseId": "reject-history-basis-switch",
+    "baseCaseId": "history-partial",
+    "changes": [
+      {
+        "path": [
+          "requestedBasis"
+        ],
+        "value": "AS_REPORTED_EXCHANGE"
+      }
+    ],
+    "expectedError": "HISTORY_BASIS_MISMATCH"
+  },
+  {
+    "caseId": "reject-history-date-range",
+    "baseCaseId": "history-partial",
+    "changes": [
+      {
+        "path": [
+          "from"
+        ],
+        "value": "2030-01-04"
+      }
+    ],
+    "expectedError": "INVALID_DATE_RANGE"
+  },
+  {
+    "caseId": "reject-history-fake-zero-coverage",
+    "baseCaseId": "history-partial",
+    "changes": [
+      {
+        "path": [
+          "coverage",
+          "availableSessions"
+        ],
+        "value": 0
+      }
+    ],
+    "expectedError": "HISTORY_COVERAGE_COUNT"
+  },
+  {
+    "caseId": "reject-history-unavailable-with-bars",
+    "baseCaseId": "history-partial",
+    "changes": [
+      {
+        "path": [
+          "availability"
+        ],
+        "value": "NOT_COVERED"
+      }
+    ],
+    "expectedError": "HISTORY_AVAILABILITY_MISMATCH"
+  },
+  {
+    "caseId": "reject-duplicate-capability",
+    "baseCaseId": "capabilities-unverified",
+    "changes": [
+      {
+        "path": [
+          "capabilities",
+          7,
+          "capability"
+        ],
+        "value": "QUOTE"
+      }
+    ],
+    "expectedError": "CAPABILITY_SET_MISMATCH"
+  },
+  {
+    "caseId": "reject-health-without-evidence",
+    "baseCaseId": "providers-unverified",
+    "changes": [
+      {
+        "path": [
+          "items",
+          0,
+          "health"
+        ],
+        "value": "HEALTHY"
+      }
+    ],
+    "expectedError": "HEALTH_WITHOUT_SUCCESS"
+  },
+  {
+    "caseId": "reject-wrong-error-status",
+    "baseCaseId": "problem-validation",
+    "changes": [
+      {
+        "path": [
+          "status"
+        ],
+        "value": 200
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-status-code-mismatch",
+    "baseCaseId": "problem-validation",
+    "changes": [
+      {
+        "path": [
+          "status"
+        ],
+        "value": 400
+      }
+    ],
+    "expectedError": "PROBLEM_STATUS_CODE_MISMATCH"
+  },
+  {
+    "caseId": "reject-token-in-source-link",
+    "baseCaseId": "acquisition-complete",
+    "changes": [
+      {
+        "path": [
+          "results",
+          0,
+          "observations",
+          0,
+          "provenance",
+          "sourceLocator"
+        ],
+        "value": "https://example.invalid/source?token=synthetic"
+      }
+    ],
+    "expectedError": "UNSAFE_SOURCE_LOCATOR"
+  },
+  {
+    "caseId": "reject-job-queued-start",
+    "baseCaseId": "job-queued",
+    "changes": [
+      {
+        "path": [
+          "startedAt"
+        ],
+        "value": "2030-01-02T10:01:00Z"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-job-running-finish",
+    "baseCaseId": "job-running",
+    "changes": [
+      {
+        "path": [
+          "finishedAt"
+        ],
+        "value": "2030-01-02T10:02:00Z"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-job-failed-code",
+    "baseCaseId": "job-failed",
+    "changes": [
+      {
+        "path": [
+          "failureCode"
+        ],
+        "value": null
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-job-finish-before-start",
+    "baseCaseId": "job-succeeded",
+    "changes": [
+      {
+        "path": [
+          "finishedAt"
+        ],
+        "value": "2030-01-02T10:00:30Z"
+      }
+    ],
+    "expectedError": "JOB_TIME_ORDER"
+  },
+  {
+    "caseId": "reject-job-update-before-create",
+    "baseCaseId": "job-queued",
+    "changes": [
+      {
+        "path": [
+          "updatedAt"
+        ],
+        "value": "2030-01-02T09:59:00Z"
+      }
+    ],
+    "expectedError": "JOB_TIME_ORDER"
+  },
+  {
+    "caseId": "reject-job-start-before-create",
+    "baseCaseId": "job-running",
+    "changes": [
+      {
+        "path": [
+          "startedAt"
+        ],
+        "value": "2030-01-02T09:59:00Z"
+      }
+    ],
+    "expectedError": "JOB_TIME_ORDER"
+  },
+  {
+    "caseId": "reject-job-zero-revision",
+    "baseCaseId": "job-queued",
+    "changes": [
+      {
+        "path": [
+          "revision"
+        ],
+        "value": 0
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-job-raw-exception",
+    "baseCaseId": "job-failed",
+    "changes": [
+      {
+        "path": [
+          "exception"
+        ],
+        "value": "fictional internal detail"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-job-unsafe-code",
+    "baseCaseId": "job-failed",
+    "changes": [
+      {
+        "path": [
+          "failureCode"
+        ],
+        "value": "fictional error with private row text"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-job-cancelled-finish",
+    "baseCaseId": "job-cancelled",
+    "changes": [
+      {
+        "path": [
+          "finishedAt"
+        ],
+        "value": null
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-job-partial-code",
+    "baseCaseId": "job-partially_succeeded",
+    "changes": [
+      {
+        "path": [
+          "failureCode"
+        ],
+        "value": null
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-session-contradiction",
+    "baseCaseId": "session-authenticated",
+    "changes": [
+      {
+        "path": [
+          "authenticated"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-session-secret-field",
+    "baseCaseId": "session-authenticated",
+    "changes": [
+      {
+        "path": [
+          "user",
+          "accessToken"
+        ],
+        "value": "nonfunctional-value"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-session-empty-csrf",
+    "baseCaseId": "session-authenticated",
+    "changes": [
+      {
+        "path": [
+          "csrf",
+          "token"
+        ],
+        "value": ""
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preferences-currency",
+    "baseCaseId": "preferences-update",
+    "changes": [
+      {
+        "path": [
+          "currency"
+        ],
+        "value": "USD"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preferences-owner",
+    "baseCaseId": "preferences-update",
+    "changes": [
+      {
+        "path": [
+          "ownerId"
+        ],
+        "value": "untrusted"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preferences-revision",
+    "baseCaseId": "preferences-update",
+    "changes": [
+      {
+        "path": [
+          "revision"
+        ],
+        "value": -1
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-unconfirmed-security",
+    "baseCaseId": "catalogue-security-input",
+    "changes": [
+      {
+        "path": [
+          "confirmed"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-catalogue-owner-override",
+    "baseCaseId": "catalogue-security-input",
+    "changes": [
+      {
+        "path": [
+          "ownerId"
+        ],
+        "value": "untrusted"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-unknown-account-coverage-date",
+    "baseCaseId": "source-account-unknown-history",
+    "changes": [
+      {
+        "path": [
+          "historyStartDate"
+        ],
+        "value": "2030-01-02"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-number-amount",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "event",
+          "amount"
+        ],
+        "value": 250.5
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-scientific-notation",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "event",
+          "amount"
+        ],
+        "value": "2.5e2"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-manual-reversal",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "event",
+          "kind"
+        ],
+        "value": "REVERSAL"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-ledger-invalid-idempotency",
+    "baseCaseId": "ledger-closing-cash-command",
+    "changes": [
+      {
+        "path": [
+          "idempotencyKey"
+        ],
+        "value": "not-a-uuid"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preview-numeric-buy-value",
+    "baseCaseId": "holdings-preview-mismatch",
+    "changes": [
+      {
+        "path": [
+          "rows",
+          0,
+          "source",
+          "buyValue"
+        ],
+        "value": 30.75
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-preview-account-metadata",
+    "baseCaseId": "holdings-preview-mismatch",
+    "changes": [
+      {
+        "path": [
+          "metadata",
+          "accountNumber"
+        ],
+        "value": "fictional-forbidden-identifier"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-acceptance-inr",
+    "baseCaseId": "holdings-confirmed-acceptance",
+    "changes": [
+      {
+        "path": [
+          "confirmInr"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-acceptance-venue",
+    "baseCaseId": "holdings-confirmed-acceptance",
+    "changes": [
+      {
+        "path": [
+          "retainUnresolvedListings"
+        ],
+        "value": false
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-acceptance-cost-mode",
+    "baseCaseId": "holdings-confirmed-acceptance",
+    "changes": [
+      {
+        "path": [
+          "costMode"
+        ],
+        "value": "ESTIMATE_COST"
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  },
+  {
+    "caseId": "reject-corporate-fractional-ratio-input",
+    "baseCaseId": "corporate-split-command",
+    "changes": [
+      {
+        "path": [
+          "ratioNumerator"
+        ],
+        "value": 1.5
+      }
+    ],
+    "expectedError": "SCHEMA_INVALID"
+  }
+]

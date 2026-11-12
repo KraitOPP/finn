@@ -1,0 +1,60 @@
+name: Verify backend
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "25.0.5+8"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13.9"
+      - name: Prepare external working directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/finn-workspace"
+          echo "FINN_WORKSPACE_ROOT=$RUNNER_TEMP/finn-workspace" >> "$GITHUB_ENV"
+          echo "PIP_CACHE_DIR=$RUNNER_TEMP/finn-workspace/cache/pip" >> "$GITHUB_ENV"
+      - name: Build and verify real PostgreSQL integration
+        run: node scripts/maven.mjs verify
+      - name: Verify encrypted database archive handling
+        run: node --test scripts/database-archive.test.mjs
+      - name: Verify contracts and synthetic runtime fixture
+        run: |
+          python -m venv "$FINN_WORKSPACE_ROOT/cache/contract-tools"
+          PYTHON="$FINN_WORKSPACE_ROOT/cache/contract-tools/bin/python"
+          "$PYTHON" -m pip install -r contracts/tooling/requirements-lock.txt
+          "$PYTHON" -B contracts/tooling/build_contracts.py --check
+          "$PYTHON" -B contracts/tooling/validate_contracts.py
+          "$PYTHON" -B contracts/tooling/validate_contracts.py --definition QuoteResponse --instance src/main/resources/demo/quote.json
+          "$PYTHON" -B -m unittest discover -s contracts/imports/tests
+      - name: Verify offline Yahoo adapter
+        run: |
+          python -m venv "$FINN_WORKSPACE_ROOT/cache/yahoo-tools"
+          PYTHON="$FINN_WORKSPACE_ROOT/cache/yahoo-tools/bin/python"
+          "$PYTHON" -m pip install -r integrations/yfinance/requirements.lock.txt
+          PYTHONPATH=integrations/yfinance/src "$PYTHON" -B -m unittest discover -s integrations/yfinance/tests
+      - name: Verify offline research PDF extraction
+        run: |
+          python -m venv "$FINN_WORKSPACE_ROOT/cache/research-pdf"
+          PYTHON="$FINN_WORKSPACE_ROOT/cache/research-pdf/bin/python"
+          "$PYTHON" -m pip install --no-deps --require-hashes --only-binary ':all:' -r integrations/research-pdf/requirements.lock.txt
+          "$PYTHON" -B -m unittest discover -s integrations/research-pdf/tests

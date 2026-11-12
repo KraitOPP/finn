@@ -1,0 +1,45 @@
+{
+  "contractVersion": "0.2.0",
+  "previewOnly": true,
+  "accountId": "synthetic-account",
+  "sourceKind": "SYNTHETIC",
+  "sourceFormat": "XLSX",
+  "reportKind": "HOLDINGS_SNAPSHOT",
+  "sourceMappingStatus": "UNVERIFIED",
+  "mappingVersion": null,
+  "parserVersion": null,
+  "batchStatus": "MAPPING_REQUIRED",
+  "sourceArtifact": {
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "displayName": "invented-holdings.xlsx",
+    "asOfDate": "2030-01-02",
+    "periodStart": null,
+    "periodEnd": null
+  },
+  "reportedHoldingsSummary": {
+    "buyValue": "200.50",
+    "closingValue": "199.50",
+    "unrealisedPnl": "-1.00"
+  },
+  "rows": [
+    {
+      "rowId": "synthetic-holding-row",
+      "sourceRowNumber": 12,
+      "sourceSheet": "Sheet1",
+      "sourceFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "status": "REVIEW_REQUIRED",
+      "issues": ["MAPPING_UNVERIFIED", "LISTING_UNRESOLVED", "CURRENCY_NOT_IN_SOURCE"],
+      "kind": "OPENING_HOLDING",
+      "listing": {"listingId": null, "exchange": null, "symbol": null, "isin": null},
+      "reportedName": "Invented demonstration security",
+      "asOfDate": "2030-01-02",
+      "quantity": "2",
+      "averageCost": "100.25",
+      "reportedClosingPrice": "99.75",
+      "reportedValues": {"buyValue": "200.50", "closingValue": "199.50", "unrealisedPnl": "-1.00"},
+      "currency": "INR",
+      "historyCoverage": "SNAPSHOT_ONLY"
+    }
+  ],
+  "warnings": ["SYNTHETIC_EXAMPLE_ONLY", "SNAPSHOT_HAS_NO_TRADE_HISTORY"]
+}

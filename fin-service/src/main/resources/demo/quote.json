@@ -1,0 +1,101 @@
+{
+  "contractVersion": "0.46.0",
+  "requestId": "demo-quote-1",
+  "listing": {
+    "listingId": "demo-nse-alpha",
+    "securityId": "demo-security-alpha",
+    "companyId": "demo-company-alpha",
+    "exchange": "NSE",
+    "segment": "CASH_EQUITY",
+    "series": "EQ",
+    "symbol": "DEMOALPHA",
+    "currency": "INR",
+    "isin": null
+  },
+  "freshness": {
+    "state": "STALE",
+    "evaluatedAt": "2030-01-04T10:00:00Z",
+    "expectedSessionDate": "2030-01-03",
+    "latestSessionDate": "2030-01-02",
+    "reasonCode": "SYNTHETIC_PRIOR_SESSION"
+  },
+  "selectionReason": "SYNTHETIC_STORED_EOD",
+  "warnings": [],
+  "availability": "AVAILABLE",
+  "observation": {
+    "observationId": "demo-observation-alpha-20300102",
+    "listing": {
+      "listingId": "demo-nse-alpha",
+      "securityId": "demo-security-alpha",
+      "companyId": "demo-company-alpha",
+      "exchange": "NSE",
+      "segment": "CASH_EQUITY",
+      "series": "EQ",
+      "symbol": "DEMOALPHA",
+      "currency": "INR",
+      "isin": null
+    },
+    "sessionDate": "2030-01-02",
+    "interval": "ONE_DAY",
+    "open": "100.00",
+    "high": "105.00",
+    "low": "99.00",
+    "close": "102.50",
+    "adjustedClose": null,
+    "volume": "1000",
+    "turnover": null,
+    "basis": {
+      "ohlcPrice": "PROVIDER_DEFINED",
+      "adjustedClose": null,
+      "volume": "PROVIDER_DEFINED",
+      "adjustmentAsOf": null
+    },
+    "finality": "UNKNOWN",
+    "provenance": {
+      "provider": "SYNTHETIC",
+      "providerInstrumentId": "GENERATED_DEMOALPHA",
+      "mappingVersion": "demo-map-1",
+      "adapterVersion": "synthetic-1",
+      "sourceName": "FINN generated EOD example",
+      "sourceLocator": "urn:finn:synthetic:alpha:2030-01-02",
+      "artifactSha256": null,
+      "sourceRevision": "demo-revision-1",
+      "parserVersion": "synthetic-1",
+      "sourceTimezone": "Asia/Kolkata",
+      "times": {
+        "observedAt": null,
+        "publishedAt": null,
+        "providerAvailableAt": null,
+        "firstSeenAt": "2030-01-02T09:59:00Z",
+        "ingestedAt": null,
+        "acceptedAt": null,
+        "unknownTimeReasons": [
+          "OBSERVATION_TIME_NOT_PROVIDED",
+          "PUBLICATION_TIME_NOT_PROVIDED",
+          "PROVIDER_AVAILABILITY_TIME_NOT_PROVIDED",
+          "NOT_YET_INGESTED",
+          "NOT_YET_ACCEPTED"
+        ]
+      },
+      "delay": {
+        "kind": "EOD",
+        "seconds": null,
+        "basis": "UNKNOWN"
+      },
+      "rights": {
+        "policyId": "synthetic-generated-v1",
+        "reviewedAt": "2029-12-31T00:00:00Z",
+        "retentionUntil": null,
+        "attribution": "FINN generated synthetic fixture; no real security or price.",
+        "mode": "SYNTHETIC_PUBLIC_DEMO",
+        "reviewStatus": "VERIFIED",
+        "publicDisplayAllowed": true,
+        "externalAiAllowed": false
+      },
+      "quality": "VALIDATED",
+      "qualityFlags": [
+        "SYNTHETIC_ONLY"
+      ]
+    }
+  }
+}
