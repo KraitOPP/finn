@@ -9,6 +9,7 @@ import { useResource } from "../api/useResource.ts";
 import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { AnchorEvidence, SourceLocation } from "./Evidence.tsx";
 import { EvidencePicker } from "./FinancialFacts.tsx";
+import { DeliveryComparison } from "./GuidanceDelivery.tsx";
 import {
   emptyTarget,
   MetricTargetFields,
@@ -165,11 +166,12 @@ function GuidanceVersion({ item }: { item: ManagementGuidance }) {
         <summary>Open the source statement</summary>
         {evidence && <AnchorEvidence id={item.anchorId} />}
       </details>
+      <DeliveryComparison item={item} />
     </article>
   );
 }
 
-export function GuidanceBounds({ item }: { item: ManagementGuidance }) {
+function GuidanceBounds({ item }: { item: ManagementGuidance }) {
   const dimensions = item.dimensions;
   if (!dimensions || (item.lower === null && item.upper === null)) return null;
   return (

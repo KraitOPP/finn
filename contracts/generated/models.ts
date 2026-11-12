@@ -402,7 +402,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.37.0") & (string);
+export type ContractVersion = ("0.38.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -601,6 +601,16 @@ export type Freshness = ({
 export type GuidanceCandidates = ({
   "evidence": (ResearchLocation);
   "printedNumbers": (Array<(string)>);
+});
+
+export type GuidanceDelivery = ({
+  "guidanceId": (OpaqueId);
+  "guidanceRevision": (number);
+  "asOf": (SessionDate);
+  "state": ("MET" | "MISSED" | "PARTIAL" | "WITHDRAWN" | "REVISED" | "NOT_DUE" | "INSUFFICIENT_EVIDENCE") & (string);
+  "reason": ("PERIOD_OPEN" | "FACT_MISSING" | "DIMENSIONS_MISMATCH" | "PUBLICATION_UNKNOWN" | "PUBLISHED_AFTER_CUTOFF" | "PERIOD_PUBLICATION_INVALID" | "SOURCE_REVISED" | "DERIVATION_REVIEW_REQUIRED" | "COMPARABLE_FACT" | "GUIDANCE_UNCONFIRMED" | "GUIDANCE_NOT_PUBLISHED" | "WITHDRAWAL_PUBLISHED" | "REVISION_PUBLISHED" | "QUALITATIVE_STATEMENT" | "OUTCOME_PREDATES_GUIDANCE" | "INTERIM_YTD_ONLY") & (string);
+  "actual": (((FinancialFact)) | ((null)));
+  "successor": (((ManagementGuidance)) | ((null)));
 });
 
 export type HistoryCoverage = ({
@@ -1881,6 +1891,7 @@ export interface ContractTypes {
   FinancialOperand: FinancialOperand;
   Freshness: Freshness;
   GuidanceCandidates: GuidanceCandidates;
+  GuidanceDelivery: GuidanceDelivery;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;
   HoldingsAcceptanceInput: HoldingsAcceptanceInput;

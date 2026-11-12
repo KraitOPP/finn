@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.37.0",
+  "contractVersion": "0.38.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "d72002ceb43ab990491371ead8868a1ffc4f2c56c8de959497af7be6716fe542",
+  "sourceSha256": "eb0730606ba97cb7443ee30edf98dff0e6d4cabe35e5cb0d1796ef262a18bb05",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -71,6 +71,7 @@
     "FinancialOperand",
     "Freshness",
     "GuidanceCandidates",
+    "GuidanceDelivery",
     "HistoryCoverage",
     "HistoryResponse",
     "HoldingsAcceptanceInput",

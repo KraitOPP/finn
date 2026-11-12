@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.37.0",
+  "contractVersion": "0.38.0",
   "openapiVersion": "3.1.1",
   "source": "finn-backend/contracts/public-api/openapi.json",
-  "sourceSha256": "d72002ceb43ab990491371ead8868a1ffc4f2c56c8de959497af7be6716fe542",
+  "sourceSha256": "eb0730606ba97cb7443ee30edf98dff0e6d4cabe35e5cb0d1796ef262a18bb05",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -72,6 +72,7 @@ export const contractMetadata = {
     "FinancialOperand",
     "Freshness",
     "GuidanceCandidates",
+    "GuidanceDelivery",
     "HistoryCoverage",
     "HistoryResponse",
     "HoldingsAcceptanceInput",
@@ -2269,7 +2270,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.37.0"
+    "const": "0.38.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3452,6 +3453,85 @@ export const contractSchemas = {
     "required": [
       "evidence",
       "printedNumbers"
+    ],
+    "additionalProperties": false
+  },
+  "GuidanceDelivery": {
+    "type": "object",
+    "properties": {
+      "guidanceId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "guidanceRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "asOf": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "MET",
+          "MISSED",
+          "PARTIAL",
+          "WITHDRAWN",
+          "REVISED",
+          "NOT_DUE",
+          "INSUFFICIENT_EVIDENCE"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "PERIOD_OPEN",
+          "FACT_MISSING",
+          "DIMENSIONS_MISMATCH",
+          "PUBLICATION_UNKNOWN",
+          "PUBLISHED_AFTER_CUTOFF",
+          "PERIOD_PUBLICATION_INVALID",
+          "SOURCE_REVISED",
+          "DERIVATION_REVIEW_REQUIRED",
+          "COMPARABLE_FACT",
+          "GUIDANCE_UNCONFIRMED",
+          "GUIDANCE_NOT_PUBLISHED",
+          "WITHDRAWAL_PUBLISHED",
+          "REVISION_PUBLISHED",
+          "QUALITATIVE_STATEMENT",
+          "OUTCOME_PREDATES_GUIDANCE",
+          "INTERIM_YTD_ONLY"
+        ]
+      },
+      "actual": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FinancialFact"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "successor": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ManagementGuidance"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "guidanceId",
+      "guidanceRevision",
+      "asOf",
+      "state",
+      "reason",
+      "actual",
+      "successor"
     ],
     "additionalProperties": false
   },
