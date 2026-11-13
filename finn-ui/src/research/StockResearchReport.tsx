@@ -248,6 +248,16 @@ function Decision({
   report: StockResearchReport;
 }) {
   const recommendation = recommendations[decision.stance];
+  const criticSupported = decision.assessments.filter(({ itemIndex }) =>
+    decision.checks.some(
+      (check) => check.itemIndex === itemIndex && check.verdict === "SUPPORTED",
+    ),
+  );
+  const bull = criticSupported.filter((item) => item.signal === "SUPPORTIVE");
+  const bear = criticSupported.filter((item) => item.signal === "ADVERSE");
+  const openChecks = decision.checks.filter(
+    (check) => check.verdict !== "SUPPORTED",
+  );
   const missing = Object.entries(factors).filter(
     ([factor]) =>
       !decision.assessments.some(
@@ -286,6 +296,45 @@ function Decision({
             </>
           )}
         </Typography>
+      )}
+      {decision.status === "REVIEWED" && criticSupported.length > 0 && (
+        <Box
+          sx={{
+            display: "grid",
+            gap: 1.5,
+            gridTemplateColumns: {
+              xs: "minmax(0, 1fr)",
+              md: "repeat(2, minmax(0, 1fr))",
+            },
+          }}
+        >
+          <CaseSummary
+            title="Bull case"
+            empty="No supportive factor passed the critic review."
+            items={bull}
+            report={report}
+          />
+          <CaseSummary
+            title="Bear case"
+            empty="No adverse factor passed the critic review."
+            items={bear}
+            report={report}
+          />
+        </Box>
+      )}
+      {openChecks.length > 0 && (
+        <ReportCard title="Unresolved questions">
+          <Stack component="ul" className="dashboard-list" spacing={1.25}>
+            {openChecks.map((check) => (
+              <li key={check.itemIndex}>
+                <Typography variant="body2">{check.verify}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {check.concern}
+                </Typography>
+              </li>
+            ))}
+          </Stack>
+        </ReportCard>
       )}
       <Box
         sx={{
@@ -345,6 +394,47 @@ function Decision({
         </Typography>
       )}
     </Stack>
+  );
+}
+
+function CaseSummary({
+  title,
+  empty,
+  items,
+  report,
+}: {
+  title: string;
+  empty: string;
+  items: StockResearchDecision["assessments"];
+  report: StockResearchReport;
+}) {
+  return (
+    <ReportCard title={title}>
+      {items.length ? (
+        <Stack component="ul" className="dashboard-list" spacing={1.25}>
+          {items.map(({ itemIndex, rationale }) => {
+            const item = report.items[itemIndex];
+            if (!item) return null;
+            return (
+              <li key={itemIndex}>
+                <Typography variant="body2">
+                  <strong>{titleOf(item)}</strong> · {rationale}
+                </Typography>
+                <CitationLinks
+                  sources={report.sources.filter((source) =>
+                    item.sourceIds.includes(source.id),
+                  )}
+                />
+              </li>
+            );
+          })}
+        </Stack>
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          {empty}
+        </Typography>
+      )}
+    </ReportCard>
   );
 }
 
