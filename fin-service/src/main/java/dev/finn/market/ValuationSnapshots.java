@@ -80,6 +80,10 @@ public class ValuationSnapshots {
     @Transactional
     public Detail detail(UUID portfolio,UUID account,UUID id){
         var owner=users.requireId();portfolios.requireAccount(owner,portfolio,account,false);
+        return detailForAccount(owner,account,id);
+    }
+
+    Detail detailForAccount(UUID owner,UUID account,UUID id){
         return jdbc.query("SELECT "+COLUMNS+",valuation FROM finn.valuation_snapshot WHERE owner_id=? AND account_id=? AND snapshot_id=?",
                 (row,index)->{String value=row.getString("valuation");return new Detail(point(row,index),value==null?null:json.readValue(value,Valuations.AccountValue.class));},
                 owner,account,id).stream().findFirst().orElseThrow(ApiFailure::notFound);

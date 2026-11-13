@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.56.0",
+  "contractVersion": "0.57.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "8911b1f9766a844511213e4b13c642109df63aafe0fe15f39a834d28d0be5cef",
+  "sourceSha256": "39ae543a58f3f5dfd91d6f2e32bd52a85dcda8cb03eef08cfcc8356330363c4c",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -99,6 +99,7 @@ export const contractMetadata = {
     "GuidanceDelivery",
     "HistoryCoverage",
     "HistoryResponse",
+    "HoldingContribution",
     "HoldingsAcceptanceInput",
     "HoldingsAcceptanceReceipt",
     "HoldingsComparison",
@@ -172,6 +173,7 @@ export const contractMetadata = {
     "PeerRankingRow",
     "PeerRankingSpecification",
     "PeerRankingSummary",
+    "PerformanceAttribution",
     "PerformanceFlow",
     "PerformanceSnapshotRef",
     "PerformanceValuation",
@@ -2464,7 +2466,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.56.0"
+    "const": "0.57.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -4643,6 +4645,44 @@ export const contractSchemas = {
     ],
     "additionalProperties": false,
     "description": "Ascending sessionDate/observationId order. ONE_DAY only. Never fill gaps with zero or a silent previous close. Cursors bind listing, range, basis and source-selection snapshot."
+  },
+  "HoldingContribution": {
+    "type": "object",
+    "properties": {
+      "securityId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "openingValue": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "closingValue": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "netTradeCash": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "dividends": {
+        "$ref": "#/components/schemas/NonNegativeDecimalString"
+      },
+      "contribution": {
+        "$ref": "#/components/schemas/DecimalString"
+      }
+    },
+    "required": [
+      "securityId",
+      "name",
+      "openingValue",
+      "closingValue",
+      "netTradeCash",
+      "dividends",
+      "contribution"
+    ],
+    "additionalProperties": false
   },
   "HoldingsAcceptanceInput": {
     "type": "object",
@@ -8451,6 +8491,43 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "PerformanceAttribution": {
+    "type": "object",
+    "properties": {
+      "state": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "INPUT_MISMATCH",
+          "LISTING_CHANGED",
+          "HOLDING_LIMIT"
+        ]
+      },
+      "holdings": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HoldingContribution"
+        },
+        "maxItems": 500
+      },
+      "standaloneFees": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "state",
+      "holdings",
+      "standaloneFees"
+    ],
+    "additionalProperties": false
+  },
   "PerformanceFlow": {
     "type": "object",
     "properties": {
@@ -9167,6 +9244,16 @@ export const contractSchemas = {
       },
       "benchmark": {
         "const": "NO_COMPATIBLE_BENCHMARK"
+      },
+      "attribution": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PerformanceAttribution"
+          },
+          {
+            "type": "null"
+          }
+        ]
       }
     },
     "required": [

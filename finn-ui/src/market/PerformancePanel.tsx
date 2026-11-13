@@ -1,5 +1,8 @@
+import Alert from "@mui/material/Alert";
+import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import type {
+  PerformanceAttribution,
   PortfolioPerformance,
   PortfolioPerformanceInput,
 } from "../../contracts/generated/models.ts";
@@ -113,6 +116,7 @@ function PerformanceResults({ result }: { result: PortfolioPerformance }) {
         withdrawals as end-of-day flows. Dividends stay inside portfolio cash.
       </p>
       <p>Benchmark comparison is unavailable for this window.</p>
+      {result.attribution && <ContributionTable report={result.attribution} />}
       <details>
         <summary>Saved valuations and cash flows</summary>
         {result.opening && (
@@ -163,6 +167,64 @@ function PerformanceResults({ result }: { result: PortfolioPerformance }) {
         )}
       </details>
     </div>
+  );
+}
+
+function ContributionTable({ report }: { report: PerformanceAttribution }) {
+  if (report.state !== "AVAILABLE") {
+    const reason = {
+      INPUT_MISMATCH:
+        "The holding breakdown could not be reconciled to the reviewed portfolio total.",
+      LISTING_CHANGED:
+        "An account used a different exchange listing at the two valuation dates.",
+      HOLDING_LIMIT:
+        "This window exceeds the 500-security limit for the breakdown.",
+    }[report.state];
+    return <Alert severity="info">{reason}</Alert>;
+  }
+  return (
+    <details open>
+      <summary>Contribution by holding</summary>
+      <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>
+        Each contribution is the change in holding value plus net trade cash and
+        recorded dividends. Deposits and withdrawals are excluded.
+      </Typography>
+      {report.holdings.length > 0 && (
+        <div className="data-table">
+          <table>
+            <caption>Largest contributions by absolute value</caption>
+            <thead>
+              <tr>
+                <th scope="col">Security</th>
+                <th scope="col">Opening value</th>
+                <th scope="col">Closing value</th>
+                <th scope="col">Net trade cash</th>
+                <th scope="col">Dividends</th>
+                <th scope="col">Contribution</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.holdings.map((row) => (
+                <tr key={row.securityId}>
+                  <th scope="row">{row.name}</th>
+                  <td>{money(row.openingValue)}</td>
+                  <td>{money(row.closingValue)}</td>
+                  <td>{money(row.netTradeCash)}</td>
+                  <td>{money(row.dividends)}</td>
+                  <td>
+                    <strong>{money(row.contribution)}</strong>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {report.holdings.length === 0 && (
+        <p>No holdings or security cash movements in this window.</p>
+      )}
+      <p>Account fees outside trades {money(report.standaloneFees)}</p>
+    </details>
   );
 }
 

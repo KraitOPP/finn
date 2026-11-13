@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.56.0",
+    "version": "0.57.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -20502,7 +20502,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.56.0"
+        "const": "0.57.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -22196,6 +22196,81 @@
         ],
         "additionalProperties": false
       },
+      "HoldingContribution": {
+        "type": "object",
+        "properties": {
+          "securityId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "openingValue": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "closingValue": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "netTradeCash": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "dividends": {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          "contribution": {
+            "$ref": "#/components/schemas/DecimalString"
+          }
+        },
+        "required": [
+          "securityId",
+          "name",
+          "openingValue",
+          "closingValue",
+          "netTradeCash",
+          "dividends",
+          "contribution"
+        ],
+        "additionalProperties": false
+      },
+      "PerformanceAttribution": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "INPUT_MISMATCH",
+              "LISTING_CHANGED",
+              "HOLDING_LIMIT"
+            ]
+          },
+          "holdings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoldingContribution"
+            },
+            "maxItems": 500
+          },
+          "standaloneFees": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "holdings",
+          "standaloneFees"
+        ],
+        "additionalProperties": false
+      },
       "PortfolioPerformance": {
         "type": "object",
         "properties": {
@@ -22289,6 +22364,16 @@
           },
           "benchmark": {
             "const": "NO_COMPATIBLE_BENCHMARK"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceAttribution"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

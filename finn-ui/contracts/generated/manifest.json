@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.56.0",
+  "contractVersion": "0.57.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "8911b1f9766a844511213e4b13c642109df63aafe0fe15f39a834d28d0be5cef",
+  "sourceSha256": "39ae543a58f3f5dfd91d6f2e32bd52a85dcda8cb03eef08cfcc8356330363c4c",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -98,6 +98,7 @@
     "GuidanceDelivery",
     "HistoryCoverage",
     "HistoryResponse",
+    "HoldingContribution",
     "HoldingsAcceptanceInput",
     "HoldingsAcceptanceReceipt",
     "HoldingsComparison",
@@ -171,6 +172,7 @@
     "PeerRankingRow",
     "PeerRankingSpecification",
     "PeerRankingSummary",
+    "PerformanceAttribution",
     "PerformanceFlow",
     "PerformanceSnapshotRef",
     "PerformanceValuation",

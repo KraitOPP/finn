@@ -408,7 +408,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.56.0") & (string);
+export type ContractVersion = ("0.57.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -787,6 +787,16 @@ export type HistoryResponse = ({
   "coverage": (HistoryCoverage);
   "freshness": (Freshness);
   "warnings": (Array<(Warning)>);
+});
+
+export type HoldingContribution = ({
+  "securityId": (OpaqueId);
+  "name": (string);
+  "openingValue": (NonNegativeDecimalString);
+  "closingValue": (NonNegativeDecimalString);
+  "netTradeCash": (DecimalString);
+  "dividends": (NonNegativeDecimalString);
+  "contribution": (DecimalString);
 });
 
 export type HoldingsAcceptanceInput = ({
@@ -1431,6 +1441,12 @@ export type PeerRankingSummary = ({
   "createdAt": (UtcInstant);
 });
 
+export type PerformanceAttribution = ({
+  "state": ("AVAILABLE" | "INPUT_MISMATCH" | "LISTING_CHANGED" | "HOLDING_LIMIT") & (string);
+  "holdings": (Array<(HoldingContribution)>);
+  "standaloneFees": (((NonNegativeDecimalString)) | ((null)));
+});
+
 export type PerformanceFlow = ({
   "date": (SessionDate);
   "deposits": (NonNegativeDecimalString);
@@ -1558,6 +1574,7 @@ export type PortfolioPerformance = ({
   "xirr": (ReturnMeasure);
   "timeWeighted": (ReturnMeasure);
   "benchmark": ("NO_COMPATIBLE_BENCHMARK");
+  "attribution"?: (((PerformanceAttribution)) | ((null)));
 });
 
 export type PortfolioPerformanceInput = ({
@@ -2786,6 +2803,7 @@ export interface ContractTypes {
   GuidanceDelivery: GuidanceDelivery;
   HistoryCoverage: HistoryCoverage;
   HistoryResponse: HistoryResponse;
+  HoldingContribution: HoldingContribution;
   HoldingsAcceptanceInput: HoldingsAcceptanceInput;
   HoldingsAcceptanceReceipt: HoldingsAcceptanceReceipt;
   HoldingsComparison: HoldingsComparison;
@@ -2859,6 +2877,7 @@ export interface ContractTypes {
   PeerRankingRow: PeerRankingRow;
   PeerRankingSpecification: PeerRankingSpecification;
   PeerRankingSummary: PeerRankingSummary;
+  PerformanceAttribution: PerformanceAttribution;
   PerformanceFlow: PerformanceFlow;
   PerformanceSnapshotRef: PerformanceSnapshotRef;
   PerformanceValuation: PerformanceValuation;

@@ -42,6 +42,9 @@ public final class PerformanceChecks {
                 .andExpect(jsonPath("$.opening.closingValue").value("1000"))
                 .andExpect(jsonPath("$.closing.closingValue").value("2210"))
                 .andExpect(jsonPath("$.investmentResult").value("310"))
+                .andExpect(jsonPath("$.attribution.state").value("AVAILABLE"))
+                .andExpect(jsonPath("$.attribution.holdings[0].contribution").value("310"))
+                .andExpect(jsonPath("$.attribution.holdings[0].dividends").value("50"))
                 .andExpect(jsonPath("$.recordedDividends").value("50"))
                 .andExpect(jsonPath("$.externalFlows.length()").value(2))
                 .andExpect(jsonPath("$.externalFlows[1].net").value("-100"))
@@ -50,6 +53,15 @@ public final class PerformanceChecks {
         event(mvc,account,end,"FEE",null,null,null,"1",null);
         submit(mvc,route,equity.owner(),window).andExpect(status().isOk())
                 .andExpect(jsonPath("$.coverage").value("ENDPOINT_VALUATIONS_MISSING"));
+        event(mvc,account,end,"SELL",equity.security(),"2","120",null,"2");
+        snapshot(mvc,account,start,start.plusDays(1));
+        snapshot(mvc,account,end,end.plusDays(1));
+        submit(mvc,route,equity.owner(),window).andExpect(status().isOk())
+                .andExpect(jsonPath("$.investmentResult").value("295"))
+                .andExpect(jsonPath("$.attribution.holdings[0].closingValue").value("1008"))
+                .andExpect(jsonPath("$.attribution.holdings[0].netTradeCash").value("238"))
+                .andExpect(jsonPath("$.attribution.holdings[0].contribution").value("296"))
+                .andExpect(jsonPath("$.attribution.standaloneFees").value("1"));
     }
 
     static void snapshot(MockMvc mvc,Account account,LocalDate start,LocalDate endExclusive)throws Exception{

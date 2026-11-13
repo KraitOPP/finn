@@ -33,7 +33,8 @@ class PortfolioPerformance {
     }
     record Result(UUID portfolioId,LocalDate start,LocalDate end,String currency,String methodology,String coverage,
                   Point opening,Point closing,List<Point> flowValuations,List<Flow> externalFlows,String recordedDividends,
-                  String investmentResult,PortfolioReturnMath.Measure xirr,PortfolioReturnMath.Measure timeWeighted,String benchmark) {}
+                  String investmentResult,PortfolioReturnMath.Measure xirr,PortfolioReturnMath.Measure timeWeighted,String benchmark,
+                  HoldingContribution.Breakdown attribution) {}
     record Inputs(String coverage,Map<LocalDate,Point> points,List<CashFlow> flows,BigDecimal dividends) {}
 
     private final JdbcTemplate jdbc;
@@ -42,9 +43,12 @@ class PortfolioPerformance {
     private final Journal journal;
     private final ValuationSnapshots snapshots;
     private final Valuations values;
+    private final HoldingContribution contributions;
 
-    PortfolioPerformance(JdbcTemplate jdbc,CurrentUser users,Portfolios portfolios,Journal journal,ValuationSnapshots snapshots,Valuations values){
-        this.jdbc=jdbc;this.users=users;this.portfolios=portfolios;this.journal=journal;this.snapshots=snapshots;this.values=values;
+    PortfolioPerformance(JdbcTemplate jdbc,CurrentUser users,Portfolios portfolios,Journal journal,ValuationSnapshots snapshots,
+                         Valuations values,HoldingContribution contributions){
+        this.jdbc=jdbc;this.users=users;this.portfolios=portfolios;this.journal=journal;this.snapshots=snapshots;
+        this.values=values;this.contributions=contributions;
     }
 
     @Transactional public Result report(UUID portfolio,Window window){
@@ -60,13 +64,16 @@ class PortfolioPerformance {
         var coverage=inputs.coverage();
         PortfolioReturnMath.Measure xirr,twr;
         String investmentResult=null;
+        HoldingContribution.Breakdown attribution=null;
         if(!coverage.equals("REVIEWED_WINDOW")||first==null||last==null){
             if(coverage.equals("REVIEWED_WINDOW"))coverage="ENDPOINT_VALUATIONS_MISSING";
             xirr=PortfolioReturnMath.Measure.unavailable(coverage);
             twr=xirr;
         }else{
             var net=flows.stream().map(CashFlow::net).reduce(BigDecimal.ZERO,BigDecimal::add);
-            investmentResult=text(last.closing().subtract(first.closing()).subtract(net));
+            var result=last.closing().subtract(first.closing()).subtract(net);
+            investmentResult=text(result);
+            attribution=contributions.calculate(owner,first,last,result);
             xirr=PortfolioReturnMath.xirr(start,first.closing(),end,last.closing(),flows);
             if(valued.size()!=required.size()){
                 twr=PortfolioReturnMath.Measure.unavailable("FLOW_DAY_VALUATION_MISSING");
@@ -75,7 +82,7 @@ class PortfolioPerformance {
             }
         }
         return new Result(portfolio,start,end,"INR",METHOD,coverage,first,last,valued,flows.stream().map(CashFlow::view).toList(),
-                inputs.dividends()==null?null:text(inputs.dividends()),investmentResult,xirr,twr,"NO_COMPATIBLE_BENCHMARK");
+                inputs.dividends()==null?null:text(inputs.dividends()),investmentResult,xirr,twr,"NO_COMPATIBLE_BENCHMARK",attribution);
     }
 
     Inputs inputs(UUID owner,UUID portfolio,Window window){

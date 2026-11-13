@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.56.0"
+VERSION = "0.57.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -245,12 +245,18 @@ def definitions() -> dict:
     d["ReturnMeasure"] = obj({"state":enum(["AVAILABLE","UNAVAILABLE"]),
         "reason":enum([*performance_coverage,"CALCULATED","FLOW_DAY_VALUATION_MISSING","NON_POSITIVE_BASE","CASH_FLOW_SIGNS",
             "AMBIGUOUS_CASH_FLOWS","OUTSIDE_SOLVER_RANGE"]),"percent":nullable(ref("DecimalString"))})
+    d["HoldingContribution"] = obj({"securityId":ref("OpaqueId"),"name":text(maxLength=120),
+        "openingValue":ref("NonNegativeDecimalString"),"closingValue":ref("NonNegativeDecimalString"),
+        "netTradeCash":ref("DecimalString"),"dividends":ref("NonNegativeDecimalString"),"contribution":ref("DecimalString")})
+    d["PerformanceAttribution"] = obj({"state":enum(["AVAILABLE","INPUT_MISMATCH","LISTING_CHANGED","HOLDING_LIMIT"]),
+        "holdings":array(ref("HoldingContribution"),maxItems=500),"standaloneFees":nullable(ref("NonNegativeDecimalString"))})
     d["PortfolioPerformance"] = obj({"portfolioId":ref("OpaqueId"),"start":ref("SessionDate"),"end":ref("SessionDate"),
         "currency":{"const":"INR"},"methodology":{"const":"cash-flow-returns-v1"},"coverage":enum(performance_coverage),
         "opening":nullable(ref("PerformanceValuation")),"closing":nullable(ref("PerformanceValuation")),
         "flowValuations":array(ref("PerformanceValuation"),maxItems=366),"externalFlows":array(ref("PerformanceFlow"),maxItems=366),
         "recordedDividends":nullable(ref("NonNegativeDecimalString")),"investmentResult":nullable(ref("DecimalString")),
-        "xirr":ref("ReturnMeasure"),"timeWeighted":ref("ReturnMeasure"),"benchmark":{"const":"NO_COMPATIBLE_BENCHMARK"}})
+        "xirr":ref("ReturnMeasure"),"timeWeighted":ref("ReturnMeasure"),"benchmark":{"const":"NO_COMPATIBLE_BENCHMARK"},
+        "attribution":nullable(ref("PerformanceAttribution"))},optional=("attribution",))
     health_gaps = ["NO_ACCOUNTS","PORTFOLIO_BUDGET","PRICES_MISSING","STALE_PRICES","MIXED_PRICE_SESSIONS"]
     health_sector = enum(["BANKING","FINANCIAL_SERVICES","MANUFACTURING","TECHNOLOGY","CONSUMER","ENERGY","OTHER","UNCLASSIFIED"])
     d["PortfolioHealthHolding"] = obj({"securityId":ref("OpaqueId"),"name":text(minLength=1,maxLength=120),"sector":health_sector,
