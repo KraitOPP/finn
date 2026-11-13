@@ -16,6 +16,10 @@ const categories = [
   "CAPITAL",
   "GOVERNANCE",
   "CORPORATE_ACTION",
+  "ORDERS",
+  "CREDIT",
+  "REGULATORY",
+  "OUTLOOK",
   "OTHER",
 ] as const;
 

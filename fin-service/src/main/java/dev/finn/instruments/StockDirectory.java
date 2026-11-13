@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
-class StockDirectory {
+public class StockDirectory {
     record Stock(String exchange,String symbol,String name,String series,String isin,LocalDate validFrom,String source) {
         String yahooSymbol() { return symbol+("NSE".equals(exchange)?".NS":".BO"); }
     }
@@ -75,6 +75,10 @@ class StockDirectory {
         }
         return upstream(symbol+suffix,exchange).items().stream().filter(stock->stock.symbol().equals(symbol))
                 .findFirst().orElseThrow(ApiFailure::notFound);
+    }
+
+    public String knownNseName(String symbol) {
+        return nse.stream().filter(stock->stock.symbol().equals(symbol)).map(Stock::name).findFirst().orElse(null);
     }
 
     private Results upstream(String query,String exchange) {

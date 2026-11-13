@@ -8,7 +8,10 @@ final class EventClassifier {
     enum Subtype {
         RESULTS("EARNINGS"), RESULTS_MEETING("EARNINGS"), BUYBACK("CAPITAL"), CAPITAL_RAISE("CAPITAL"),
         AUDITOR("GOVERNANCE"), GOVERNANCE("GOVERNANCE"), DIVIDEND("CORPORATE_ACTION"),
-        SPLIT_BONUS("CORPORATE_ACTION"), MERGER("CORPORATE_ACTION"), OTHER("OTHER");
+        SPLIT_BONUS("CORPORATE_ACTION"), MERGER("CORPORATE_ACTION"), ACQUISITION("CORPORATE_ACTION"),
+        ORDER("ORDERS"), RATING_DOWNGRADE("CREDIT"), RATING_CHANGE("CREDIT"),
+        MANAGEMENT_CHANGE("GOVERNANCE"), REGULATORY("REGULATORY"), GUIDANCE_CUT("OUTLOOK"),
+        GUIDANCE_UPDATE("OUTLOOK"), OTHER("OTHER");
 
         final String category;
         Subtype(String category) { this.category = category; }
@@ -18,6 +21,8 @@ final class EventClassifier {
     private static final Pattern CAPITAL = Pattern.compile("\\b(fund rais(e|ing)|capital rais(e|ing)|preferential issue|qualified institutional placement|rights issue)\\b");
     private static final Pattern BUYBACK = Pattern.compile("\\b(buy[ -]?back|share repurchase)\\b");
     private static final Pattern RESULTS = Pattern.compile("\\b(financial results|quarterly results|annual results|earnings results)\\b");
+    private static final Pattern ORDER = Pattern.compile("\\b(order win|order received|award of (an? )?(order|contract)|contract award|letter of award|work order)\\b");
+    private static final Pattern MANAGEMENT = Pattern.compile("\\b(appointment|resignation|retirement) of (the )?(a |an )?(chief|director|ceo|cfo|managing director)\\b");
 
     private EventClassifier() {}
 
@@ -25,6 +30,16 @@ final class EventClassifier {
         String value = title.toLowerCase(Locale.ROOT);
         boolean meeting = value.contains("meeting") || value.contains("intimation");
         if (value.contains("auditor")) return hint(Subtype.AUDITOR,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (value.contains("credit rating") || value.contains("credit-rating"))
+            return hint(value.contains("downgrad")?Subtype.RATING_DOWNGRADE:Subtype.RATING_CHANGE,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (value.contains("guidance"))
+            return hint(value.matches(".*\\b(cut|lowers?|reduced?|reduction|downgraded?)\\b.*")?Subtype.GUIDANCE_CUT:Subtype.GUIDANCE_UPDATE,
+                    "UNKNOWN","MEDIUM","UNKNOWN");
+        if (ORDER.matcher(value).find()) return hint(Subtype.ORDER,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (MANAGEMENT.matcher(value).find()) return hint(Subtype.MANAGEMENT_CHANGE,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (value.contains("regulatory action") || value.contains("regulatory approval") || value.contains("show cause notice"))
+            return hint(Subtype.REGULATORY,"UNKNOWN","MEDIUM","UNKNOWN");
+        if (value.contains("acquisition")) return hint(Subtype.ACQUISITION,"UNKNOWN","HIGH","UNKNOWN");
         if (BUYBACK.matcher(value).find()) return hint(Subtype.BUYBACK,"UNKNOWN","MEDIUM","UNKNOWN");
         if (CAPITAL.matcher(value).find()) return hint(Subtype.CAPITAL_RAISE,"UNKNOWN","MEDIUM","UNKNOWN");
         if (RESULTS.matcher(value).find()) {

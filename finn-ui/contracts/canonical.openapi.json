@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.50.0",
+    "version": "0.51.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -5302,6 +5302,379 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CompanyResearchOverview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/radar": {
+      "get": {
+        "operationId": "getMarketRadar",
+        "summary": "Rank reviewed company events and available completed-session signals",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "HELD",
+                "WATCHLIST"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ANNOUNCEMENTS",
+                "MOVES"
+              ]
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/DiscoverySector"
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CompanyEventType"
+            }
+          },
+          {
+            "name": "liquidity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "TURNOVER_1_CRORE",
+                "TURNOVER_10_CRORE"
+              ]
+            }
+          },
+          {
+            "name": "portfolioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketRadar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/radar/leads": {
+      "post": {
+        "operationId": "findRadarLeads",
+        "summary": "Find recent public NSE event leads for user review",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RadarLeads"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarLeadSearch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/portfolio-calendar": {
+      "get": {
+        "operationId": "getPortfolioCalendar",
+        "summary": "Read upcoming announced dates for recorded holdings",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "portfolioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RadarCalendar"
                 }
               }
             }
@@ -18476,7 +18849,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.50.0"
+        "const": "0.51.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -25518,6 +25891,29 @@
         ],
         "additionalProperties": false
       },
+      "CompanyEventType": {
+        "type": "string",
+        "enum": [
+          "RESULTS",
+          "RESULTS_MEETING",
+          "BUYBACK",
+          "CAPITAL_RAISE",
+          "AUDITOR",
+          "GOVERNANCE",
+          "DIVIDEND",
+          "SPLIT_BONUS",
+          "MERGER",
+          "ACQUISITION",
+          "ORDER",
+          "RATING_DOWNGRADE",
+          "RATING_CHANGE",
+          "MANAGEMENT_CHANGE",
+          "REGULATORY",
+          "GUIDANCE_CUT",
+          "GUIDANCE_UPDATE",
+          "OTHER"
+        ]
+      },
       "EventSuggestion": {
         "type": "object",
         "properties": {
@@ -25528,6 +25924,10 @@
               "CAPITAL",
               "GOVERNANCE",
               "CORPORATE_ACTION",
+              "ORDERS",
+              "CREDIT",
+              "REGULATORY",
+              "OUTLOOK",
               "OTHER"
             ]
           },
@@ -25543,6 +25943,14 @@
               "DIVIDEND",
               "SPLIT_BONUS",
               "MERGER",
+              "ACQUISITION",
+              "ORDER",
+              "RATING_DOWNGRADE",
+              "RATING_CHANGE",
+              "MANAGEMENT_CHANGE",
+              "REGULATORY",
+              "GUIDANCE_CUT",
+              "GUIDANCE_UPDATE",
               "OTHER"
             ]
           },
@@ -25687,6 +26095,14 @@
               "DIVIDEND",
               "SPLIT_BONUS",
               "MERGER",
+              "ACQUISITION",
+              "ORDER",
+              "RATING_DOWNGRADE",
+              "RATING_CHANGE",
+              "MANAGEMENT_CHANGE",
+              "REGULATORY",
+              "GUIDANCE_CUT",
+              "GUIDANCE_UPDATE",
               "OTHER"
             ]
           },
@@ -25792,6 +26208,10 @@
               "CAPITAL",
               "GOVERNANCE",
               "CORPORATE_ACTION",
+              "ORDERS",
+              "CREDIT",
+              "REGULATORY",
+              "OUTLOOK",
               "OTHER"
             ]
           },
@@ -25807,6 +26227,14 @@
               "DIVIDEND",
               "SPLIT_BONUS",
               "MERGER",
+              "ACQUISITION",
+              "ORDER",
+              "RATING_DOWNGRADE",
+              "RATING_CHANGE",
+              "MANAGEMENT_CHANGE",
+              "REGULATORY",
+              "GUIDANCE_CUT",
+              "GUIDANCE_UPDATE",
               "OTHER"
             ]
           },
@@ -26216,6 +26644,10 @@
               "CAPITAL",
               "GOVERNANCE",
               "CORPORATE_ACTION",
+              "ORDERS",
+              "CREDIT",
+              "REGULATORY",
+              "OUTLOOK",
               "OTHER"
             ]
           },
@@ -26370,6 +26802,461 @@
         "required": [
           "items",
           "hasMore"
+        ],
+        "additionalProperties": false
+      },
+      "RadarStock": {
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "companyId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "listingId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 72
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "exchange": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "NSE",
+                  "BSE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscoverySector"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "held": {
+            "type": "boolean"
+          },
+          "watched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "companyName",
+          "companyId",
+          "listingId",
+          "symbol",
+          "exchange",
+          "sector",
+          "held",
+          "watched"
+        ],
+        "additionalProperties": false
+      },
+      "RadarAnnouncement": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/CompanyEvent"
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtcInstant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "event",
+          "publishedAt",
+          "sourceUrl",
+          "sourceName"
+        ],
+        "additionalProperties": false
+      },
+      "RadarMovement": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "previousSession": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "changePercent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volumeMultiple": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "medianTurnover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unusualPrice": {
+            "type": "boolean"
+          },
+          "unusualVolume": {
+            "type": "boolean"
+          },
+          "baselineSessions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 21
+          }
+        },
+        "required": [
+          "session",
+          "previousSession",
+          "changePercent",
+          "volumeMultiple",
+          "medianTurnover",
+          "unusualPrice",
+          "unusualVolume",
+          "baselineSessions"
+        ],
+        "additionalProperties": false
+      },
+      "RadarEntry": {
+        "type": "object",
+        "properties": {
+          "stock": {
+            "$ref": "#/components/schemas/RadarStock"
+          },
+          "announcement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RadarAnnouncement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "movement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RadarMovement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sectorMove": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "peers": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 59
+                  },
+                  "medianChangePercent": {
+                    "$ref": "#/components/schemas/DecimalString"
+                  }
+                },
+                "required": [
+                  "peers",
+                  "medianChangePercent"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 150
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "points": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 40
+                }
+              },
+              "required": [
+                "label",
+                "points"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 9
+          }
+        },
+        "required": [
+          "stock",
+          "announcement",
+          "movement",
+          "sectorMove",
+          "score",
+          "reasons"
+        ],
+        "additionalProperties": false
+      },
+      "MarketRadar": {
+        "type": "object",
+        "properties": {
+          "asOf": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "listingsChecked": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
+          "listingsWithRecentPrices": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
+          "listingLimitReached": {
+            "type": "boolean"
+          },
+          "holdingsCoverage": {
+            "type": "string",
+            "enum": [
+              "NO_RECORDS",
+              "PARTIAL",
+              "RECORDED_ACCOUNTS"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RadarEntry"
+            },
+            "maxItems": 50
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "asOf",
+          "listingsChecked",
+          "listingsWithRecentPrices",
+          "listingLimitReached",
+          "holdingsCoverage",
+          "items",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "RadarCalendarEntry": {
+        "type": "object",
+        "properties": {
+          "stock": {
+            "$ref": "#/components/schemas/RadarStock"
+          },
+          "event": {
+            "$ref": "#/components/schemas/CompanyEvent"
+          },
+          "date": {
+            "$ref": "#/components/schemas/AnnouncedEventDate"
+          }
+        },
+        "required": [
+          "stock",
+          "event",
+          "date"
+        ],
+        "additionalProperties": false
+      },
+      "RadarCalendar": {
+        "type": "object",
+        "properties": {
+          "asOf": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "holdingsCoverage": {
+            "type": "string",
+            "enum": [
+              "NO_RECORDS",
+              "PARTIAL",
+              "RECORDED_ACCOUNTS"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RadarCalendarEntry"
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "asOf",
+          "holdingsCoverage",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "RadarLeadSearch": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "eventType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyEventType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "days",
+          "eventType"
+        ],
+        "additionalProperties": false
+      },
+      "RadarLeads": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "symbol": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 36
+                },
+                "companyName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "eventType": {
+                  "$ref": "#/components/schemas/CompanyEventType"
+                },
+                "publishedOn": {
+                  "$ref": "#/components/schemas/SessionDate"
+                },
+                "headline": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "detail": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "url": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000,
+                  "pattern": "^https://"
+                }
+              },
+              "required": [
+                "symbol",
+                "companyName",
+                "eventType",
+                "publishedOn",
+                "headline",
+                "detail",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 5
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       },

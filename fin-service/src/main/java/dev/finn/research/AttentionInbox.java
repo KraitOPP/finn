@@ -26,7 +26,7 @@ class AttentionInbox {
         }
     }
     private record Security(UUID id,UUID company,String name) {}
-    private record Exposure(String coverage,Map<UUID,List<Holding>> byCompany) {}
+    record Exposure(String coverage,Map<UUID,List<Holding>> byCompany) {}
     private static final Feedback DEFAULT = new Feedback(null,false,null);
     private static final ZoneId INDIA=ZoneId.of("Asia/Kolkata");
     private static final int PAGE=25;
@@ -53,7 +53,7 @@ class AttentionInbox {
                     feedback.put(row.getObject("event_id",UUID.class),new Feedback(row.getObject("read_revision",Integer.class),
                             row.getBoolean("muted"),row.getObject("snoozed_until",OffsetDateTime.class)));
                 },owner);
-        var exposure=current.isEmpty()?new Exposure("NO_RECORDS",Map.of()):exposure(owner,now.atZone(INDIA).toLocalDate());
+        var exposure=current.isEmpty()?new Exposure("NO_RECORDS",Map.of()):exposure(owner,now.atZone(INDIA).toLocalDate(),null);
         List<Item> ordered=current.stream()
                 .map(event->item(event,exposure.byCompany().getOrDefault(event.companyId(),List.of()),
                         feedback.getOrDefault(event.eventId(),DEFAULT).state(event.revision(),now)))
@@ -92,17 +92,17 @@ class AttentionInbox {
         return next.state(revision,now);
     }
 
-    private Exposure exposure(UUID owner,LocalDate today) {
+    Exposure exposure(UUID owner,LocalDate today,UUID portfolio) {
         var accounts=jdbc.query("""
                 SELECT a.account_id FROM finn.investment_account a JOIN finn.portfolio p USING(owner_id,portfolio_id)
-                WHERE a.owner_id=? AND NOT p.archived ORDER BY a.created_at,a.account_id LIMIT 21
-                """,(row,i)->row.getObject(1,UUID.class),owner);
+                WHERE a.owner_id=? AND NOT p.archived AND (?::uuid IS NULL OR p.portfolio_id=?)
+                ORDER BY a.created_at,a.account_id LIMIT 21
+                """,(row,i)->row.getObject(1,UUID.class),owner,portfolio,portfolio);
         if (accounts.isEmpty()) return new Exposure("NO_RECORDS",Map.of());
         int events=jdbc.queryForObject("SELECT count(*) FROM (SELECT 1 FROM finn.ledger_event WHERE owner_id=? LIMIT 30001) n",Integer.class,owner);
         if (events>30000) return new Exposure("PARTIAL",Map.of());
         var securities=jdbc.query("""
-                SELECT s.security_id,s.company_id,s.name FROM finn.security s WHERE s.owner_id=? AND EXISTS(
-                    SELECT 1 FROM finn.company_event e WHERE e.owner_id=s.owner_id AND e.company_id=s.company_id)
+                SELECT s.security_id,s.company_id,s.name FROM finn.security s WHERE s.owner_id=?
                 ORDER BY s.security_id LIMIT 5001
                 """,(row,i)->new Security(row.getObject(1,UUID.class),row.getObject(2,UUID.class),row.getString(3)),owner);
         var wanted=new HashMap<UUID,Security>();

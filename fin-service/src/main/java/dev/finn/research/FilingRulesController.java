@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/research")
 class FilingRulesController {
     record Input(UUID companyId,@NotBlank @Size(max=80) String title,
-                 @NotNull @Pattern(regexp="ANY|EARNINGS|CAPITAL|GOVERNANCE|CORPORATE_ACTION|OTHER") String category,
+                 @NotNull @Pattern(regexp="ANY|EARNINGS|CAPITAL|GOVERNANCE|CORPORATE_ACTION|ORDERS|CREDIT|REGULATORY|OUTLOOK|OTHER") String category,
                  @NotNull @Pattern(regexp="ANY|MEDIUM|HIGH") String minimumMateriality,
                  @NotNull Boolean arrivals,@NotNull Boolean dates,@NotNull Boolean tentative) {}
     record Change(@NotNull @Min(1) Integer expectedRevision,@NotNull Boolean enabled) {}

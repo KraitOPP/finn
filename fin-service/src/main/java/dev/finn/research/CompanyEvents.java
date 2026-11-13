@@ -35,7 +35,7 @@ public class CompanyEvents {
                             String materiality,String novelty) {}
 
     static final String SELECT = """
-            SELECT v.*,e.company_id,c.name AS company_name,s.title AS source_title
+            SELECT v.*,e.company_id,c.name AS company_name,s.title AS source_title,s.url,s.source_name,s.published_at
             FROM finn.company_event_version v
             JOIN finn.company_event e ON e.owner_id=v.owner_id AND e.event_id=v.event_id
             JOIN finn.company c ON c.owner_id=e.owner_id AND c.company_id=e.company_id

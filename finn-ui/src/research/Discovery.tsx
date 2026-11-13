@@ -4,6 +4,8 @@ import Chip from "@mui/material/Chip";
 import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import { useId, useState } from "react";
 import type {
@@ -26,10 +28,57 @@ import {
 import { AnchorEvidence } from "./Evidence.tsx";
 import { FactLabels, factAmount, metricLabels } from "./FinancialFacts.tsx";
 import { SavedScreens } from "./SavedScreens.tsx";
+import { Radar } from "./Radar.tsx";
 import { factReasons } from "./ThesisConditions.tsx";
 
 const path = "/api/v1/discovery";
 export function Discovery() {
+  const id = useId();
+  const [view, setView] = useState("radar");
+  return (
+    <section className="workspace-section">
+      <RouteHeading>Discover</RouteHeading>
+      <Paper variant="outlined" sx={{ mb: 2 }}>
+        <Tabs
+          value={view}
+          aria-label="Discover views"
+          onChange={(_, next: string) => setView(next)}
+        >
+          <Tab
+            label="Market radar"
+            value="radar"
+            id={`${id}-radar-tab`}
+            aria-controls={`${id}-radar`}
+          />
+          <Tab
+            label="Fundamentals screens"
+            value="screens"
+            id={`${id}-screens-tab`}
+            aria-controls={`${id}-screens`}
+          />
+        </Tabs>
+      </Paper>
+      <div
+        role="tabpanel"
+        id={`${id}-radar`}
+        aria-labelledby={`${id}-radar-tab`}
+        hidden={view !== "radar"}
+      >
+        {view === "radar" && <Radar />}
+      </div>
+      <div
+        role="tabpanel"
+        id={`${id}-screens`}
+        aria-labelledby={`${id}-screens-tab`}
+        hidden={view !== "screens"}
+      >
+        {view === "screens" && <Fundamentals />}
+      </div>
+    </section>
+  );
+}
+
+function Fundamentals() {
   const id = useId();
   const directory = useResource("DiscoveryDirectory", `${path}/universe`);
   const [query, setQuery] = useState("");
@@ -42,8 +91,7 @@ export function Discovery() {
     (member) => member.active,
   ).length;
   return (
-    <section className="workspace-section">
-      <RouteHeading>Discover</RouteHeading>
+    <div>
       <Typography color="text.secondary" sx={{ maxWidth: "68ch", mb: 3 }}>
         Build a stock shortlist from companies you add and financial figures you
         review in Research. Check a reporting period, save filters for a sector,
@@ -180,7 +228,7 @@ export function Discovery() {
         </Paper>
       </Stack>
       {directory.value && <SavedScreens metrics={directory.value.metrics} />}
-    </section>
+    </div>
   );
 }
 

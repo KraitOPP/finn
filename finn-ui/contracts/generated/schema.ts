@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.50.0",
+  "contractVersion": "0.51.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "bf6ef8338ffa857fa93107964ecf9956142551d9f8e89d19dfbfed52b00353ab",
+  "sourceSha256": "b5f5be7a153f1b98dd3cb4156863b2b4660f6b45f610cf7a80393a4829fc3e78",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -34,6 +34,7 @@ export const contractMetadata = {
     "CompanyEventHistory",
     "CompanyEventInput",
     "CompanyEventPage",
+    "CompanyEventType",
     "CompanyInput",
     "CompanyNewsCluster",
     "CompanyNewsInput",
@@ -142,6 +143,7 @@ export const contractMetadata = {
     "MarketChart",
     "MarketDiagnostics",
     "MarketFeed",
+    "MarketRadar",
     "NonNegativeDecimalString",
     "Notification",
     "NotificationAttempt",
@@ -204,6 +206,14 @@ export const contractMetadata = {
     "ProviderStatus",
     "ProviderStatusPage",
     "QuoteResponse",
+    "RadarAnnouncement",
+    "RadarCalendar",
+    "RadarCalendarEntry",
+    "RadarEntry",
+    "RadarLeadSearch",
+    "RadarLeads",
+    "RadarMovement",
+    "RadarStock",
     "ReminderEdit",
     "ReminderEvidence",
     "ReminderList",
@@ -1616,6 +1626,10 @@ export const contractSchemas = {
           "CAPITAL",
           "GOVERNANCE",
           "CORPORATE_ACTION",
+          "ORDERS",
+          "CREDIT",
+          "REGULATORY",
+          "OUTLOOK",
           "OTHER"
         ]
       },
@@ -1631,6 +1645,14 @@ export const contractSchemas = {
           "DIVIDEND",
           "SPLIT_BONUS",
           "MERGER",
+          "ACQUISITION",
+          "ORDER",
+          "RATING_DOWNGRADE",
+          "RATING_CHANGE",
+          "MANAGEMENT_CHANGE",
+          "REGULATORY",
+          "GUIDANCE_CUT",
+          "GUIDANCE_UPDATE",
           "OTHER"
         ]
       },
@@ -1776,6 +1798,14 @@ export const contractSchemas = {
           "DIVIDEND",
           "SPLIT_BONUS",
           "MERGER",
+          "ACQUISITION",
+          "ORDER",
+          "RATING_DOWNGRADE",
+          "RATING_CHANGE",
+          "MANAGEMENT_CHANGE",
+          "REGULATORY",
+          "GUIDANCE_CUT",
+          "GUIDANCE_UPDATE",
           "OTHER"
         ]
       },
@@ -1853,6 +1883,29 @@ export const contractSchemas = {
       "hasMore"
     ],
     "additionalProperties": false
+  },
+  "CompanyEventType": {
+    "type": "string",
+    "enum": [
+      "RESULTS",
+      "RESULTS_MEETING",
+      "BUYBACK",
+      "CAPITAL_RAISE",
+      "AUDITOR",
+      "GOVERNANCE",
+      "DIVIDEND",
+      "SPLIT_BONUS",
+      "MERGER",
+      "ACQUISITION",
+      "ORDER",
+      "RATING_DOWNGRADE",
+      "RATING_CHANGE",
+      "MANAGEMENT_CHANGE",
+      "REGULATORY",
+      "GUIDANCE_CUT",
+      "GUIDANCE_UPDATE",
+      "OTHER"
+    ]
   },
   "CompanyInput": {
     "type": "object",
@@ -2367,7 +2420,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.50.0"
+    "const": "0.51.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3272,6 +3325,10 @@ export const contractSchemas = {
           "CAPITAL",
           "GOVERNANCE",
           "CORPORATE_ACTION",
+          "ORDERS",
+          "CREDIT",
+          "REGULATORY",
+          "OUTLOOK",
           "OTHER"
         ]
       },
@@ -3287,6 +3344,14 @@ export const contractSchemas = {
           "DIVIDEND",
           "SPLIT_BONUS",
           "MERGER",
+          "ACQUISITION",
+          "ORDER",
+          "RATING_DOWNGRADE",
+          "RATING_CHANGE",
+          "MANAGEMENT_CHANGE",
+          "REGULATORY",
+          "GUIDANCE_CUT",
+          "GUIDANCE_UPDATE",
           "OTHER"
         ]
       },
@@ -3465,6 +3530,10 @@ export const contractSchemas = {
           "CAPITAL",
           "GOVERNANCE",
           "CORPORATE_ACTION",
+          "ORDERS",
+          "CREDIT",
+          "REGULATORY",
+          "OUTLOOK",
           "OTHER"
         ]
       },
@@ -7117,6 +7186,55 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "MarketRadar": {
+    "type": "object",
+    "properties": {
+      "asOf": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "listingsChecked": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 60
+      },
+      "listingsWithRecentPrices": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 60
+      },
+      "listingLimitReached": {
+        "type": "boolean"
+      },
+      "holdingsCoverage": {
+        "type": "string",
+        "enum": [
+          "NO_RECORDS",
+          "PARTIAL",
+          "RECORDED_ACCOUNTS"
+        ]
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RadarEntry"
+        },
+        "maxItems": 50
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "asOf",
+      "listingsChecked",
+      "listingsWithRecentPrices",
+      "listingLimitReached",
+      "holdingsCoverage",
+      "items",
+      "truncated"
+    ],
+    "additionalProperties": false
+  },
   "NonNegativeDecimalString": {
     "type": "string",
     "minLength": 1,
@@ -9877,6 +9995,412 @@ export const contractSchemas = {
         "additionalProperties": false
       }
     ]
+  },
+  "RadarAnnouncement": {
+    "type": "object",
+    "properties": {
+      "event": {
+        "$ref": "#/components/schemas/CompanyEvent"
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sourceUrl": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sourceName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
+    "required": [
+      "event",
+      "publishedAt",
+      "sourceUrl",
+      "sourceName"
+    ],
+    "additionalProperties": false
+  },
+  "RadarCalendar": {
+    "type": "object",
+    "properties": {
+      "asOf": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "holdingsCoverage": {
+        "type": "string",
+        "enum": [
+          "NO_RECORDS",
+          "PARTIAL",
+          "RECORDED_ACCOUNTS"
+        ]
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RadarCalendarEntry"
+        },
+        "maxItems": 20
+      }
+    },
+    "required": [
+      "asOf",
+      "holdingsCoverage",
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "RadarCalendarEntry": {
+    "type": "object",
+    "properties": {
+      "stock": {
+        "$ref": "#/components/schemas/RadarStock"
+      },
+      "event": {
+        "$ref": "#/components/schemas/CompanyEvent"
+      },
+      "date": {
+        "$ref": "#/components/schemas/AnnouncedEventDate"
+      }
+    },
+    "required": [
+      "stock",
+      "event",
+      "date"
+    ],
+    "additionalProperties": false
+  },
+  "RadarEntry": {
+    "type": "object",
+    "properties": {
+      "stock": {
+        "$ref": "#/components/schemas/RadarStock"
+      },
+      "announcement": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/RadarAnnouncement"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "movement": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/RadarMovement"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sectorMove": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "peers": {
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 59
+              },
+              "medianChangePercent": {
+                "$ref": "#/components/schemas/DecimalString"
+              }
+            },
+            "required": [
+              "peers",
+              "medianChangePercent"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "score": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 150
+      },
+      "reasons": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "points": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 40
+            }
+          },
+          "required": [
+            "label",
+            "points"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 9
+      }
+    },
+    "required": [
+      "stock",
+      "announcement",
+      "movement",
+      "sectorMove",
+      "score",
+      "reasons"
+    ],
+    "additionalProperties": false
+  },
+  "RadarLeadSearch": {
+    "type": "object",
+    "properties": {
+      "days": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 30
+      },
+      "eventType": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CompanyEventType"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "days",
+      "eventType"
+    ],
+    "additionalProperties": false
+  },
+  "RadarLeads": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "symbol": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36
+            },
+            "companyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "eventType": {
+              "$ref": "#/components/schemas/CompanyEventType"
+            },
+            "publishedOn": {
+              "$ref": "#/components/schemas/SessionDate"
+            },
+            "headline": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000,
+              "pattern": "^https://"
+            }
+          },
+          "required": [
+            "symbol",
+            "companyName",
+            "eventType",
+            "publishedOn",
+            "headline",
+            "detail",
+            "url"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 5
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "RadarMovement": {
+    "type": "object",
+    "properties": {
+      "session": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "previousSession": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "changePercent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "volumeMultiple": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "medianTurnover": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PositiveDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "unusualPrice": {
+        "type": "boolean"
+      },
+      "unusualVolume": {
+        "type": "boolean"
+      },
+      "baselineSessions": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 21
+      }
+    },
+    "required": [
+      "session",
+      "previousSession",
+      "changePercent",
+      "volumeMultiple",
+      "medianTurnover",
+      "unusualPrice",
+      "unusualVolume",
+      "baselineSessions"
+    ],
+    "additionalProperties": false
+  },
+  "RadarStock": {
+    "type": "object",
+    "properties": {
+      "companyName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "listingId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "symbol": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "exchange": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "NSE",
+              "BSE"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sector": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DiscoverySector"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "held": {
+        "type": "boolean"
+      },
+      "watched": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "companyName",
+      "companyId",
+      "listingId",
+      "symbol",
+      "exchange",
+      "sector",
+      "held",
+      "watched"
+    ],
+    "additionalProperties": false
   },
   "ReminderEdit": {
     "type": "object",

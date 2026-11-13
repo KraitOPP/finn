@@ -15,13 +15,13 @@ class CompanyEventsController {
                      @NotNull @Pattern(regexp="CONFIRMED|TENTATIVE|CANCELLED") String certainty) {}
     record Input(@NotNull UUID documentId,@NotNull @Min(1) @Max(50) Integer documentRevision,UUID eventId,
                  @Min(1) @Max(100) Integer expectedRevision,@NotBlank @Size(max=120) String title,@Size(max=80) String groupingKey,
-                 @NotNull @Pattern(regexp="RESULTS|RESULTS_MEETING|BUYBACK|CAPITAL_RAISE|AUDITOR|GOVERNANCE|DIVIDEND|SPLIT_BONUS|MERGER|OTHER") String subtype,
+                 @NotNull EventClassifier.Subtype subtype,
                  @NotNull @Pattern(regexp="ANNOUNCED|DECIDED|COMPLETED|CANCELLED|UNKNOWN") String stage,
                  @NotNull @Pattern(regexp="HIGH|MEDIUM|LOW|UNKNOWN") String materiality,
                  @NotNull @Pattern(regexp="NEW|FOLLOW_UP|CORRECTION|ROUTINE|UNKNOWN") String novelty,
                  @NotNull @AssertTrue Boolean reviewed,@Size(max=5) List<@NotNull @Valid DateInput> dates) {
         CompanyEvents.Input value() {
-            return new CompanyEvents.Input(documentId,documentRevision,eventId,expectedRevision,title,groupingKey,subtype,stage,materiality,novelty,
+            return new CompanyEvents.Input(documentId,documentRevision,eventId,expectedRevision,title,groupingKey,subtype.name(),stage,materiality,novelty,
                     dates==null?List.of():dates.stream().map(date->new CompanyEvents.AnnouncedDate(date.type(),date.date(),date.certainty())).toList());
         }
     }

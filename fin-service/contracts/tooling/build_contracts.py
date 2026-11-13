@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.50.0"
+VERSION = "0.51.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -608,8 +608,12 @@ def definitions() -> dict:
         "current":ref("FinancialFact"),"previous":ref("FinancialFact"),"change":nullable(ref("DecimalString")),
         "percentChange":nullable(ref("DecimalString")),
     })
-    event_category = enum(["EARNINGS","CAPITAL","GOVERNANCE","CORPORATE_ACTION","OTHER"])
-    event_subtype = enum(["RESULTS","RESULTS_MEETING","BUYBACK","CAPITAL_RAISE","AUDITOR","GOVERNANCE","DIVIDEND","SPLIT_BONUS","MERGER","OTHER"])
+    event_categories = ["EARNINGS","CAPITAL","GOVERNANCE","CORPORATE_ACTION","ORDERS","CREDIT","REGULATORY","OUTLOOK","OTHER"]
+    event_category = enum(event_categories)
+    event_subtype = enum(["RESULTS","RESULTS_MEETING","BUYBACK","CAPITAL_RAISE","AUDITOR","GOVERNANCE","DIVIDEND",
+                          "SPLIT_BONUS","MERGER","ACQUISITION","ORDER","RATING_DOWNGRADE","RATING_CHANGE","MANAGEMENT_CHANGE",
+                          "REGULATORY","GUIDANCE_CUT","GUIDANCE_UPDATE","OTHER"])
+    d["CompanyEventType"] = event_subtype
     event_revision = {"type":"integer","minimum":1,"maximum":100}
     classification = {
         "subtype": event_subtype, "stage": enum(["ANNOUNCED","DECIDED","COMPLETED","CANCELLED","UNKNOWN"]),
@@ -664,7 +668,7 @@ def definitions() -> dict:
     })
     d["FilingRuleSettings"] = obj({
         "companyId": nullable(ref("OpaqueId")), "title": text(maxLength=80),
-        "category": enum(["ANY","EARNINGS","CAPITAL","GOVERNANCE","CORPORATE_ACTION","OTHER"]),
+        "category": enum(["ANY", *event_categories]),
         "minimumMateriality": enum(["ANY","MEDIUM","HIGH"]),
         **{key: {"type":"boolean"} for key in ("arrivals","dates","tentative")},
     })
@@ -681,6 +685,43 @@ def definitions() -> dict:
         }),maxItems=40),
         "hasMore": {"type":"boolean"},
     })
+    d["RadarStock"] = obj({
+        "companyName": text(maxLength=120), "companyId":ref("OpaqueId"), "listingId":nullable(ref("OpaqueId")),
+        "symbol":nullable(text(maxLength=72)), "exchange":nullable(enum(["NSE","BSE"])),
+        "sector":nullable(ref("DiscoverySector")), "held":{"type":"boolean"}, "watched":{"type":"boolean"},
+    })
+    d["RadarAnnouncement"] = obj({
+        "event":ref("CompanyEvent"), "publishedAt":nullable(ref("UtcInstant")),
+        "sourceUrl":nullable(text(maxLength=1000)), "sourceName":text(maxLength=120),
+    })
+    d["RadarMovement"] = obj({
+        "session":ref("SessionDate"), "previousSession":ref("SessionDate"),
+        "changePercent":nullable(ref("DecimalString")), "volumeMultiple":nullable(ref("DecimalString")),
+        "medianTurnover":nullable(ref("PositiveDecimalString")), "unusualPrice":{"type":"boolean"},
+        "unusualVolume":{"type":"boolean"}, "baselineSessions":{"type":"integer","minimum":1,"maximum":21},
+    })
+    d["RadarEntry"] = obj({
+        "stock":ref("RadarStock"), "announcement":nullable(ref("RadarAnnouncement")),
+        "movement":nullable(ref("RadarMovement")),
+        "sectorMove":nullable(obj({"peers":{"type":"integer","minimum":3,"maximum":59},"medianChangePercent":ref("DecimalString")})),
+        "score":{"type":"integer","minimum":0,"maximum":150},
+        "reasons":array(obj({"label":text(maxLength=100),"points":{"type":"integer","minimum":0,"maximum":40}}),maxItems=9),
+    })
+    d["MarketRadar"] = obj({
+        "asOf":ref("SessionDate"), "listingsChecked":{"type":"integer","minimum":0,"maximum":60},
+        "listingsWithRecentPrices":{"type":"integer","minimum":0,"maximum":60},
+        "listingLimitReached":{"type":"boolean"}, "holdingsCoverage":enum(["NO_RECORDS","PARTIAL","RECORDED_ACCOUNTS"]),
+        "items":array(ref("RadarEntry"),maxItems=50), "truncated":{"type":"boolean"},
+    })
+    d["RadarCalendarEntry"] = obj({"stock":ref("RadarStock"),"event":ref("CompanyEvent"),"date":ref("AnnouncedEventDate")})
+    d["RadarCalendar"] = obj({"asOf":ref("SessionDate"),"holdingsCoverage":enum(["NO_RECORDS","PARTIAL","RECORDED_ACCOUNTS"]),
+                               "items":array(ref("RadarCalendarEntry"),maxItems=20)})
+    d["RadarLeadSearch"] = obj({"days":{"type":"integer","minimum":1,"maximum":30},"eventType":nullable(ref("CompanyEventType"))})
+    d["RadarLeads"] = obj({"items":array(obj({
+        "symbol":text(maxLength=36), "companyName":text(maxLength=120), "eventType":ref("CompanyEventType"),
+        "publishedOn":ref("SessionDate"), "headline":text(maxLength=160), "detail":text(maxLength=500),
+        "url":text(pattern=r"^https://",maxLength=4000),
+    }),maxItems=5)})
     d["EventReplay"] = obj({
         "mode": {"const":"SYNTHETIC_REPLAY"}, "runId": nullable(ref("OpaqueId")), "savedAt": nullable(ref("UtcInstant")),
         "events": array(obj({"attention": ref("AttentionItem"), "evidence": ref("CompanySourceDetail")}),maxItems=25),
@@ -1149,6 +1190,16 @@ def public_api_document() -> dict:
             parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/companies/{company}/overview":{"get":maintained(
             "getCompanyResearchOverview","Read company evidence coverage and reviewed highlights","CompanyResearchOverview",company_parameter)},
+        "/api/v1/discovery/radar":{"get":maintained("getMarketRadar","Rank reviewed company events and available completed-session signals","MarketRadar",[
+            parameter("days","query",{"type":"integer","minimum":1,"maximum":30}),
+            parameter("scope","query",enum(["ALL","HELD","WATCHLIST"])),
+            parameter("kind","query",enum(["ALL","ANNOUNCEMENTS","MOVES"])),
+            parameter("sector","query",ref("DiscoverySector")), parameter("eventType","query",ref("CompanyEventType")),
+            parameter("liquidity","query",enum(["ALL","TURNOVER_1_CRORE","TURNOVER_10_CRORE"])),
+            parameter("portfolioId","query",text(format="uuid"))])},
+        "/api/v1/discovery/radar/leads":{"post":maintained("findRadarLeads","Find recent public NSE event leads for user review","RadarLeads",input_name="RadarLeadSearch")},
+        "/api/v1/discovery/portfolio-calendar":{"get":maintained("getPortfolioCalendar","Read upcoming announced dates for recorded holdings","RadarCalendar",[
+            parameter("portfolioId","query",text(format="uuid"))])},
         "/api/v1/discovery/universe":{
             "get":maintained("readDiscoveryDirectory","Read manually reviewed companies and sector metric support","DiscoveryDirectory"),
             "post":maintained("saveDiscoveryMember","Review the sector and listing for a company","DiscoveryMember",input_name="DiscoveryMemberInput"),

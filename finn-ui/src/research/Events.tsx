@@ -12,7 +12,7 @@ import { AnnouncedDates, EditAnnouncedDates } from "./AnnouncedDates.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
 const path = "/api/v1/research/events";
-const subtypes: Record<CompanyEventInput["subtype"], string> = {
+export const eventTypes: Record<CompanyEventInput["subtype"], string> = {
   RESULTS: "Financial results",
   RESULTS_MEETING: "Results meeting notice",
   BUYBACK: "Buyback",
@@ -22,6 +22,14 @@ const subtypes: Record<CompanyEventInput["subtype"], string> = {
   DIVIDEND: "Dividend",
   SPLIT_BONUS: "Split or bonus",
   MERGER: "Merger or demerger",
+  ACQUISITION: "Acquisition",
+  ORDER: "Contract or order award",
+  RATING_DOWNGRADE: "Credit-rating downgrade",
+  RATING_CHANGE: "Other credit-rating change",
+  MANAGEMENT_CHANGE: "Management change",
+  REGULATORY: "Regulatory development",
+  GUIDANCE_CUT: "Guidance reduction",
+  GUIDANCE_UPDATE: "Other guidance update",
   OTHER: "Other or unknown",
 };
 const stages = [
@@ -117,7 +125,7 @@ export function CompanyEvents({ generation }: { generation: number }) {
 export function EventLabels({ event }: { event: CompanyEvent }) {
   return (
     <p>
-      {event.companyName} · {subtypes[event.subtype]} ·{" "}
+      {event.companyName} · {eventTypes[event.subtype]} ·{" "}
       {eventLabel(event.stage)} · {eventLabel(event.materiality)} materiality ·{" "}
       {eventLabel(event.novelty)}
     </p>
@@ -261,7 +269,7 @@ function EventForm({
             setNotice("");
           }}
         >
-          Use title suggestion: {subtypes[hint.value.subtype]}
+          Use title suggestion: {eventTypes[hint.value.subtype]}
         </button>
       )}
       <label>
@@ -321,7 +329,7 @@ function EventForm({
             )
           }
         >
-          {Object.entries(subtypes).map(([key, label]) => (
+          {Object.entries(eventTypes).map(([key, label]) => (
             <option key={key} value={key}>
               {label}
             </option>

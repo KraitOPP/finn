@@ -267,8 +267,8 @@ export type CompanyEvent = ({
   "documentRevision": (number);
   "sourceTitle": (string);
   "title": (string);
-  "category": ("EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "OTHER") & (string);
-  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "OTHER") & (string);
+  "category": ("EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "ORDERS" | "CREDIT" | "REGULATORY" | "OUTLOOK" | "OTHER") & (string);
+  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "ACQUISITION" | "ORDER" | "RATING_DOWNGRADE" | "RATING_CHANGE" | "MANAGEMENT_CHANGE" | "REGULATORY" | "GUIDANCE_CUT" | "GUIDANCE_UPDATE" | "OTHER") & (string);
   "stage": ("ANNOUNCED" | "DECIDED" | "COMPLETED" | "CANCELLED" | "UNKNOWN") & (string);
   "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
   "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
@@ -288,7 +288,7 @@ export type CompanyEventInput = ({
   "expectedRevision": (((number)) | ((null)));
   "title": (string);
   "groupingKey": (((string)) | ((null)));
-  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "OTHER") & (string);
+  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "ACQUISITION" | "ORDER" | "RATING_DOWNGRADE" | "RATING_CHANGE" | "MANAGEMENT_CHANGE" | "REGULATORY" | "GUIDANCE_CUT" | "GUIDANCE_UPDATE" | "OTHER") & (string);
   "stage": ("ANNOUNCED" | "DECIDED" | "COMPLETED" | "CANCELLED" | "UNKNOWN") & (string);
   "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
   "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
@@ -300,6 +300,8 @@ export type CompanyEventPage = ({
   "items": (Array<(CompanyEvent)>);
   "hasMore": (boolean);
 });
+
+export type CompanyEventType = ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "ACQUISITION" | "ORDER" | "RATING_DOWNGRADE" | "RATING_CHANGE" | "MANAGEMENT_CHANGE" | "REGULATORY" | "GUIDANCE_CUT" | "GUIDANCE_UPDATE" | "OTHER") & (string);
 
 export type CompanyInput = ({
   "name": (string);
@@ -404,7 +406,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.50.0") & (string);
+export type ContractVersion = ("0.51.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -562,8 +564,8 @@ export type EventReplay = ({
 });
 
 export type EventSuggestion = ({
-  "category": ("EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "OTHER") & (string);
-  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "OTHER") & (string);
+  "category": ("EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "ORDERS" | "CREDIT" | "REGULATORY" | "OUTLOOK" | "OTHER") & (string);
+  "subtype": ("RESULTS" | "RESULTS_MEETING" | "BUYBACK" | "CAPITAL_RAISE" | "AUDITOR" | "GOVERNANCE" | "DIVIDEND" | "SPLIT_BONUS" | "MERGER" | "ACQUISITION" | "ORDER" | "RATING_DOWNGRADE" | "RATING_CHANGE" | "MANAGEMENT_CHANGE" | "REGULATORY" | "GUIDANCE_CUT" | "GUIDANCE_UPDATE" | "OTHER") & (string);
   "stage": ("ANNOUNCED" | "DECIDED" | "COMPLETED" | "CANCELLED" | "UNKNOWN") & (string);
   "materiality": ("HIGH" | "MEDIUM" | "LOW" | "UNKNOWN") & (string);
   "novelty": ("NEW" | "FOLLOW_UP" | "CORRECTION" | "ROUTINE" | "UNKNOWN") & (string);
@@ -596,7 +598,7 @@ export type FilingRuleList = ({
 export type FilingRuleSettings = ({
   "companyId": (((OpaqueId)) | ((null)));
   "title": (string);
-  "category": ("ANY" | "EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "OTHER") & (string);
+  "category": ("ANY" | "EARNINGS" | "CAPITAL" | "GOVERNANCE" | "CORPORATE_ACTION" | "ORDERS" | "CREDIT" | "REGULATORY" | "OUTLOOK" | "OTHER") & (string);
   "minimumMateriality": ("ANY" | "MEDIUM" | "HIGH") & (string);
   "arrivals": (boolean);
   "dates": (boolean);
@@ -1202,6 +1204,16 @@ export type MarketFeed = ({
   "knownDelaySeconds": (null);
 });
 
+export type MarketRadar = ({
+  "asOf": (SessionDate);
+  "listingsChecked": (number);
+  "listingsWithRecentPrices": (number);
+  "listingLimitReached": (boolean);
+  "holdingsCoverage": ("NO_RECORDS" | "PARTIAL" | "RECORDED_ACCOUNTS") & (string);
+  "items": (Array<(RadarEntry)>);
+  "truncated": (boolean);
+});
+
 export type NonNegativeDecimalString = (string);
 
 export type Notification = ({
@@ -1717,6 +1729,79 @@ export type QuoteResponse = ((({
   "availability": ("NOT_YET_PUBLISHED" | "NO_TRADE" | "NOT_COVERED" | "TEMPORARILY_UNAVAILABLE" | "INVALID_DATA" | "UNKNOWN") & (string);
   "observation": (null);
 })));
+
+export type RadarAnnouncement = ({
+  "event": (CompanyEvent);
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "sourceUrl": (((string)) | ((null)));
+  "sourceName": (string);
+});
+
+export type RadarCalendar = ({
+  "asOf": (SessionDate);
+  "holdingsCoverage": ("NO_RECORDS" | "PARTIAL" | "RECORDED_ACCOUNTS") & (string);
+  "items": (Array<(RadarCalendarEntry)>);
+});
+
+export type RadarCalendarEntry = ({
+  "stock": (RadarStock);
+  "event": (CompanyEvent);
+  "date": (AnnouncedEventDate);
+});
+
+export type RadarEntry = ({
+  "stock": (RadarStock);
+  "announcement": (((RadarAnnouncement)) | ((null)));
+  "movement": (((RadarMovement)) | ((null)));
+  "sectorMove": ((({
+  "peers": (number);
+  "medianChangePercent": (DecimalString);
+})) | ((null)));
+  "score": (number);
+  "reasons": (Array<({
+  "label": (string);
+  "points": (number);
+})>);
+});
+
+export type RadarLeadSearch = ({
+  "days": (number);
+  "eventType": (((CompanyEventType)) | ((null)));
+});
+
+export type RadarLeads = ({
+  "items": (Array<({
+  "symbol": (string);
+  "companyName": (string);
+  "eventType": (CompanyEventType);
+  "publishedOn": (SessionDate);
+  "headline": (string);
+  "detail": (string);
+  "url": (string);
+})>);
+});
+
+export type RadarMovement = ({
+  "session": (SessionDate);
+  "previousSession": (SessionDate);
+  "changePercent": (((DecimalString)) | ((null)));
+  "volumeMultiple": (((DecimalString)) | ((null)));
+  "medianTurnover": (((PositiveDecimalString)) | ((null)));
+  "unusualPrice": (boolean);
+  "unusualVolume": (boolean);
+  "baselineSessions": (number);
+});
+
+export type RadarStock = ({
+  "companyName": (string);
+  "companyId": (OpaqueId);
+  "listingId": (((OpaqueId)) | ((null)));
+  "symbol": (((string)) | ((null)));
+  "exchange": ((("NSE" | "BSE") & (string)) | ((null)));
+  "sector": (((DiscoverySector)) | ((null)));
+  "held": (boolean);
+  "watched": (boolean);
+});
 
 export type ReminderEdit = ({
   "expectedRevision": (number);
@@ -2391,6 +2476,7 @@ export interface ContractTypes {
   CompanyEventHistory: CompanyEventHistory;
   CompanyEventInput: CompanyEventInput;
   CompanyEventPage: CompanyEventPage;
+  CompanyEventType: CompanyEventType;
   CompanyInput: CompanyInput;
   CompanyNewsCluster: CompanyNewsCluster;
   CompanyNewsInput: CompanyNewsInput;
@@ -2499,6 +2585,7 @@ export interface ContractTypes {
   MarketChart: MarketChart;
   MarketDiagnostics: MarketDiagnostics;
   MarketFeed: MarketFeed;
+  MarketRadar: MarketRadar;
   NonNegativeDecimalString: NonNegativeDecimalString;
   Notification: Notification;
   NotificationAttempt: NotificationAttempt;
@@ -2561,6 +2648,14 @@ export interface ContractTypes {
   ProviderStatus: ProviderStatus;
   ProviderStatusPage: ProviderStatusPage;
   QuoteResponse: QuoteResponse;
+  RadarAnnouncement: RadarAnnouncement;
+  RadarCalendar: RadarCalendar;
+  RadarCalendarEntry: RadarCalendarEntry;
+  RadarEntry: RadarEntry;
+  RadarLeadSearch: RadarLeadSearch;
+  RadarLeads: RadarLeads;
+  RadarMovement: RadarMovement;
+  RadarStock: RadarStock;
   ReminderEdit: ReminderEdit;
   ReminderEvidence: ReminderEvidence;
   ReminderList: ReminderList;
