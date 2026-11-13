@@ -32,14 +32,15 @@ import { EvidencePicker, factAmount, metricLabels } from "./FinancialFacts.tsx";
 import { DeliveryComparison } from "./GuidanceDelivery.tsx";
 import { sessionDate } from "./Radar.tsx";
 
-const qualityMetrics = [
-  "OPERATING_PROFIT",
-  "EXCEPTIONAL_ITEMS",
-  "OTHER_INCOME",
-  "TAX_EXPENSE",
-  "CASH_FROM_OPERATIONS",
-  "PROFIT_AFTER_TAX",
-];
+const qualityMetrics = {
+  PROFIT_AFTER_TAX: "Profit after tax",
+  OPERATING_PROFIT: "Operating profit",
+  CASH_FROM_OPERATIONS: "Operating cash flow",
+  EXCEPTIONAL_ITEMS: "Exceptional items as reported",
+  OTHER_INCOME: "Other income",
+  TAX_EXPENSE: "Tax expense",
+} as const;
+type QualityMetric = keyof typeof qualityMetrics;
 const inputMetrics = [
   "REVENUE",
   "OPERATING_PROFIT",
@@ -73,10 +74,6 @@ export function EarningsPanel({ company }: { company: string }) {
   });
   const data = useResource("EarningsReview", `${path}?${query}`);
   const report = data.value;
-  const drivers =
-    report?.metrics.filter(({ actual }) =>
-      qualityMetrics.includes(actual.dimensions.metric),
-    ) ?? [];
   function changeContext() {
     setEditing(false);
     setAppliedEnd("");
@@ -247,33 +244,7 @@ export function EarningsPanel({ company }: { company: string }) {
                 publication date.
               </Alert>
             )}
-            <Box>
-              <Typography
-                component="h4"
-                variant="subtitle1"
-                sx={{ fontWeight: 700 }}
-              >
-                Earnings quality
-              </Typography>
-              {drivers.length ? (
-                <Typography variant="body2" color="text.secondary">
-                  Review{" "}
-                  {drivers
-                    .map(({ actual }) =>
-                      metricLabels[actual.dimensions.metric].toLowerCase(),
-                    )
-                    .join(", ")}{" "}
-                  in the table. A comparison describes changes in reported
-                  lines. An earnings bridge requires a complete reconciliation
-                  from the filing.
-                </Typography>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Operating profit, cash flow, tax, other income and exceptional
-                  items appear as reviewed figures become available.
-                </Typography>
-              )}
-            </Box>
+            <EarningsQuality metrics={report.metrics} open={setAnchor} />
             <Box>
               <Typography
                 component="h4"
@@ -475,6 +446,91 @@ function ChangeCell({
         From <FactButton fact={value.previous} open={open} />
       </span>
     </>
+  );
+}
+
+function EarningsQuality({
+  metrics,
+  open,
+}: {
+  metrics: EarningsReview["metrics"];
+  open: (anchor: string) => void;
+}) {
+  const indexed = new Map(
+    metrics.map((item) => [item.actual.dimensions.metric, item]),
+  );
+  const comparisons = Object.keys(qualityMetrics).flatMap((key) => {
+    const item = indexed.get(key as QualityMetric);
+    return item?.yearOverYear
+      ? [
+          {
+            key: key as QualityMetric,
+            actual: item.actual,
+            change: item.yearOverYear,
+          },
+        ]
+      : [];
+  });
+  const direction = (change: EarningsChange) =>
+    change.difference === "0"
+      ? "flat"
+      : change.difference.startsWith("-")
+        ? "lower"
+        : "higher";
+  const profit = comparisons.find(
+    (item) => item.key === "PROFIT_AFTER_TAX",
+  )?.change;
+  const operating = comparisons.find(
+    (item) => item.key === "OPERATING_PROFIT",
+  )?.change;
+  const cash = comparisons.find(
+    (item) => item.key === "CASH_FROM_OPERATIONS",
+  )?.change;
+  const gaps = [
+    profit &&
+    direction(profit) === "higher" &&
+    operating &&
+    direction(operating) !== "higher"
+      ? `Reported profit rose while operating profit was ${direction(operating)}.`
+      : null,
+    profit &&
+    direction(profit) === "higher" &&
+    cash &&
+    direction(cash) !== "higher"
+      ? `Reported profit rose while operating cash flow was ${direction(cash)}.`
+      : null,
+  ].filter(Boolean);
+  return (
+    <Stack component="section" spacing={1} aria-label="Earnings quality">
+      <Typography component="h4" variant="subtitle1" sx={{ fontWeight: 700 }}>
+        Earnings quality
+      </Typography>
+      {gaps.length > 0 && <Alert severity="info">{gaps.join(" ")}</Alert>}
+      {comparisons.length > 0 ? (
+        <>
+          <Stack component="ul" className="dashboard-list" spacing={1}>
+            {comparisons.map(({ key, actual, change }) => (
+              <li key={key}>
+                <Typography variant="body2">
+                  <strong>{qualityMetrics[key]}</strong> · {direction(change)}{" "}
+                  year over year · <FactButton fact={actual} open={open} /> from{" "}
+                  <FactButton fact={change.previous} open={open} />
+                </Typography>
+              </li>
+            ))}
+          </Stack>
+          <Typography variant="caption" color="text.secondary">
+            These comparisons use the reported lines. A contribution to profit
+            requires a reconciliation from the filing.
+          </Typography>
+        </>
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          Add comparable prior-year figures to see changes in operations, cash
+          flow, taxes and exceptional items.
+        </Typography>
+      )}
+    </Stack>
   );
 }
 
