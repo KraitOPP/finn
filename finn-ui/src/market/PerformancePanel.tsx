@@ -190,7 +190,12 @@ function ContributionTable({ report }: { report: PerformanceAttribution }) {
         recorded dividends. Deposits and withdrawals are excluded.
       </Typography>
       {report.holdings.length > 0 && (
-        <div className="data-table">
+        <section
+          className="data-table contribution-table"
+          aria-label="Holding contributions"
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: Allow keyboard scrolling when the table exceeds the viewport.
+          tabIndex={0}
+        >
           <table>
             <caption>Largest contributions by absolute value</caption>
             <thead>
@@ -218,7 +223,7 @@ function ContributionTable({ report }: { report: PerformanceAttribution }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </section>
       )}
       {report.holdings.length === 0 && (
         <p>No holdings or security cash movements in this window.</p>

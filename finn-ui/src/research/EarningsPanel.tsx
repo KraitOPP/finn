@@ -196,7 +196,12 @@ export function EarningsPanel({ company }: { company: string }) {
               <Chip size="small" variant="outlined" label={currency} />
             </Stack>
             {report.metrics.length ? (
-              <div className="data-table">
+              <section
+                className="data-table research-table"
+                aria-label="Reviewed figures and changes"
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Allow keyboard scrolling when the table exceeds the viewport.
+                tabIndex={0}
+              >
                 <table>
                   <caption>Reviewed figures and changes</caption>
                   <thead>
@@ -235,7 +240,7 @@ export function EarningsPanel({ company }: { company: string }) {
                     )}
                   </tbody>
                 </table>
-              </div>
+              </section>
             ) : (
               <Alert severity="info">
                 Figures for this period need a current source and verified

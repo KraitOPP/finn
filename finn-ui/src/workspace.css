@@ -99,6 +99,86 @@ main {
   padding: 0;
   margin: 0;
 }
+.today-workspace {
+  display: grid;
+  gap: 18px;
+}
+.today-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-block: 4px 2px;
+}
+.today-heading .route-heading {
+  margin-block: 0 6px;
+}
+.brief-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.brief-metric {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: clamp(12px, 2vw, 20px);
+}
+.brief-metric span {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+.brief-metric strong {
+  color: var(--accent);
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.today-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+.today-card {
+  min-width: 0;
+  padding: clamp(14px, 2.5vw, 24px);
+  overflow-wrap: anywhere;
+}
+.brief-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.brief-rows > li {
+  padding-block: 9px;
+}
+.brief-rows > :where(li + li) {
+  border-top: 1px solid var(--border);
+}
+.research-table table {
+  min-width: 440px;
+  overflow-wrap: normal;
+}
+.contribution-table table {
+  min-width: 560px;
+  overflow-wrap: normal;
+  font-variant-numeric: tabular-nums;
+}
+.contribution-table tbody td {
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .today-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .brief-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .detail-card,
 .settings-card,
 .empty-state {
