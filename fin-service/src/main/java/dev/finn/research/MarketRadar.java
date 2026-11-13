@@ -83,9 +83,10 @@ class MarketRadar {
             if(signal!=null)signals.put(stock.companyId(),signal);
         }
         var caps=marketCapitalizations(owner,today);
-        var start=today.minusDays(filter.days()-1L).atStartOfDay(INDIA).toInstant();
+        var firstDay=today.minusDays(filter.days()-1L);
+        var start=firstDay.atStartOfDay(INDIA).toInstant();
         var entries=new ArrayList<Entry>();
-        var withEvents=new HashSet<UUID>();
+        var withPriceContext=new HashSet<UUID>();
         for(var announcement:announcements){
             var event=announcement.event();
             var stock=byCompany.get(event.companyId());
@@ -95,12 +96,14 @@ class MarketRadar {
             var signal=signals.get(stock.companyId());
             var cap=caps.get(stock.companyId());
             if(!liquid(signal,filter.liquidity())||!inSize(cap,filter.size()))continue;
+            if(signal!=null&&(!DailyMovement.recent(signal,stock.exchange(),today)||!nearSession(announcement,signal.session())))signal=null;
             entries.add(entry(stock,announcement,signal,benchmark(stock,signal,stocks,signals),cap,today));
-            withEvents.add(stock.companyId());
+            if(signal!=null)withPriceContext.add(stock.companyId());
         }
         if(filter.kind()!=Kind.ANNOUNCEMENTS&&filter.eventType()==null) for(var stock:eligible){
             var signal=signals.get(stock.companyId());
-            if(!withEvents.contains(stock.companyId())&&DailyMovement.recent(signal,stock.exchange(),today)
+            if(!withPriceContext.contains(stock.companyId())&&DailyMovement.recent(signal,stock.exchange(),today)
+                    &&(afterReview!=null||filter.days()==1||!signal.session().isBefore(firstDay))
                     &&(afterReview==null||signal.receivedAt().isAfter(afterReview))
                     &&(signal.unusualPrice()||signal.unusualVolume())&&liquid(signal,filter.liquidity())
                     &&inSize(caps.get(stock.companyId()),filter.size()))
@@ -167,15 +170,22 @@ class MarketRadar {
 
     static boolean fresh(Announcement announcement,Instant start,Instant now) {
         var event=announcement.event();
+        if(event.novelty().equals("ROUTINE")&&!event.stage().equals("CANCELLED"))return false;
         String time=event.novelty().equals("CORRECTION")||event.stage().equals("CANCELLED") ? event.reviewedAt() : announcement.publishedAt();
         if(time==null)return false;
         var date=Instant.parse(time);
         return !date.isBefore(start)&&!date.isAfter(now);
     }
 
+    private static boolean nearSession(Announcement announcement,LocalDate session){
+        if(announcement.publishedAt()==null)return false;
+        var published=Instant.parse(announcement.publishedAt()).atZone(INDIA).toLocalDate();
+        return !published.isAfter(session.plusDays(3))&&!published.isBefore(session.minusDays(3));
+    }
+
     private static boolean reviewedSince(CompanyEvents.Version event,Instant from,Instant through){
         var reviewed=Instant.parse(event.reviewedAt());
-        return !event.novelty().equals("ROUTINE")&&reviewed.isAfter(from)&&!reviewed.isAfter(through);
+        return (!event.novelty().equals("ROUTINE")||event.stage().equals("CANCELLED"))&&reviewed.isAfter(from)&&!reviewed.isAfter(through);
     }
 
     private static boolean sectorMatches(Context stock,Filter filter) {return filter.sector()==null||stock.sector()==filter.sector();}

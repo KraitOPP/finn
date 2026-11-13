@@ -23,6 +23,10 @@ public final class MarketRadarChecks {
         String fresh=saveSource(mvc,owner,company,now,"Fictional letter of award");
         event(mvc,owner,old,"Old award");
         event(mvc,owner,fresh,"Recent award");
+        ok(submit(mvc,"/api/v1/research/events",owner,"""
+                {"documentId":"%s","documentRevision":1,"title":"Repeated publication notice","subtype":"ORDER","stage":"ANNOUNCED",
+                 "materiality":"LOW","novelty":"ROUTINE","reviewed":true}
+                """.formatted(fresh)));
         var endpoint="/api/v1/discovery/radar?scope=WATCHLIST&eventType=ORDER&sector=MANUFACTURING&days=7";
         read(mvc,endpoint,owner).andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(1))

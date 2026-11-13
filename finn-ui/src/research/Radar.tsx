@@ -124,7 +124,9 @@ export function Radar({
             >
               {[1, 7, 14, 30].map((value) => (
                 <MenuItem key={value} value={value}>
-                  {value === 1 ? "Today" : `Last ${value} days`}
+                  {value === 1
+                    ? "Today / latest session"
+                    : `Last ${value} days`}
                 </MenuItem>
               ))}
             </TextField>
@@ -156,72 +158,87 @@ export function Radar({
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
-              select
-              label="Event type"
-              value={eventType}
-              disabled={kind === "MOVES"}
-              onChange={(event) =>
-                setEventType(event.target.value as typeof eventType)
-              }
-            >
-              <MenuItem value="">Any event</MenuItem>
-              {Object.entries(eventTypes).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Sector"
-              value={sector}
-              onChange={(event) =>
-                setSector(event.target.value as typeof sector)
-              }
-            >
-              <MenuItem value="">Any sector</MenuItem>
-              {Object.entries(sectors).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Liquidity"
-              value={liquidity}
-              onChange={(event) =>
-                setLiquidity(event.target.value as typeof liquidity)
-              }
-            >
-              {Object.entries(liquidityOptions).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-            {!portfolioId && (
+          </Box>
+          <details>
+            <summary>More filters</summary>
+            <Box className="radar-filters" sx={{ mt: 1.5 }}>
               <TextField
                 select
-                label="Company size"
-                value={size}
-                onChange={(event) => setSize(event.target.value as typeof size)}
+                label="Event type"
+                value={eventType}
+                disabled={kind === "MOVES"}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  select: { displayEmpty: true },
+                }}
+                onChange={(event) =>
+                  setEventType(event.target.value as typeof eventType)
+                }
               >
-                {Object.entries(sizes).map(([key, label]) => (
+                <MenuItem value="">Any event</MenuItem>
+                {Object.entries(eventTypes).map(([key, label]) => (
                   <MenuItem key={key} value={key}>
                     {label}
                   </MenuItem>
                 ))}
               </TextField>
+              <TextField
+                select
+                label="Sector"
+                value={sector}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  select: { displayEmpty: true },
+                }}
+                onChange={(event) =>
+                  setSector(event.target.value as typeof sector)
+                }
+              >
+                <MenuItem value="">Any sector</MenuItem>
+                {Object.entries(sectors).map(([key, label]) => (
+                  <MenuItem key={key} value={key}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Liquidity"
+                value={liquidity}
+                onChange={(event) =>
+                  setLiquidity(event.target.value as typeof liquidity)
+                }
+              >
+                {Object.entries(liquidityOptions).map(([key, label]) => (
+                  <MenuItem key={key} value={key}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              {!portfolioId && (
+                <TextField
+                  select
+                  label="Company size"
+                  value={size}
+                  onChange={(event) =>
+                    setSize(event.target.value as typeof size)
+                  }
+                >
+                  {Object.entries(sizes).map(([key, label]) => (
+                    <MenuItem key={key} value={key}>
+                      {label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            </Box>
+            {size !== "ALL" && (
+              <Typography variant="caption" color="text.secondary">
+                Size filters require a reviewed INR market cap dated within 90
+                days.
+              </Typography>
             )}
-          </Box>
-          {size !== "ALL" && (
-            <Typography variant="caption" color="text.secondary">
-              Size filters require a reviewed INR market cap dated within 90
-              days.
-            </Typography>
-          )}
+          </details>
           {resource.value && (
             <Stack
               direction="row"

@@ -153,7 +153,7 @@ export function ListingPrices({
         onChanged?.();
       } else {
         const endExclusive = sessionOffset(0);
-        const start = [sessionOffset(-14), listing.validFrom].sort()[1];
+        const start = [sessionOffset(-28), listing.validFrom].sort()[1];
         const result = await requestContract(
           "PriceFetchQueued",
           `${path}/refresh`,

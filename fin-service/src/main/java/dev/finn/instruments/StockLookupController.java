@@ -39,7 +39,7 @@ class StockLookupController {
         if(feed.lastAttemptAt()!=null&&Instant.parse(feed.lastAttemptAt()).isAfter(Instant.now().minusSeconds(1800)))
             return new Opened(listing,"RECENT");
         var today=StockDirectory.today();
-        var start=java.util.Collections.max(java.util.List.of(today.minusDays(14),listing.validFrom(),candidate.validFrom()));
+        var start=java.util.Collections.max(java.util.List.of(today.minusDays(28),listing.validFrom(),candidate.validFrom()));
         if(!start.isBefore(today)) return new Opened(listing,"UNAVAILABLE");
         try {
             prices.queue(listing.listingId(),start,today);
