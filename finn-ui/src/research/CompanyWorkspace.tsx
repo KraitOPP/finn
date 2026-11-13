@@ -227,6 +227,7 @@ function Overview({
                     path={path}
                     notes={notes}
                     reload={data.reload}
+                    showQuestions={target.view === "questions"}
                   />
                   <SearchEvidence company={company} />
                   {sources.map((source) => (
@@ -255,16 +256,18 @@ function ResearchNotes({
   path,
   notes,
   reload,
+  showQuestions,
 }: {
   company: string;
   path: string;
   notes: CompanyResearchNote[];
   reload: () => void;
+  showQuestions: boolean;
 }) {
   return (
     <>
       {Object.entries(labels).map(([kind, label]) => (
-        <details key={kind}>
+        <details key={kind} open={kind === "QUESTION" && showQuestions}>
           <summary>
             {label} (
             {

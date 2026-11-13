@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.54.0",
+  "contractVersion": "0.55.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "9d37031f708917450c0df0ff98bb1ea77948eab208e937b9c9b32cdee2c3ae5e",
+  "sourceSha256": "289fa53be48c6e0bd6dbe48154c5b94c9dd3bfec0dfe26dc99bfe33b04c246a2",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -2462,7 +2462,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.54.0"
+    "const": "0.55.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -8594,6 +8594,16 @@ export const contractSchemas = {
       },
       "truncated": {
         "type": "boolean"
+      },
+      "research": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TodayBriefing"
+          },
+          {
+            "type": "null"
+          }
+        ]
       }
     },
     "required": [

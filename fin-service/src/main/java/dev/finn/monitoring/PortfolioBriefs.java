@@ -4,6 +4,7 @@ package dev.finn.monitoring;
 import dev.finn.identity.CurrentUser;
 import dev.finn.platform.ApiFailure;
 import dev.finn.research.CompanyEvents;
+import dev.finn.research.TodayBriefing;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.*;
@@ -26,7 +27,8 @@ public class PortfolioBriefs {
     record SnapshotItem(UUID snapshotId, UUID portfolioId, UUID accountId, String accountName, LocalDate sessionDate,
                         String holdingsValue, String recordedValue, String status) {}
     public record Brief(String windowStart, String windowEnd, String timeZone, List<ActivityItem> items,
-                        List<SnapshotItem> snapshots, List<CompanyEvents.Version> companyEvents, boolean truncated) {
+                        List<SnapshotItem> snapshots, List<CompanyEvents.Version> companyEvents, boolean truncated,
+                        TodayBriefing.Brief research) {
         public Brief {
             if(companyEvents==null) companyEvents=List.of();
         }
@@ -40,13 +42,15 @@ public class PortfolioBriefs {
     private final ActivityWriter activity;
     private final JsonMapper json;
     private final CompanyEvents events;
+    private final TodayBriefing briefing;
 
-    PortfolioBriefs(JdbcTemplate jdbc, CurrentUser users, ActivityWriter activity, JsonMapper json,CompanyEvents events) {
+    PortfolioBriefs(JdbcTemplate jdbc, CurrentUser users, ActivityWriter activity, JsonMapper json,CompanyEvents events,TodayBriefing briefing) {
         this.jdbc = jdbc;
         this.users = users;
         this.activity = activity;
         this.json = json;
         this.events = events;
+        this.briefing = briefing;
     }
 
     @Transactional public Index index() {
@@ -95,7 +99,7 @@ public class PortfolioBriefs {
         var today = LocalDate.now(schedule.zone());
         var date = ending == null ? today : ending;
         if (date.isAfter(today) || date.isBefore(today.minusDays(366))) throw ApiFailure.invalid();
-        return build(owner,schedule.zone(),schedule.interval(),schedule.view().settings(),date);
+        return build(owner,schedule.zone(),schedule.interval(),schedule.view().settings(),date,date.equals(today));
     }
 
     @Transactional public Brief read(UUID id) {
@@ -109,7 +113,7 @@ public class PortfolioBriefs {
 
     public Brief replayWindow(UUID syntheticOwner,LocalDate end) {
         var settings=new Settings("","UTC","WEEKLY",false,false,false,true,false);
-        return build(syntheticOwner,ZoneOffset.UTC,7,settings,end);
+        return build(syntheticOwner,ZoneOffset.UTC,7,settings,end,false);
     }
 
     @Transactional public boolean processNext() {
@@ -120,7 +124,7 @@ public class PortfolioBriefs {
         if (due == null) return false;
         Instant slot = Instant.parse(due.view().nextAt());
         LocalDate end = slot.atZone(due.zone()).toLocalDate();
-        Brief brief = build(due.owner(),due.zone(),due.interval(),due.view().settings(),end);
+        Brief brief = build(due.owner(),due.zone(),due.interval(),due.view().settings(),end,true);
         UUID run = UUID.randomUUID();
         int written = jdbc.update("""
                 INSERT INTO finn.brief_run(run_id,owner_id,schedule_revision,window_start,window_end,payload)
@@ -137,12 +141,12 @@ public class PortfolioBriefs {
         return true;
     }
 
-    private Brief build(UUID owner,ZoneId zone,int interval,Settings settings,LocalDate end) {
+    private Brief build(UUID owner,ZoneId zone,int interval,Settings settings,LocalDate end,boolean currentContext) {
         var period = window(end,zone,interval);
         var items = jdbc.query("""
                 SELECT activity_id,kind,title,created_at FROM finn.activity
                 WHERE owner_id=? AND created_at>=? AND created_at<? AND (
-                    (? AND kind IN ('PRICE_RULE','VOLUME_RULE','ALLOCATION_RULE'))
+                    (? AND kind IN ('PRICE_RULE','VOLUME_RULE','ALLOCATION_RULE','RESEARCH_ALERT'))
                     OR (? AND kind='REVIEW_REMINDER'))
                 ORDER BY created_at DESC,activity_id LIMIT 51
                 """, (row,i) -> new ActivityItem(row.getObject("activity_id",UUID.class),row.getString("kind"),
@@ -160,9 +164,19 @@ public class PortfolioBriefs {
         var companyEvents=settings.includeCompany()
                 ? events.reviewedBetween(owner,ReviewReminders.utc(period.start()),ReviewReminders.utc(period.end()))
                 : List.<CompanyEvents.Version>of();
+        var research=settings.includeCompany()&&currentContext?briefing.forScheduledBrief(owner,unreportedSince(owner,period)):null;
         return new Brief(period.start().toString(),period.end().toString(),zone.getId(),
                 items.stream().limit(50).toList(),snapshots.stream().limit(50).toList(),companyEvents.stream().limit(50).toList(),
-                items.size()>50||snapshots.size()>50||companyEvents.size()>50);
+                items.size()>50||snapshots.size()>50||companyEvents.size()>50,research);
+    }
+
+    private Instant unreportedSince(UUID owner,Window period){
+        var latest=jdbc.query("""
+                SELECT payload #>> '{research,through}' AS through FROM finn.brief_run
+                WHERE owner_id=? AND window_end<? AND payload #>> '{research,through}' IS NOT NULL
+                ORDER BY window_end DESC LIMIT 1
+                """,(row,i)->Instant.parse(row.getString(1)),owner,ReviewReminders.utc(period.end())).stream().findFirst().orElse(null);
+        return latest==null||latest.isBefore(period.start())?period.start():latest;
     }
 
     static Window window(LocalDate ending,ZoneId zone,int days) {

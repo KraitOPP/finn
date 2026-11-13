@@ -5,7 +5,7 @@ import { AuthControls, SessionNotice } from "./AuthControls.tsx";
 import { AuthProvider, sessionChannelName } from "./AuthProvider.tsx";
 
 const payload = (authenticated: boolean) => ({
-  contractVersion: "0.54.0",
+  contractVersion: "0.55.0",
   requestId: "synthetic-auth-request",
   authenticated,
   user: authenticated

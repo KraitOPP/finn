@@ -102,8 +102,11 @@ class FilingRules {
             syncDates(owner,rule,event);
             if (!rule.settings().arrivals()||!matches(rule,event)) continue;
             String semantic=event.category()+"|"+event.subtype()+"|"+event.stage()+"|"+event.materiality()+"|"+event.dates();
+            boolean correction=event.novelty().equals("CORRECTION")||event.stage().equals("CANCELLED");
+            if(correction)semantic+="|CORRECTION|"+event.versionId();
             String key="ARRIVAL:"+event.eventId()+":"+rule.ruleId()+":"+SourceDocuments.checksum(semantic);
-            activities.add(owner,ActivityWriter.Kind.COMPANY_EVENT,event.eventId(),key,event.title(),event.versionId(),OffsetDateTime.now(ZoneOffset.UTC));
+            activities.add(owner,ActivityWriter.Kind.COMPANY_EVENT,event.eventId(),key,correction?"Correction · "+event.title():event.title(),
+                    event.versionId(),OffsetDateTime.now(ZoneOffset.UTC));
         }
     }
 

@@ -408,7 +408,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.54.0") & (string);
+export type ContractVersion = ("0.55.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1462,6 +1462,7 @@ export type PortfolioBrief = ({
 })>);
   "companyEvents": (Array<(CompanyEvent)>);
   "truncated": (boolean);
+  "research"?: (((TodayBriefing)) | ((null)));
 });
 
 export type PortfolioDetail = ({

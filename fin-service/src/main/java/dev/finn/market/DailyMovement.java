@@ -1,8 +1,12 @@
 package dev.finn.market;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -10,25 +14,27 @@ import org.springframework.stereotype.Service;
 @Service
 public class DailyMovement {
     public record Signal(LocalDate session, LocalDate previousSession, String changePercent, String volumeMultiple,
-                         String medianTurnover, boolean unusualPrice, boolean unusualVolume, int baselineSessions) {}
-    record Bar(LocalDate date, BigDecimal close, BigDecimal adjusted, BigDecimal volume) {}
+                         String medianTurnover, boolean unusualPrice, boolean unusualVolume, int baselineSessions,
+                         @JsonIgnore Instant receivedAt) {}
+    record Bar(LocalDate date, BigDecimal close, BigDecimal adjusted, BigDecimal volume, Instant receivedAt) {}
 
     private final JdbcTemplate jdbc;
 
     DailyMovement(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
-    public Signal observed(UUID owner, UUID listing, String exchange, LocalDate today) {
+    public Signal observed(UUID owner, UUID listing, String exchange, LocalDate today, Instant through) {
         if (listing == null) return null;
         var bars = jdbc.query("""
-                SELECT DISTINCT ON (session_date) session_date,close,
+                SELECT DISTINCT ON (session_date) session_date,close,received_at,
                     (provider_bar->>'adjustedClose')::numeric AS adjusted,
                     (provider_bar->>'volume')::numeric AS volume
                 FROM finn.market_observation
                 WHERE owner_id=? AND listing_id=? AND source='YAHOO_YFINANCE'
-                    AND session_date>=? AND session_date<?
+                    AND session_date>=? AND session_date<? AND received_at<=?
                 ORDER BY session_date DESC,receipt_order DESC LIMIT 22
-                """,(row,i)->new Bar(row.getObject(1,LocalDate.class),row.getBigDecimal(2),row.getBigDecimal(3),
-                    row.getBigDecimal(4)),owner,listing,today.minusDays(42),today);
+                """,(row,i)->new Bar(row.getObject("session_date",LocalDate.class),row.getBigDecimal("close"),
+                    row.getBigDecimal("adjusted"),row.getBigDecimal("volume"),row.getObject("received_at",OffsetDateTime.class).toInstant()),
+                owner,listing,today.minusDays(42),today,through.atOffset(ZoneOffset.UTC));
         return assess(bars,exchange);
     }
 
@@ -54,7 +60,7 @@ public class DailyMovement {
                 &&change.abs().compareTo(median(swings).multiply(BigDecimal.TWO))>=0;
         boolean volume=multiple!=null&&multiple.compareTo(new BigDecimal("2.5"))>=0;
         return new Signal(latest.date(),previous.date(),decimal(change),decimal(multiple),
-                turnover.size()<7?null:decimal(median(turnover)),price,volume,baseline.size());
+                turnover.size()<7?null:decimal(median(turnover)),price,volume,baseline.size(),latest.receivedAt());
     }
 
     public static BigDecimal median(List<BigDecimal> values) {

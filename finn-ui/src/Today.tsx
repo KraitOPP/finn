@@ -1,26 +1,18 @@
 import Alert from "@mui/material/Alert";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
 import LinearProgress from "@mui/material/LinearProgress";
-import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
-import type { RadarEntry } from "../contracts/generated/models.ts";
 import { requestContract } from "./api/request.ts";
 import { usePrivateCommand } from "./api/usePrivateCommand.ts";
 import { useResource } from "./api/useResource.ts";
 import { StockExplorer } from "./instruments/StockExplorer.tsx";
 import { LocalTime } from "./monitoring/LocalTime.tsx";
 import { RouteHeading } from "./Navigation.tsx";
-import { eventTypes } from "./research/Events.tsx";
-import {
-  companyResearch,
-  sessionDate,
-  UpcomingEvents,
-} from "./research/Radar.tsx";
+import { BriefRows, ResearchQuestions } from "./research/BriefingLists.tsx";
+import { UpcomingEvents } from "./research/Radar.tsx";
 
 const path = "/api/v1/briefing";
 
@@ -152,33 +144,7 @@ export function Today() {
                 <UpcomingEvents items={brief.upcoming} />
               </Section>
               <Section title="Open research questions">
-                {brief.questions.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Save a question in a company’s Sources &amp; facts tab to
-                    see it here.
-                  </Typography>
-                ) : (
-                  <Stack
-                    component="ul"
-                    className="dashboard-list"
-                    spacing={1.25}
-                  >
-                    {brief.questions.map((question) => (
-                      <li key={question.noteId}>
-                        <Typography variant="caption" color="text.secondary">
-                          {question.companyName}
-                        </Typography>
-                        <Typography variant="body2">
-                          <Link
-                            href={`#/research?company=${question.companyId}&view=questions`}
-                          >
-                            {question.title}
-                          </Link>
-                        </Typography>
-                      </li>
-                    ))}
-                  </Stack>
-                )}
+                <ResearchQuestions items={brief.questions} />
               </Section>
             </Stack>
           </div>
@@ -239,61 +205,5 @@ function BriefMetric({ label, value }: { label: string; value: number }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </Paper>
-  );
-}
-
-function BriefRows({ label, items }: { label?: string; items: RadarEntry[] }) {
-  if (!items.length) return null;
-  return (
-    <Box sx={{ mb: 1 }}>
-      {label && (
-        <Typography component="h3" variant="subtitle2" sx={{ mb: 0.75 }}>
-          {label}
-        </Typography>
-      )}
-      <ul className="brief-rows">
-        {items.map((item) => {
-          const event = item.announcement?.event;
-          return (
-            <li key={event?.eventId ?? item.stock.companyId}>
-              <Stack
-                direction="row"
-                useFlexGap
-                spacing={1}
-                sx={{ alignItems: "center", flexWrap: "wrap" }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  {item.stock.symbol ?? item.stock.companyName}
-                </Typography>
-                {event?.novelty === "CORRECTION" && (
-                  <Chip size="small" color="warning" label="Correction" />
-                )}
-              </Stack>
-              <Typography variant="body2" sx={{ fontWeight: 650 }}>
-                <Link
-                  underline="hover"
-                  href={companyResearch(item.stock, event?.eventId)}
-                >
-                  {event?.title ??
-                    `Unusual trading in ${item.stock.companyName}`}
-                </Link>
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {event ? (
-                  <>
-                    {eventTypes[event.subtype]} · Reviewed{" "}
-                    <LocalTime value={event.reviewedAt} />
-                  </>
-                ) : (
-                  item.movement && (
-                    <>{sessionDate(item.movement.session)} · Yahoo daily</>
-                  )
-                )}
-              </Typography>
-            </li>
-          );
-        })}
-      </ul>
-    </Box>
   );
 }

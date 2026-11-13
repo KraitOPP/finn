@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.54.0"
+VERSION = "0.55.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -430,8 +430,8 @@ def definitions() -> dict:
             "status": enum(["BEFORE_COVERAGE","PRICES_MISSING","CASH_UNKNOWN","RECORDED_VALUE"]),
         }),maxItems=50),
         "companyEvents": array(ref("CompanyEvent"),maxItems=50),
-        "truncated": {"type":"boolean"},
-    })
+        "truncated": {"type":"boolean"}, "research":nullable(ref("TodayBriefing")),
+    }, optional=("research",))
     source_revision = {"type":"integer","minimum":1,"maximum":50}
     d["CompanySourceInput"] = obj({
         "companyId": ref("OpaqueId"), "title": text(maxLength=120), "sourceName": text(maxLength=120),

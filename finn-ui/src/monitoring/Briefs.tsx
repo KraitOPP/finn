@@ -1,3 +1,10 @@
+import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import type {
   BriefSchedule,
@@ -8,16 +15,33 @@ import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { usePreferences } from "../preferences/PreferencesProvider.tsx";
+import { BriefRows, ResearchQuestions } from "../research/BriefingLists.tsx";
 import { CompanyNotificationEvidence } from "../research/CompanyNotificationEvidence.tsx";
+import { UpcomingEvents } from "../research/Radar.tsx";
 import { LocalTime } from "./LocalTime.tsx";
 
 const path = "/api/v1/monitoring/briefs";
 const options = [
-  ["includeAlerts", "Price, volume, and concentration alerts"],
+  ["includeAlerts", "Research and market alerts"],
   ["includeReminders", "Review reminders"],
-  ["includeCompany", "Company events"],
+  ["includeCompany", "Company events and research shortlist"],
   ["includeValuations", "Saved account valuations"],
 ] as const;
+
+function tomorrowMorning(zone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts();
+  const part = (type: string) =>
+    Number(parts.find((value) => value.type === type)?.value);
+  const tomorrow = new Date(
+    Date.UTC(part("year"), part("month") - 1, part("day") + 1),
+  );
+  return `${tomorrow.toISOString().slice(0, 10)}T09:00`;
+}
 
 export function Briefs() {
   const data = useResource("BriefIndex", path);
@@ -54,24 +78,29 @@ export function Briefs() {
           />
           {data.value.schedule && (
             <>
-              <form
-                className="market-filters"
+              <Stack
+                component="form"
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1.5}
+                sx={{ my: 2, alignItems: { sm: "center" } }}
                 onSubmit={(event) => {
                   event.preventDefault();
                   setPreview(end);
                   draft.reload();
                 }}
               >
-                <label>
-                  Preview through (date excluded){" "}
-                  <input
-                    type="date"
-                    value={end}
-                    onChange={(event) => setEnd(event.target.value)}
-                  />
-                </label>
-                <button type="submit">Preview brief</button>
-              </form>
+                <TextField
+                  label="Preview through (date excluded)"
+                  type="date"
+                  size="small"
+                  value={end}
+                  onChange={(event) => setEnd(event.target.value)}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+                <Button type="submit" variant="outlined">
+                  Preview brief
+                </Button>
+              </Stack>
               {draft.error && <p role="alert">{draft.error}</p>}
               {draft.loading && <p role="status">Preparing preview…</p>}
               {draft.value && <BriefContents brief={draft.value} />}
@@ -118,17 +147,19 @@ function BriefScheduleForm({
 }) {
   const { value } = usePreferences();
   const command = usePrivateCommand();
+  const zone = value?.timeZone ?? "Asia/Kolkata";
   const [settings, setSettings] = useState<BriefSettings>(
-    saved?.settings ?? {
-      scheduledLocal: "",
-      timeZone: value?.timeZone ?? "Asia/Kolkata",
-      cadence: "DAILY",
-      enabled: true,
-      includeAlerts: true,
-      includeReminders: true,
-      includeCompany: true,
-      includeValuations: true,
-    },
+    () =>
+      saved?.settings ?? {
+        scheduledLocal: tomorrowMorning(zone),
+        timeZone: zone,
+        cadence: "DAILY",
+        enabled: true,
+        includeAlerts: true,
+        includeReminders: true,
+        includeCompany: true,
+        includeValuations: true,
+      },
   );
   function change<K extends keyof BriefSettings>(
     key: K,
@@ -137,8 +168,10 @@ function BriefScheduleForm({
     setSettings((current) => ({ ...current, [key]: input }));
   }
   return (
-    <form
-      className="settings-card workspace-form"
+    <Stack
+      component="form"
+      className="settings-card"
+      spacing={1.5}
       onSubmit={async (event) => {
         event.preventDefault();
         const result = await command.run((csrf) =>
@@ -151,33 +184,20 @@ function BriefScheduleForm({
         if (result) onSave();
       }}
     >
-      <h3>Brief schedule</h3>
+      <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 700 }}>
+        Brief schedule
+      </Typography>
       {saved?.nextAt && (
         <p>
           Next brief <LocalTime value={saved.nextAt} />
         </p>
       )}
-      <label>
-        First run (local date and time){" "}
-        <input
-          type="datetime-local"
-          required
-          value={settings.scheduledLocal}
-          onChange={(event) => change("scheduledLocal", event.target.value)}
-        />
-      </label>
-      <label>
-        Time zone{" "}
-        <input
-          required
-          maxLength={64}
-          value={settings.timeZone}
-          onChange={(event) => change("timeZone", event.target.value)}
-        />
-      </label>
-      <label>
-        Frequency{" "}
-        <select
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+        <TextField
+          select
+          label="Frequency"
+          size="small"
+          sx={{ minWidth: 125 }}
           value={settings.cadence}
           onChange={(event) =>
             change(
@@ -186,40 +206,67 @@ function BriefScheduleForm({
             )
           }
         >
-          <option value="DAILY">Daily</option>
-          <option value="WEEKLY">Weekly</option>
-        </select>
-      </label>
-      <p className="field-help">
-        A brief covers the previous full day or seven full days in the selected
-        time zone.
-      </p>
-      <fieldset>
-        <legend>Include</legend>
-        {options.map(([key, label]) => (
-          <label className="check-label" key={key}>
-            <input
-              type="checkbox"
-              checked={settings[key]}
-              onChange={(event) => change(key, event.target.checked)}
-            />
-            {label}
-          </label>
-        ))}
-      </fieldset>
-      <label className="check-label">
-        <input
-          type="checkbox"
-          checked={settings.enabled}
-          onChange={(event) => change("enabled", event.target.checked)}
+          <MenuItem value="DAILY">Daily</MenuItem>
+          <MenuItem value="WEEKLY">Weekly</MenuItem>
+        </TextField>
+        <TextField
+          label="First run (local date and time)"
+          type="datetime-local"
+          size="small"
+          required
+          value={settings.scheduledLocal}
+          onChange={(event) => change("scheduledLocal", event.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
         />
-        Enable scheduled briefs
-      </label>
+        <FormControlLabel
+          label="Enable scheduled briefs"
+          control={
+            <Checkbox
+              checked={settings.enabled}
+              onChange={(event) => change("enabled", event.target.checked)}
+            />
+          }
+        />
+      </Stack>
+      <Typography variant="body2" color="text.secondary">
+        Scheduled in {settings.timeZone}. The research shortlist uses new
+        evidence since your last review within the brief’s lookback window.
+      </Typography>
+      <details>
+        <summary>Time zone and included items</summary>
+        <Stack spacing={1} sx={{ mt: 1 }}>
+          <TextField
+            label="Time zone"
+            size="small"
+            value={settings.timeZone}
+            onChange={(event) => change("timeZone", event.target.value)}
+            slotProps={{ htmlInput: { maxLength: 64 } }}
+            sx={{ alignSelf: "start" }}
+          />
+          {options.map(([key, label]) => (
+            <FormControlLabel
+              key={key}
+              label={label}
+              control={
+                <Checkbox
+                  checked={settings[key]}
+                  onChange={(event) => change(key, event.target.checked)}
+                />
+              }
+            />
+          ))}
+        </Stack>
+      </details>
       {command.error && <p role="alert">{command.error}</p>}
-      <button type="submit" className="primary-button" disabled={command.busy}>
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={command.busy}
+        sx={{ alignSelf: "start" }}
+      >
         Save brief schedule
-      </button>
-    </form>
+      </Button>
+    </Stack>
   );
 }
 
@@ -232,10 +279,44 @@ export function SavedBrief({ id }: { id: string }) {
 
 function BriefContents({ brief }: { brief: PortfolioBrief }) {
   const [source, setSource] = useState<string | null>(null);
+  const research = brief.research;
   return (
     <section className="settings-card" aria-label="Portfolio brief contents">
+      {research && (
+        <Stack spacing={1.5} sx={{ mb: 2 }}>
+          <Typography component="h3" variant="h6">
+            Research shortlist
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            New evidence from <LocalTime value={research.from} /> through{" "}
+            <LocalTime value={research.through} />
+          </Typography>
+          <BriefRows label="Holdings" items={research.holdings} />
+          <BriefRows label="Watchlist" items={research.watchlist} />
+          <BriefRows
+            label="Stocks to investigate"
+            items={research.candidates}
+          />
+          {research.holdings.length +
+            research.watchlist.length +
+            research.candidates.length ===
+            0 && (
+            <Typography variant="body2" color="text.secondary">
+              No new ranked developments in this window.
+            </Typography>
+          )}
+          <Typography component="h3" variant="subtitle2">
+            Upcoming events
+          </Typography>
+          <UpcomingEvents items={research.upcoming} />
+          <Typography component="h3" variant="subtitle2">
+            Open research questions
+          </Typography>
+          <ResearchQuestions items={research.questions} />
+        </Stack>
+      )}
       <p>
-        <LocalTime value={brief.windowStart} /> to{" "}
+        Saved activity from <LocalTime value={brief.windowStart} /> to{" "}
         <LocalTime value={brief.windowEnd} /> (excluded) · Window in{" "}
         {brief.timeZone}.
       </p>

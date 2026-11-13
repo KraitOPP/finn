@@ -75,10 +75,10 @@ public class ResearchAlerts {
     @EventListener void onEvent(CompanyEvents.Reviewed reviewed){
         UUID owner=reviewed.owner();
         var event=reviewed.event();
-        var rules=rules(owner,true).stream().filter(rule->rule.preview().criteria().kind()==AlertLanguage.Kind.EVENT
-                &&rule.preview().criteria().eventType().name().equals(event.subtype())).toList();
-        if(rules.isEmpty()||event.novelty().equals("ROUTINE")||muted(owner,event.eventId()))return;
         boolean correction=event.novelty().equals("CORRECTION")||event.stage().equals("CANCELLED");
+        var rules=rules(owner,true).stream().filter(rule->rule.preview().criteria().kind()==AlertLanguage.Kind.EVENT
+                &&(correction||rule.preview().criteria().eventType().name().equals(event.subtype()))).toList();
+        if(rules.isEmpty()||event.novelty().equals("ROUTINE")||muted(owner,event.eventId()))return;
         if(!correction&&event.subtype().equals("ORDER")&&!event.materiality().equals("HIGH"))return;
         var current=Instant.now();
         var scopes=relevance(owner,event.companyId(),rules,current.atZone(INDIA).toLocalDate());
@@ -88,7 +88,8 @@ public class ResearchAlerts {
             if(correction&&!previousMatch(owner,rule.ruleId(),event.eventId()))continue;
             var key=SourceDocuments.checksum(correction?semantic+"|correction|"+event.versionId():semantic);
             String title=(correction?"Correction · ":"")+event.title();
-            save(owner,rule,new Proof(event.companyId(),title,rule.preview().summary(),event,null,null,null,null,key),current);
+            String reason=correction?"A previously matched company event was corrected or cancelled.":rule.preview().summary();
+            save(owner,rule,new Proof(event.companyId(),title,reason,event,null,null,null,null,key),current);
         }
     }
 

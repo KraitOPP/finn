@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.54.0",
+    "version": "0.55.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -20361,7 +20361,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.54.0"
+        "const": "0.55.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -24545,6 +24545,16 @@
           },
           "truncated": {
             "type": "boolean"
+          },
+          "research": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TodayBriefing"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

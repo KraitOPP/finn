@@ -29,6 +29,7 @@ import { AnchorEvidence } from "./Evidence.tsx";
 import { factAmount } from "./FinancialFacts.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 import { OrderEvidence } from "./OrderEvidence.tsx";
+import { RelatedNews } from "./RelatedNews.tsx";
 
 const path = "/api/v1/discovery";
 const scopes = {
@@ -558,6 +559,7 @@ export function RadarCard({
           {open && event?.subtype === "ORDER" && (
             <OrderEvidence event={event} />
           )}
+          {open && event && <RelatedNews event={event} />}
         </details>
       </Stack>
     </Paper>

@@ -34,7 +34,7 @@ class MarketRadar {
                  String holdingsCoverage, List<Entry> items, boolean truncated) {}
     record CalendarEntry(Context stock, CompanyEvents.Version event, CompanyEvents.AnnouncedDate date) {}
     record Calendar(LocalDate asOf, String holdingsCoverage, List<CalendarEntry> items) {}
-    record Snapshot(Radar radar, Calendar calendar) {}
+    record Snapshot(Radar radar, Calendar calendar, List<Entry> ranked) {}
 
     private final JdbcTemplate jdbc;
     private final CurrentUser users;
@@ -79,7 +79,7 @@ class MarketRadar {
         var selected=eligible.stream().filter(stock->stock.listingId()!=null).limit(LIMIT+1L).toList();
         var signals=new LinkedHashMap<UUID,DailyMovement.Signal>();
         for(var stock:selected.stream().limit(LIMIT).toList()){
-            var signal=movement.observed(owner,stock.listingId(),stock.exchange(),today);
+            var signal=movement.observed(owner,stock.listingId(),stock.exchange(),today,now);
             if(signal!=null)signals.put(stock.companyId(),signal);
         }
         var caps=marketCapitalizations(owner,today);
@@ -101,7 +101,7 @@ class MarketRadar {
         if(filter.kind()!=Kind.ANNOUNCEMENTS&&filter.eventType()==null) for(var stock:eligible){
             var signal=signals.get(stock.companyId());
             if(!withEvents.contains(stock.companyId())&&DailyMovement.recent(signal,stock.exchange(),today)
-                    &&(afterReview==null||signal.session().atTime(16,0).atZone(INDIA).toInstant().isAfter(afterReview))
+                    &&(afterReview==null||signal.receivedAt().isAfter(afterReview))
                     &&(signal.unusualPrice()||signal.unusualVolume())&&liquid(signal,filter.liquidity())
                     &&inSize(caps.get(stock.companyId()),filter.size()))
                 entries.add(entry(stock,null,signal,benchmark(stock,signal,stocks,signals),caps.get(stock.companyId()),today));
@@ -109,8 +109,10 @@ class MarketRadar {
         entries.sort(Comparator.comparingInt(Entry::score).reversed().thenComparing(e->e.stock().companyName())
                 .thenComparing(e->e.announcement()==null ? "" : e.announcement().event().eventId().toString()));
         int recent=(int)selected.stream().limit(LIMIT).filter(stock->DailyMovement.recent(signals.get(stock.companyId()),stock.exchange(),today)).count();
+        var calendarStocks=afterReview==null?eligible:eligible.stream().filter(stock->stock.held()||stock.watched()).toList();
         return new Snapshot(new Radar(today,Math.min(selected.size(),LIMIT),recent,selected.size()>LIMIT,exposure.coverage(),
-                entries.stream().limit(50).toList(),entries.size()>50),upcoming(today,exposure.coverage(),eligible,announcements));
+                entries.stream().limit(50).toList(),entries.size()>50),
+                upcoming(today,exposure.coverage(),calendarStocks,announcements),List.copyOf(entries));
     }
 
     private static Calendar upcoming(LocalDate today,String coverage,List<Context> stocks,List<Announcement> announcements) {

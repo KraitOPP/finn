@@ -24,7 +24,10 @@ public final class BriefChecks {
                 """.formatted(first);
         ok(submit(mvc,path+"/schedule",subject,body));
         read(mvc,path+"/preview",subject).andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty())
-                .andExpect(jsonPath("$.windowEnd").value(today.atStartOfDay(ZoneOffset.UTC).toInstant().toString()));
+                .andExpect(jsonPath("$.windowEnd").value(today.atStartOfDay(ZoneOffset.UTC).toInstant().toString()))
+                .andExpect(jsonPath("$.research.from").value(today.minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().toString()));
+        read(mvc,path+"/preview?windowEnd="+today.minusDays(1),subject).andExpect(status().isOk())
+                .andExpect(jsonPath("$.research").isEmpty());
         var owner = jdbc.queryForObject("SELECT user_id FROM finn.app_user WHERE subject=?",UUID.class,subject);
         var before = today.minusDays(1).atTime(12,0).atOffset(ZoneOffset.UTC);
         jdbc.update("""
@@ -39,7 +42,8 @@ public final class BriefChecks {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM finn.activity WHERE owner_id=? AND kind='PORTFOLIO_BRIEF'",Integer.class,owner)).isEqualTo(1);
         var index = ok(read(mvc,path,subject));
         String id = index.get("runs").get(0).get("runId").asText();
-        read(mvc,path+"/"+id,subject).andExpect(status().isOk()).andExpect(jsonPath("$.items[0].title").value("Fictional prior alert"));
+        read(mvc,path+"/"+id,subject).andExpect(status().isOk()).andExpect(jsonPath("$.items[0].title").value("Fictional prior alert"))
+                .andExpect(jsonPath("$.research.holdings").isEmpty());
         read(mvc,path+"/"+id,"fictional-brief-other").andExpect(status().isNotFound());
     }
 }
