@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.52.0",
+  "contractVersion": "0.53.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "a87f818ae9478b62b11bc0ac2b622ad1c0792d0831e4d700c4bd5de69913f2dd",
+  "sourceSha256": "a76eeb475ebb36fb907f326e752b8f5fd599fbd05ea0a9bc90db1f0a7cbb84b5",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -140,6 +140,7 @@ export const contractMetadata = {
     "LedgerRecordInput",
     "LedgerReverseInput",
     "LedgerView",
+    "LinkEventNews",
     "ListingIdentity",
     "ListingInput",
     "ManagementGuidance",
@@ -221,12 +222,22 @@ export const contractMetadata = {
     "RadarLeads",
     "RadarMovement",
     "RadarStock",
+    "RelatedEventNews",
     "ReminderEdit",
     "ReminderEvidence",
     "ReminderList",
     "ReminderScheduleChange",
     "ReminderSettings",
     "ReportedFactInput",
+    "ResearchAlertCadence",
+    "ResearchAlertChange",
+    "ResearchAlertConfirm",
+    "ResearchAlertCriteria",
+    "ResearchAlertIndex",
+    "ResearchAlertMatch",
+    "ResearchAlertPreview",
+    "ResearchAlertRequest",
+    "ResearchAlertRule",
     "ResearchExtraction",
     "ResearchLocation",
     "ResearchLocations",
@@ -930,7 +941,11 @@ export const contractSchemas = {
           "MUTE",
           "UNMUTE",
           "SNOOZE",
-          "UNSNOOZE"
+          "UNSNOOZE",
+          "USEFUL",
+          "ALREADY_KNEW",
+          "TOO_MANY",
+          "CLEAR_REACTION"
         ]
       },
       "snoozeUntil": {
@@ -960,7 +975,7 @@ export const contractSchemas = {
       "score": {
         "type": "integer",
         "minimum": 0,
-        "maximum": 75
+        "maximum": 85
       },
       "state": {
         "$ref": "#/components/schemas/AttentionState"
@@ -977,8 +992,8 @@ export const contractSchemas = {
             },
             "points": {
               "type": "integer",
-              "minimum": 0,
-              "maximum": 75
+              "minimum": -15,
+              "maximum": 85
             }
           },
           "required": [
@@ -987,7 +1002,7 @@ export const contractSchemas = {
           ],
           "additionalProperties": false
         },
-        "maxItems": 3
+        "maxItems": 5
       },
       "holdings": {
         "type": "array",
@@ -1014,6 +1029,9 @@ export const contractSchemas = {
           "additionalProperties": false
         },
         "maxItems": 100
+      },
+      "watched": {
+        "type": "boolean"
       }
     },
     "required": [
@@ -1075,6 +1093,14 @@ export const contractSchemas = {
           {
             "type": "null"
           }
+        ]
+      },
+      "reaction": {
+        "type": "string",
+        "enum": [
+          "USEFUL",
+          "ALREADY_KNEW",
+          "TOO_MANY"
         ]
       }
     },
@@ -2429,7 +2455,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.52.0"
+    "const": "0.53.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -6880,6 +6906,24 @@ export const contractSchemas = {
     "additionalProperties": false,
     "description": "Tracked positions and accounting effects, not a full broker balance or tax calculation. Cash requires an explicit baseline and known movements. Coverage is partial; never fabricate past returns. Quantity/cost are by security; valuation needs a separate reviewed listing."
   },
+  "LinkEventNews": {
+    "type": "object",
+    "properties": {
+      "documentId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      }
+    },
+    "required": [
+      "documentId",
+      "revision"
+    ],
+    "additionalProperties": false
+  },
   "ListingIdentity": {
     "type": "object",
     "properties": {
@@ -7648,7 +7692,8 @@ export const contractSchemas = {
           "VOLUME_RULE",
           "ALLOCATION_RULE",
           "COMPANY_EVENT",
-          "THESIS_REVIEW"
+          "THESIS_REVIEW",
+          "RESEARCH_ALERT"
         ]
       },
       "subjectId": {
@@ -7807,7 +7852,8 @@ export const contractSchemas = {
                 "VOLUME_RULE",
                 "ALLOCATION_RULE",
                 "COMPANY_EVENT",
-                "THESIS_REVIEW"
+                "THESIS_REVIEW",
+                "RESEARCH_ALERT"
               ]
             },
             "delivery": {
@@ -7896,6 +7942,13 @@ export const contractSchemas = {
             "type": "null"
           }
         ]
+      },
+      "researchMatches": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ResearchAlertMatch"
+        },
+        "maxItems": 100
       },
       "deliveries": {
         "type": "array",
@@ -8417,7 +8470,8 @@ export const contractSchemas = {
                 "VOLUME_RULE",
                 "ALLOCATION_RULE",
                 "COMPANY_EVENT",
-                "THESIS_REVIEW"
+                "THESIS_REVIEW",
+                "RESEARCH_ALERT"
               ]
             },
             "title": {
@@ -10045,6 +10099,9 @@ export const contractSchemas = {
           "RATE_LIMITED",
           "DATA_SOURCE_UNAVAILABLE",
           "INTERNAL_ERROR",
+          "ALERT_LANGUAGE_UNSUPPORTED",
+          "RESEARCH_ALERT_LIMIT",
+          "EARNINGS_INPUT_LIMIT",
           "GROQ_SEARCH_FAILED",
           "GROQ_NOT_CONFIGURED",
           "GROQ_ACCESS_REJECTED",
@@ -10840,6 +10897,22 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "RelatedEventNews": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CompanySource"
+        },
+        "maxItems": 40
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
   "ReminderEdit": {
     "type": "object",
     "properties": {
@@ -11021,6 +11094,238 @@ export const contractSchemas = {
       "amount",
       "scale",
       "reviewed"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertCadence": {
+    "type": "string",
+    "enum": [
+      "IMMEDIATE",
+      "DAILY",
+      "WEEKLY"
+    ]
+  },
+  "ResearchAlertChange": {
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "enabled"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertConfirm": {
+    "type": "object",
+    "properties": {
+      "sentence": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "cadence": {
+        "$ref": "#/components/schemas/ResearchAlertCadence"
+      },
+      "criteria": {
+        "$ref": "#/components/schemas/ResearchAlertCriteria"
+      }
+    },
+    "required": [
+      "sentence",
+      "cadence",
+      "criteria"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertCriteria": {
+    "type": "object",
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "EVENT",
+          "REVENUE_MARGIN"
+        ]
+      },
+      "scope": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "HOLDINGS",
+          "WATCHLIST"
+        ]
+      },
+      "eventType": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CompanyEventType"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "growthPercent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PositiveDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "cadence": {
+        "$ref": "#/components/schemas/ResearchAlertCadence"
+      }
+    },
+    "required": [
+      "kind",
+      "scope",
+      "eventType",
+      "growthPercent",
+      "cadence"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertIndex": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ResearchAlertRule"
+        },
+        "maxItems": 20
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertMatch": {
+    "type": "object",
+    "properties": {
+      "companyName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "companyId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      },
+      "reason": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 450
+      },
+      "event": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CompanyEvent"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "anchors": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/OpaqueId"
+        },
+        "maxItems": 4
+      }
+    },
+    "required": [
+      "companyName",
+      "companyId",
+      "title",
+      "reason",
+      "event",
+      "anchors"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertPreview": {
+    "type": "object",
+    "properties": {
+      "sentence": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "criteria": {
+        "$ref": "#/components/schemas/ResearchAlertCriteria"
+      },
+      "summary": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "schedule": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "coverage": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 140
+      }
+    },
+    "required": [
+      "sentence",
+      "criteria",
+      "summary",
+      "schedule",
+      "coverage"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertRequest": {
+    "type": "object",
+    "properties": {
+      "sentence": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      },
+      "cadence": {
+        "$ref": "#/components/schemas/ResearchAlertCadence"
+      }
+    },
+    "required": [
+      "sentence",
+      "cadence"
+    ],
+    "additionalProperties": false
+  },
+  "ResearchAlertRule": {
+    "type": "object",
+    "properties": {
+      "ruleId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "preview": {
+        "$ref": "#/components/schemas/ResearchAlertPreview"
+      }
+    },
+    "required": [
+      "ruleId",
+      "enabled",
+      "preview"
     ],
     "additionalProperties": false
   },

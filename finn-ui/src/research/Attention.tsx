@@ -1,4 +1,6 @@
 import { useState } from "react";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import type {
   AttentionFeedback,
   AttentionItem,
@@ -149,6 +151,7 @@ function AttentionCard({
       <div>
         <strong>{event.title}</strong>
         <EventLabels event={event} />
+        {item.watched && <p>Matches your watchlist.</p>}
         <p>
           {state.read ? "Read" : "Unread"} · Reviewed{" "}
           <LocalTime value={event.reviewedAt} />
@@ -211,6 +214,35 @@ function AttentionCard({
             {state.snoozedUntil ? "End snooze" : "Snooze 24 hours"}
           </button>
         </div>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          useFlexGap
+          sx={{ flexWrap: "wrap", my: 1 }}
+        >
+          {(
+            [
+              ["USEFUL", "Useful"],
+              ["ALREADY_KNEW", "Already knew"],
+              ["TOO_MANY", "Too many like this"],
+            ] as const
+          ).map(([action, label]) => (
+            <Button
+              key={action}
+              size="small"
+              variant={state.reaction === action ? "contained" : "outlined"}
+              disabled={command.busy}
+              aria-pressed={state.reaction === action}
+              onClick={() =>
+                void change(
+                  state.reaction === action ? "CLEAR_REACTION" : action,
+                )
+              }
+            >
+              {label}
+            </Button>
+          ))}
+        </Stack>
         {command.error && <p role="alert">{command.error}</p>}
         {evidence && <EventHistory id={event.eventId} />}
       </div>

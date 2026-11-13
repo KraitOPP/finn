@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.52.0"
+VERSION = "0.53.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -28,6 +28,7 @@ PROBLEM_STATUSES = {
     "AUTHENTICATION_REQUIRED": (401,), "RESOURCE_NOT_FOUND": (404,),
     "OPERATION_FORBIDDEN": (403,), "CONFLICT": (409,), "RATE_LIMITED": (429,),
     "DATA_SOURCE_UNAVAILABLE": (503,), "INTERNAL_ERROR": (500,),
+    "ALERT_LANGUAGE_UNSUPPORTED": (422,), "RESEARCH_ALERT_LIMIT": (429,), "EARNINGS_INPUT_LIMIT": (429,),
     "GROQ_SEARCH_FAILED": (502,),
     **{
         f"{provider}_{reason}": statuses
@@ -316,7 +317,7 @@ def definitions() -> dict:
         "status": enum(["PAUSED","EXPIRED","WAITING_FOR_PRICE","STALE","EVALUATED","INSUFFICIENT_HISTORY"]),
         "items": array(ref("PriceEvaluation"),maxItems=50),
     })
-    activity_kind = enum(["PRICE_RULE","REVIEW_REMINDER","PORTFOLIO_BRIEF","VOLUME_RULE","ALLOCATION_RULE","COMPANY_EVENT","THESIS_REVIEW"])
+    activity_kind = enum(["PRICE_RULE","REVIEW_REMINDER","PORTFOLIO_BRIEF","VOLUME_RULE","ALLOCATION_RULE","COMPANY_EVENT","THESIS_REVIEW","RESEARCH_ALERT"])
     channel = enum(["IN_APP","EMAIL_PREVIEW"])
     delivery_status = enum(["PENDING","DELIVERED","SUPPRESSED","PREVIEWED","FAILED"])
     d["Notification"] = obj({
@@ -364,8 +365,24 @@ def definitions() -> dict:
         "briefId": nullable(ref("OpaqueId")),
         "companyEvent": nullable(ref("CompanyEvent")),
         "thesisReview": nullable(ref("ThesisReviewLink")),
+        "researchMatches":array(ref("ResearchAlertMatch"),maxItems=100),
         "deliveries": array(ref("NotificationDelivery"),maxItems=2), "attempts": array(ref("NotificationAttempt"),maxItems=6),
-    })
+    },optional=("researchMatches",))
+    d["ResearchAlertMatch"] = obj({"companyName":text(maxLength=120),"companyId":ref("OpaqueId"),
+        "title":text(maxLength=160),"reason":text(maxLength=450),"event":nullable(ref("CompanyEvent")),
+        "anchors":array(ref("OpaqueId"),maxItems=4)})
+    d["ResearchAlertCadence"] = enum(["IMMEDIATE","DAILY","WEEKLY"])
+    d["ResearchAlertCriteria"] = obj({"kind":enum(["EVENT","REVENUE_MARGIN"]),"scope":enum(["ALL","HOLDINGS","WATCHLIST"]),
+        "eventType":nullable(ref("CompanyEventType")),"growthPercent":nullable(ref("PositiveDecimalString")),
+        "cadence":ref("ResearchAlertCadence")})
+    research_alert_request = {"sentence":text(maxLength=240),"cadence":ref("ResearchAlertCadence")}
+    d["ResearchAlertRequest"] = obj(research_alert_request)
+    d["ResearchAlertConfirm"] = obj({**research_alert_request,"criteria":ref("ResearchAlertCriteria")})
+    d["ResearchAlertPreview"] = obj({"sentence":text(maxLength=240),"criteria":ref("ResearchAlertCriteria"),
+        "summary":text(maxLength=240),"schedule":text(maxLength=100),"coverage":text(maxLength=140)})
+    d["ResearchAlertRule"] = obj({"ruleId":ref("OpaqueId"),"enabled":{"type":"boolean"},"preview":ref("ResearchAlertPreview")})
+    d["ResearchAlertIndex"] = obj({"items":array(ref("ResearchAlertRule"),maxItems=20)})
+    d["ResearchAlertChange"] = obj({"enabled":{"type":"boolean"}})
     local_minute = text(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$",maxLength=16)
     clock_minute = text(pattern=r"^[0-9]{2}:[0-9]{2}$",maxLength=5)
     reminder_revision = {"type":"integer","minimum":1,"maximum":1000000}
@@ -663,20 +680,25 @@ def definitions() -> dict:
     })
     d["CompanyEventPage"] = obj({"items": array(ref("CompanyEvent"),maxItems=40), "hasMore": {"type":"boolean"}})
     d["CompanyEventHistory"] = obj({"items": array(ref("CompanyEvent"),maxItems=100)})
+    d["RelatedEventNews"] = obj({"items":array(ref("CompanySource"),maxItems=40)})
+    d["LinkEventNews"] = obj({"documentId":ref("OpaqueId"),"revision":source_revision})
     attention_view = enum(["ACTIVE","UNREAD","HIDDEN"])
     d["AttentionState"] = obj({
         "read": {"type":"boolean"}, "muted": {"type":"boolean"}, "snoozedUntil": nullable(ref("UtcInstant")),
-    })
+        "reaction":enum(["USEFUL","ALREADY_KNEW","TOO_MANY"]),
+    },optional=("reaction",))
     d["AttentionFeedback"] = obj({
-        "eventRevision": event_revision, "action": enum(["READ","UNREAD","MUTE","UNMUTE","SNOOZE","UNSNOOZE"]),
+        "eventRevision": event_revision, "action": enum(["READ","UNREAD","MUTE","UNMUTE","SNOOZE","UNSNOOZE",
+                                                         "USEFUL","ALREADY_KNEW","TOO_MANY","CLEAR_REACTION"]),
         "snoozeUntil": nullable(ref("UtcInstant")),
     })
-    points = {"type":"integer","minimum":0,"maximum":75}
+    points = {"type":"integer","minimum":0,"maximum":85}
     d["AttentionItem"] = obj({
         "event": ref("CompanyEvent"), "score": points, "state": ref("AttentionState"),
-        "reasons": array(obj({"label":text(maxLength=100), "points":points}),maxItems=3),
+        "reasons": array(obj({"label":text(maxLength=100), "points":{"type":"integer","minimum":-15,"maximum":85}}),maxItems=5),
         "holdings": array(obj({"securityId":ref("OpaqueId"), "name":text(maxLength=120), "quantity":ref("PositiveDecimalString")}),maxItems=100),
-    })
+        "watched":{"type":"boolean"},
+    },optional=("watched",))
     d["AttentionPage"] = obj({
         "coverage": enum(["NO_RECORDS","PARTIAL","RECORDED_ACCOUNTS"]), "rankedAt": ref("UtcInstant"),
         "items": array(ref("AttentionItem"),maxItems=25), "hasMore": {"type":"boolean"},
@@ -1168,6 +1190,13 @@ def public_api_document() -> dict:
         "/api/v1/monitoring/rules/{id}":{"post": maintained("editPriceRule","Append a reviewed price rule version","PriceRule",identifier,"PriceRuleEdit")},
         "/api/v1/monitoring/rules/{id}/versions":{"get": maintained("getPriceRuleVersions","Inspect the owned rule and its previous definitions","PriceRuleList",identifier)},
         "/api/v1/monitoring/rules/{id}/evaluations":{"get": maintained("getPriceRuleEvaluations","Read observed decisions and retained evidence","PriceEvaluationReport",identifier)},
+        "/api/v1/monitoring/research-alerts":{
+            "get":maintained("listResearchAlertRules","Read your plain-language rules","ResearchAlertIndex"),
+            "post":maintained("activateResearchAlert","Activate the exact previewed criteria","ResearchAlertRule",input_name="ResearchAlertConfirm")},
+        "/api/v1/monitoring/research-alerts/preview":{"post":maintained("previewResearchAlert","Interpret supported plain-language event and earnings rules","ResearchAlertPreview",
+            input_name="ResearchAlertRequest")},
+        "/api/v1/monitoring/research-alerts/{id}":{"post":maintained("setResearchAlertEnabled","Pause or resume a reviewed rule","ResearchAlertRule",
+            identifier,"ResearchAlertChange")},
         "/api/v1/monitoring/notifications":{"get": maintained("listNotifications","Read an owned page of delivered in-app notifications","NotificationPage",[parameter("before","query",text(format="uuid"))])},
         "/api/v1/monitoring/notifications/{id}":{"get": maintained("getNotification","Inspect an owned in-app item and its delivery evidence","NotificationDetail",identifier)},
         "/api/v1/monitoring/notifications/{id}/read":{"post": maintained("setNotificationRead","Change the read state of an owned notification","Notification",identifier,"NotificationRead")},
@@ -1349,6 +1378,9 @@ def public_api_document() -> dict:
         "/api/v1/research/events/suggestion":{"get": maintained("suggestSourceClassification","Suggest a classification from an owned primary source title","EventSuggestion",[
             parameter("documentId","query",text(format="uuid"),True),parameter("revision","query",{"type":"integer","minimum":1,"maximum":50},True)])},
         "/api/v1/research/events/{id}/versions":{"get": maintained("getCompanyEventHistory","Read retained thread versions and exact source references","CompanyEventHistory",identifier)},
+        "/api/v1/research/events/{id}/news":{
+            "get":maintained("getRelatedEventNews","Read related coverage for one reviewed event thread","RelatedEventNews",identifier),
+            "post":maintained("linkRelatedEventNews","Attach a reviewed saved article to an owned event thread","RelatedEventNews",identifier,"LinkEventNews")},
         "/api/v1/research/attention":{"get": maintained("rankAttentionInbox","Rank owned event threads using reviewed materiality and recorded holdings","AttentionPage",[
             parameter("view","query",enum(["ACTIVE","UNREAD","HIDDEN"])),parameter("offset","query",{"type":"integer","minimum":0,"maximum":300})])},
         "/api/v1/research/attention/{id}":{"post": maintained("saveAttentionFeedback","Set read, mute, or snooze state on an owned event","AttentionState",identifier,"AttentionFeedback")},

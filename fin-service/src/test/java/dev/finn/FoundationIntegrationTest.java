@@ -49,6 +49,9 @@ class FoundationIntegrationTest {
     @Test void marketRadarRanksRecentReviewedEventsBeforePriceCoverage() throws Exception {
         dev.finn.market.MarketRadarChecks.ranksDatedEventsWithoutPriceAndKeepsOwnersSeparate(mvc);
     }
+    @Test void researchAlertsRequirePreviewAndDeduplicateEventThreads() throws Exception {
+        dev.finn.market.ResearchAlertChecks.confirmsExactRulesAndDeliversOneNoticePerMaterialEvent(mvc,deliveryWorker);
+    }
     @Test void earningsReviewKeepsReportingBasesAndPriorExpectationsSeparate() throws Exception {
         dev.finn.market.EarningsReviewChecks.comparesReviewedPeriodsAndOnlyPreResultEstimates(mvc,researchExtraction);
     }
@@ -209,7 +212,7 @@ class FoundationIntegrationTest {
     @Test void demoIsSyntheticAndPrivateRoutesStayClosed() throws Exception {
         mvc.perform(get("/api/v1/demo/quote")).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.contractVersion").value("0.52.0"))
+                .andExpect(jsonPath("$.contractVersion").value("0.53.0"))
                 .andExpect(jsonPath("$.observation.provenance.provider").value("SYNTHETIC"))
                 .andExpect(jsonPath("$.observation.provenance.rights.mode").value("SYNTHETIC_PUBLIC_DEMO"));
         mvc.perform(get("/api/v1/portfolios/guessed-id")).andExpect(status().isUnauthorized())

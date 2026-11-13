@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.52.0",
+    "version": "0.53.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -1525,6 +1525,462 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/research-alerts": {
+      "get": {
+        "operationId": "listResearchAlertRules",
+        "summary": "Read your plain-language rules",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchAlertIndex"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "activateResearchAlert",
+        "summary": "Activate the exact previewed criteria",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchAlertRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResearchAlertConfirm"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/research-alerts/preview": {
+      "post": {
+        "operationId": "previewResearchAlert",
+        "summary": "Interpret supported plain-language event and earnings rules",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchAlertPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResearchAlertRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitoring/research-alerts/{id}": {
+      "post": {
+        "operationId": "setResearchAlertEnabled",
+        "summary": "Pause or resume a reviewed rule",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchAlertRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResearchAlertChange"
               }
             }
           }
@@ -11889,6 +12345,230 @@
         }
       }
     },
+    "/api/v1/research/events/{id}/news": {
+      "get": {
+        "operationId": "getRelatedEventNews",
+        "summary": "Read related coverage for one reviewed event thread",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatedEventNews"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "linkRelatedEventNews",
+        "summary": "Attach a reviewed saved article to an owned event thread",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatedEventNews"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkEventNews"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/research/attention": {
       "get": {
         "operationId": "rankAttentionInbox",
@@ -19331,7 +20011,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.52.0"
+        "const": "0.53.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -22060,7 +22740,8 @@
               "VOLUME_RULE",
               "ALLOCATION_RULE",
               "COMPANY_EVENT",
-              "THESIS_REVIEW"
+              "THESIS_REVIEW",
+              "RESEARCH_ALERT"
             ]
           },
           "subjectId": {
@@ -22593,6 +23274,13 @@
               }
             ]
           },
+          "researchMatches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResearchAlertMatch"
+            },
+            "maxItems": 100
+          },
           "deliveries": {
             "type": "array",
             "items": {
@@ -22618,6 +23306,238 @@
           "thesisReview",
           "deliveries",
           "attempts"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertMatch": {
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "companyId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 450
+          },
+          "event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "anchors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "companyName",
+          "companyId",
+          "title",
+          "reason",
+          "event",
+          "anchors"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertCadence": {
+        "type": "string",
+        "enum": [
+          "IMMEDIATE",
+          "DAILY",
+          "WEEKLY"
+        ]
+      },
+      "ResearchAlertCriteria": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "EVENT",
+              "REVENUE_MARGIN"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "HOLDINGS",
+              "WATCHLIST"
+            ]
+          },
+          "eventType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyEventType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "growthPercent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cadence": {
+            "$ref": "#/components/schemas/ResearchAlertCadence"
+          }
+        },
+        "required": [
+          "kind",
+          "scope",
+          "eventType",
+          "growthPercent",
+          "cadence"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertRequest": {
+        "type": "object",
+        "properties": {
+          "sentence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "cadence": {
+            "$ref": "#/components/schemas/ResearchAlertCadence"
+          }
+        },
+        "required": [
+          "sentence",
+          "cadence"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertConfirm": {
+        "type": "object",
+        "properties": {
+          "sentence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "cadence": {
+            "$ref": "#/components/schemas/ResearchAlertCadence"
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/ResearchAlertCriteria"
+          }
+        },
+        "required": [
+          "sentence",
+          "cadence",
+          "criteria"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertPreview": {
+        "type": "object",
+        "properties": {
+          "sentence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/ResearchAlertCriteria"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "schedule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "coverage": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 140
+          }
+        },
+        "required": [
+          "sentence",
+          "criteria",
+          "summary",
+          "schedule",
+          "coverage"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertRule": {
+        "type": "object",
+        "properties": {
+          "ruleId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/ResearchAlertPreview"
+          }
+        },
+        "required": [
+          "ruleId",
+          "enabled",
+          "preview"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertIndex": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResearchAlertRule"
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchAlertChange": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ],
         "additionalProperties": false
       },
@@ -22970,7 +23890,8 @@
                     "VOLUME_RULE",
                     "ALLOCATION_RULE",
                     "COMPANY_EVENT",
-                    "THESIS_REVIEW"
+                    "THESIS_REVIEW",
+                    "RESEARCH_ALERT"
                   ]
                 },
                 "title": {
@@ -27310,6 +28231,40 @@
         ],
         "additionalProperties": false
       },
+      "RelatedEventNews": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanySource"
+            },
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "LinkEventNews": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "documentId",
+          "revision"
+        ],
+        "additionalProperties": false
+      },
       "AttentionState": {
         "type": "object",
         "properties": {
@@ -27327,6 +28282,14 @@
               {
                 "type": "null"
               }
+            ]
+          },
+          "reaction": {
+            "type": "string",
+            "enum": [
+              "USEFUL",
+              "ALREADY_KNEW",
+              "TOO_MANY"
             ]
           }
         },
@@ -27353,7 +28316,11 @@
               "MUTE",
               "UNMUTE",
               "SNOOZE",
-              "UNSNOOZE"
+              "UNSNOOZE",
+              "USEFUL",
+              "ALREADY_KNEW",
+              "TOO_MANY",
+              "CLEAR_REACTION"
             ]
           },
           "snoozeUntil": {
@@ -27383,7 +28350,7 @@
           "score": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 75
+            "maximum": 85
           },
           "state": {
             "$ref": "#/components/schemas/AttentionState"
@@ -27400,8 +28367,8 @@
                 },
                 "points": {
                   "type": "integer",
-                  "minimum": 0,
-                  "maximum": 75
+                  "minimum": -15,
+                  "maximum": 85
                 }
               },
               "required": [
@@ -27410,7 +28377,7 @@
               ],
               "additionalProperties": false
             },
-            "maxItems": 3
+            "maxItems": 5
           },
           "holdings": {
             "type": "array",
@@ -27437,6 +28404,9 @@
               "additionalProperties": false
             },
             "maxItems": 100
+          },
+          "watched": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -28454,7 +29424,8 @@
                     "VOLUME_RULE",
                     "ALLOCATION_RULE",
                     "COMPANY_EVENT",
-                    "THESIS_REVIEW"
+                    "THESIS_REVIEW",
+                    "RESEARCH_ALERT"
                   ]
                 },
                 "delivery": {
@@ -29774,6 +30745,9 @@
               "RATE_LIMITED",
               "DATA_SOURCE_UNAVAILABLE",
               "INTERNAL_ERROR",
+              "ALERT_LANGUAGE_UNSUPPORTED",
+              "RESEARCH_ALERT_LIMIT",
+              "EARNINGS_INPUT_LIMIT",
               "GROQ_SEARCH_FAILED",
               "GROQ_NOT_CONFIGURED",
               "GROQ_ACCESS_REJECTED",

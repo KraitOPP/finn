@@ -4,6 +4,8 @@ package dev.finn.monitoring;
 import dev.finn.identity.CurrentUser;
 import dev.finn.platform.ApiFailure;
 import dev.finn.research.CompanyEvents;
+import dev.finn.research.ResearchAlerts;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -22,7 +24,8 @@ class Notifications {
     record ThesisReviewLink(UUID companyId,UUID thesisId,UUID reviewId) {}
     record Detail(Item notification, PriceEvaluationReport.Evaluation price, ReminderEvidence reminder,
                   Indicators.Evaluation indicator, UUID briefId, CompanyEvents.Version companyEvent,ThesisReviewLink thesisReview,
-                  List<Delivery> deliveries, List<Attempt> attempts) {}
+                  List<Delivery> deliveries, List<Attempt> attempts,
+                  @JsonInclude(JsonInclude.Include.NON_NULL) List<ResearchAlerts.Match> researchMatches) {}
     record DeliveryItem(UUID activityId, String title, String kind, Delivery delivery) {}
     record DeliveryPage(boolean emailPreviewEnabled, List<DeliveryItem> items) {}
 
@@ -36,15 +39,17 @@ class Notifications {
     private final EmailPreviewSink preview;
     private final Indicators indicators;
     private final CompanyEvents companyEvents;
+    private final ResearchAlerts researchAlerts;
 
     Notifications(JdbcTemplate jdbc, CurrentUser users, PriceEvaluationReport prices, EmailPreviewSink preview, Indicators indicators,
-                  CompanyEvents companyEvents) {
+                  CompanyEvents companyEvents,ResearchAlerts researchAlerts) {
         this.jdbc = jdbc;
         this.users = users;
         this.prices = prices;
         this.preview = preview;
         this.indicators = indicators;
         this.companyEvents = companyEvents;
+        this.researchAlerts=researchAlerts;
     }
 
     @Transactional
@@ -88,7 +93,8 @@ class Notifications {
                 WHERE r.owner_id=? AND r.review_id=?
                 """,(row,i)->new ThesisReviewLink(row.getObject("company_id",UUID.class),row.getObject("thesis_id",UUID.class),evidence),
                 owner,evidence).stream().findFirst().orElse(null):null;
-        return new Detail(item, evaluation, reminder, indicator, item.kind().equals("PORTFOLIO_BRIEF") ? evidence : null, event, review, deliveries, attempts);
+        return new Detail(item, evaluation, reminder, indicator, item.kind().equals("PORTFOLIO_BRIEF") ? evidence : null,
+                event, review, deliveries, attempts, item.kind().equals("RESEARCH_ALERT")?researchAlerts.evidence(owner,id):null);
     }
 
     @Transactional

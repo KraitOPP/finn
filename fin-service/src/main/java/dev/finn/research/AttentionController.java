@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/research/attention")
 class AttentionController {
     record Feedback(@NotNull @Min(1) @Max(100) Integer eventRevision,
-                    @NotNull @Pattern(regexp="READ|UNREAD|MUTE|UNMUTE|SNOOZE|UNSNOOZE") String action,
+                    @NotNull @Pattern(regexp="READ|UNREAD|MUTE|UNMUTE|SNOOZE|UNSNOOZE|USEFUL|ALREADY_KNEW|TOO_MANY|CLEAR_REACTION") String action,
                     @Size(max=32) String snoozeUntil) {}
     private final AttentionInbox inbox;
     AttentionController(AttentionInbox inbox) { this.inbox=inbox; }

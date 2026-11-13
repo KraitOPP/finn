@@ -31,6 +31,7 @@ type ResearchTarget = {
   thesis?: string;
   review?: string;
   event?: string;
+  eventVersion?: string;
   view?: string;
 };
 
@@ -53,6 +54,7 @@ export function CompanyWorkspace({ generation }: { generation: number }) {
           thesis: id("thesis"),
           review: id("review"),
           event: id("event"),
+          eventVersion: id("eventVersion"),
           view: params.get("view") ?? undefined,
         }
       : {};
@@ -117,7 +119,7 @@ function Overview({
   );
   const id = useId();
   const [view, setView] = useState(
-    target.thesis || target.review
+    target.thesis || target.review || target.view === "thesis"
       ? "thesis"
       : target.event
         ? "events"
@@ -186,7 +188,7 @@ function Overview({
                 <ThesisNotebook
                   company={company}
                   initialThesis={target.thesis}
-                  event={target.event}
+                  event={target.eventVersion}
                   review={target.review}
                 />
               )}

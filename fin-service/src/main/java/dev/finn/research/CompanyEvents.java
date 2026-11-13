@@ -18,11 +18,13 @@ import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
 public class CompanyEvents {
     public record AnnouncedDate(String type,LocalDate date,String certainty) {}
+    record Reviewed(UUID owner,Version event) {}
     record Input(UUID documentId,int documentRevision,UUID eventId,Integer expectedRevision,String title,String groupingKey,
                  String subtype,String stage,String materiality,String novelty,List<AnnouncedDate> dates) {}
     public record Version(UUID eventId,UUID versionId,UUID companyId,String companyName,int revision,UUID documentId,int documentRevision,
@@ -30,6 +32,7 @@ public class CompanyEvents {
                    String confidence,String reviewedAt,List<AnnouncedDate> dates) {}
     record Page(List<Version> items,boolean hasMore) {}
     record History(List<Version> items) {}
+    record RelatedNews(List<SourceDocuments.Entry> items) {}
     private record Root(UUID eventId,UUID companyId,int revision) {}
     private record Decision(UUID documentId,int documentRevision,String title,String category,String subtype,String stage,
                             String materiality,String novelty) {}
@@ -46,14 +49,17 @@ public class CompanyEvents {
     private final SourceDocuments sources;
     private final JsonMapper json;
     private final FilingRules rules;
+    private final ApplicationEventPublisher publisher;
     private static final JsonMapper DATE_READER=JsonMapper.builder().build();
 
-    CompanyEvents(JdbcTemplate jdbc,CurrentUser users,SourceDocuments sources,JsonMapper json,FilingRules rules) {
+    CompanyEvents(JdbcTemplate jdbc,CurrentUser users,SourceDocuments sources,JsonMapper json,FilingRules rules,
+                  ApplicationEventPublisher publisher) {
         this.jdbc=jdbc;
         this.users=users;
         this.sources=sources;
         this.json=json;
         this.rules=rules;
+        this.publisher=publisher;
     }
 
     @Transactional public EventClassifier.Hint suggestion(UUID document,int revision) {
@@ -76,6 +82,28 @@ public class CompanyEvents {
         require(owner,id);
         return new History(jdbc.query(SELECT+" WHERE e.owner_id=? AND e.event_id=? ORDER BY v.revision DESC LIMIT 100",
                 CompanyEvents::version,owner,id));
+    }
+
+    @Transactional public RelatedNews relatedNews(UUID id,UUID newsId,Integer revision){
+        UUID owner=users.requireId();
+        var event=current(owner,id);
+        if(newsId!=null){
+            var source=sources.evidence(owner,newsId,revision).source();
+            if(!source.sourceType().equals("NEWS")||!source.companyId().equals(event.companyId()))throw ApiFailure.notFound();
+            int added=jdbc.update("""
+                    INSERT INTO finn.event_related_news(owner_id,event_id,document_id,document_revision)
+                    VALUES (?,?,?,?) ON CONFLICT DO NOTHING
+                    """,owner,id,newsId,revision);
+            if(added==0&&!Boolean.TRUE.equals(jdbc.queryForObject("""
+                    SELECT EXISTS(SELECT 1 FROM finn.event_related_news WHERE owner_id=? AND event_id=?
+                        AND document_id=? AND document_revision=?)
+                    """,Boolean.class,owner,id,newsId,revision)))throw ApiFailure.conflict();
+        }
+        var links=jdbc.query("""
+                SELECT document_id,document_revision FROM finn.event_related_news WHERE owner_id=? AND event_id=?
+                ORDER BY document_id,document_revision LIMIT 40
+                """,(row,i)->sources.evidence(owner,row.getObject(1,UUID.class),row.getInt(2)).source(),owner,id);
+        return new RelatedNews(links);
     }
 
     @Transactional public Version classify(Input input) { return classifyFor(users.requireId(),input); }
@@ -127,6 +155,7 @@ public class CompanyEvents {
                 decision.subtype(),decision.stage(),decision.materiality(),decision.novelty(),fingerprint,dateJson);
         var saved=current(owner,id);
         rules.onEvent(owner,saved);
+        publisher.publishEvent(new Reviewed(owner,saved));
         return saved;
     }
 

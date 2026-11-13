@@ -15,12 +15,14 @@ import { useResource } from "../api/useResource.ts";
 import { RouteHeading } from "../Navigation.tsx";
 import { Attention } from "../research/Attention.tsx";
 import { CompanyNotificationEvidence } from "../research/CompanyNotificationEvidence.tsx";
+import { AnchorEvidence } from "../research/Evidence.tsx";
 import { Briefs, SavedBrief } from "./Briefs.tsx";
 import { IndicatorEvidence, IndicatorRules } from "./IndicatorRules.tsx";
 import { LocalTime } from "./LocalTime.tsx";
 import { CloseEvidence } from "./PriceEvaluations.tsx";
 import { PriceRules } from "./PriceRules.tsx";
 import { ReviewCalendar } from "./ReviewCalendar.tsx";
+import { ResearchAlertRules } from "./ResearchAlertRules.tsx";
 
 const path = "/api/v1/monitoring/notifications";
 const kinds = {
@@ -31,6 +33,7 @@ const kinds = {
   ALLOCATION_RULE: "Allocation alert",
   COMPANY_EVENT: "Company event",
   THESIS_REVIEW: "Thesis review",
+  RESEARCH_ALERT: "Research alert",
 };
 const statuses = {
   PENDING: "Pending",
@@ -44,7 +47,12 @@ const channelLabel = (value: NotificationDelivery["channel"]) =>
 
 export function Inbox() {
   const id = useId();
-  const [view, setView] = useState("activity");
+  const tab = new URLSearchParams(window.location.hash.split("?")[1]).get(
+    "view",
+  );
+  const [view, setView] = useState(
+    tab === "alerts" || tab === "briefs" ? tab : "activity",
+  );
   const views = {
     activity: "Activity",
     alerts: "Alerts",
@@ -85,10 +93,7 @@ export function Inbox() {
               {key === "activity" && (
                 <>
                   <NotificationList />
-                  <details className="workspace-tools">
-                    <summary>Research to review</summary>
-                    <Attention />
-                  </details>
+                  <Attention />
                   <details className="workspace-tools">
                     <summary>Notification delivery</summary>
                     <DeliveryStatus />
@@ -97,6 +102,7 @@ export function Inbox() {
               )}
               {key === "alerts" && (
                 <>
+                  <ResearchAlertRules />
                   <PriceRules />
                   <details className="workspace-tools">
                     <summary>Volume and allocation alerts</summary>
@@ -264,7 +270,7 @@ function NotificationDetails({
               <CompanyNotificationEvidence event={detail.value.companyEvent} />
               <p>
                 <a
-                  href={`#/research?company=${detail.value.companyEvent.companyId}&event=${detail.value.companyEvent.versionId}`}
+                  href={`#/research?company=${detail.value.companyEvent.companyId}&event=${detail.value.companyEvent.eventId}&eventVersion=${detail.value.companyEvent.versionId}&view=thesis`}
                 >
                   Review this event against a thesis
                 </a>
@@ -281,6 +287,12 @@ function NotificationDetails({
             </p>
           )}
           {detail.value.briefId && <SavedBrief id={detail.value.briefId} />}
+          {detail.value.researchMatches?.map((match) => (
+            <ResearchMatch
+              key={`${match.companyId}-${match.event?.versionId ?? match.anchors.join("-")}`}
+              match={match}
+            />
+          ))}
           {detail.value.indicator && (
             <IndicatorEvidence value={detail.value.indicator} />
           )}
@@ -319,6 +331,41 @@ function NotificationDetails({
         </>
       )}
     </div>
+  );
+}
+
+function ResearchMatch({
+  match,
+}: {
+  match: import("../../contracts/generated/models.ts").ResearchAlertMatch;
+}) {
+  const [open, setOpen] = useState(false);
+  const event = match.event;
+  return (
+    <details
+      className="workspace-tools"
+      onToggle={(change) => setOpen(change.currentTarget.open)}
+    >
+      <summary>
+        {match.companyName} · {match.title}
+      </summary>
+      <p>{match.reason}</p>
+      <p>
+        <a
+          href={
+            event
+              ? `#/research?company=${match.companyId}&event=${event.eventId}&eventVersion=${event.versionId}&view=thesis`
+              : `#/research?company=${match.companyId}&view=earnings`
+          }
+        >
+          {event
+            ? "Review evidence against a thesis"
+            : "Compare the reported results"}
+        </a>
+      </p>
+      {open && event && <CompanyNotificationEvidence event={event} />}
+      {open && match.anchors.map((id) => <AnchorEvidence key={id} id={id} />)}
+    </details>
   );
 }
 

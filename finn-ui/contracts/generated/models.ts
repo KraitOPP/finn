@@ -124,7 +124,7 @@ export type AsyncJobStatus = ((({
 
 export type AttentionFeedback = ({
   "eventRevision": (number);
-  "action": ("READ" | "UNREAD" | "MUTE" | "UNMUTE" | "SNOOZE" | "UNSNOOZE") & (string);
+  "action": ("READ" | "UNREAD" | "MUTE" | "UNMUTE" | "SNOOZE" | "UNSNOOZE" | "USEFUL" | "ALREADY_KNEW" | "TOO_MANY" | "CLEAR_REACTION") & (string);
   "snoozeUntil": (((UtcInstant)) | ((null)));
 });
 
@@ -141,6 +141,7 @@ export type AttentionItem = ({
   "name": (string);
   "quantity": (PositiveDecimalString);
 })>);
+  "watched"?: (boolean);
 });
 
 export type AttentionPage = ({
@@ -154,6 +155,7 @@ export type AttentionState = ({
   "read": (boolean);
   "muted": (boolean);
   "snoozedUntil": (((UtcInstant)) | ((null)));
+  "reaction"?: ("USEFUL" | "ALREADY_KNEW" | "TOO_MANY") & (string);
 });
 
 export type BriefIndex = ({
@@ -406,7 +408,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.52.0") & (string);
+export type ContractVersion = ("0.53.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -1161,6 +1163,11 @@ export type LedgerView = ({
   "recordedDividends": (NonNegativeDecimalString);
 });
 
+export type LinkEventNews = ({
+  "documentId": (OpaqueId);
+  "revision": (number);
+});
+
 export type ListingIdentity = ({
   "listingId": (OpaqueId);
   "securityId": (OpaqueId);
@@ -1282,7 +1289,7 @@ export type NonNegativeDecimalString = (string);
 
 export type Notification = ({
   "activityId": (OpaqueId);
-  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW") & (string);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW" | "RESEARCH_ALERT") & (string);
   "subjectId": (OpaqueId);
   "title": (string);
   "createdAt": (UtcInstant);
@@ -1310,7 +1317,7 @@ export type NotificationDeliveryPage = ({
   "items": (Array<({
   "activityId": (OpaqueId);
   "title": (string);
-  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW") & (string);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW" | "RESEARCH_ALERT") & (string);
   "delivery": (NotificationDelivery);
 })>);
 });
@@ -1323,6 +1330,7 @@ export type NotificationDetail = ({
   "briefId": (((OpaqueId)) | ((null)));
   "companyEvent": (((CompanyEvent)) | ((null)));
   "thesisReview": (((ThesisReviewLink)) | ((null)));
+  "researchMatches"?: (Array<(ResearchAlertMatch)>);
   "deliveries": (Array<(NotificationDelivery)>);
   "attempts": (Array<(NotificationAttempt)>);
 });
@@ -1433,7 +1441,7 @@ export type PortfolioBrief = ({
   "timeZone": (string);
   "items": (Array<({
   "activityId": (OpaqueId);
-  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW") & (string);
+  "kind": ("PRICE_RULE" | "REVIEW_REMINDER" | "PORTFOLIO_BRIEF" | "VOLUME_RULE" | "ALLOCATION_RULE" | "COMPANY_EVENT" | "THESIS_REVIEW" | "RESEARCH_ALERT") & (string);
   "title": (string);
   "createdAt": (UtcInstant);
 })>);
@@ -1730,7 +1738,7 @@ export type Problem = ({
   "status": (number);
   "detail": (string);
   "instance": (string);
-  "code": ("MALFORMED_REQUEST" | "VALIDATION_FAILED" | "AUTHENTICATION_REQUIRED" | "RESOURCE_NOT_FOUND" | "OPERATION_FORBIDDEN" | "CONFLICT" | "RATE_LIMITED" | "DATA_SOURCE_UNAVAILABLE" | "INTERNAL_ERROR" | "GROQ_SEARCH_FAILED" | "GROQ_NOT_CONFIGURED" | "GROQ_ACCESS_REJECTED" | "GROQ_REQUEST_REJECTED" | "GROQ_QUOTA" | "GROQ_RATE_LIMIT" | "GROQ_TIMEOUT" | "GROQ_UNAVAILABLE" | "GROQ_NO_RESULT" | "GROQ_NO_SOURCES" | "GEMINI_NOT_CONFIGURED" | "GEMINI_ACCESS_REJECTED" | "GEMINI_REQUEST_REJECTED" | "GEMINI_QUOTA" | "GEMINI_RATE_LIMIT" | "GEMINI_TIMEOUT" | "GEMINI_UNAVAILABLE" | "GEMINI_NO_RESULT" | "GEMINI_NO_SOURCES") & (string);
+  "code": ("MALFORMED_REQUEST" | "VALIDATION_FAILED" | "AUTHENTICATION_REQUIRED" | "RESOURCE_NOT_FOUND" | "OPERATION_FORBIDDEN" | "CONFLICT" | "RATE_LIMITED" | "DATA_SOURCE_UNAVAILABLE" | "INTERNAL_ERROR" | "ALERT_LANGUAGE_UNSUPPORTED" | "RESEARCH_ALERT_LIMIT" | "EARNINGS_INPUT_LIMIT" | "GROQ_SEARCH_FAILED" | "GROQ_NOT_CONFIGURED" | "GROQ_ACCESS_REJECTED" | "GROQ_REQUEST_REJECTED" | "GROQ_QUOTA" | "GROQ_RATE_LIMIT" | "GROQ_TIMEOUT" | "GROQ_UNAVAILABLE" | "GROQ_NO_RESULT" | "GROQ_NO_SOURCES" | "GEMINI_NOT_CONFIGURED" | "GEMINI_ACCESS_REJECTED" | "GEMINI_REQUEST_REJECTED" | "GEMINI_QUOTA" | "GEMINI_RATE_LIMIT" | "GEMINI_TIMEOUT" | "GEMINI_UNAVAILABLE" | "GEMINI_NO_RESULT" | "GEMINI_NO_SOURCES") & (string);
   "traceId": (OpaqueId);
   "errors"?: (Array<(ProblemField)>);
 });
@@ -1877,6 +1885,10 @@ export type RadarStock = ({
   "watched": (boolean);
 });
 
+export type RelatedEventNews = ({
+  "items": (Array<(CompanySource)>);
+});
+
 export type ReminderEdit = ({
   "expectedRevision": (number);
   "settings": (ReminderSettings);
@@ -1912,6 +1924,58 @@ export type ReportedFactInput = ({
   "amount": (DecimalString);
   "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
   "reviewed": (true);
+});
+
+export type ResearchAlertCadence = ("IMMEDIATE" | "DAILY" | "WEEKLY") & (string);
+
+export type ResearchAlertChange = ({
+  "enabled": (boolean);
+});
+
+export type ResearchAlertConfirm = ({
+  "sentence": (string);
+  "cadence": (ResearchAlertCadence);
+  "criteria": (ResearchAlertCriteria);
+});
+
+export type ResearchAlertCriteria = ({
+  "kind": ("EVENT" | "REVENUE_MARGIN") & (string);
+  "scope": ("ALL" | "HOLDINGS" | "WATCHLIST") & (string);
+  "eventType": (((CompanyEventType)) | ((null)));
+  "growthPercent": (((PositiveDecimalString)) | ((null)));
+  "cadence": (ResearchAlertCadence);
+});
+
+export type ResearchAlertIndex = ({
+  "items": (Array<(ResearchAlertRule)>);
+});
+
+export type ResearchAlertMatch = ({
+  "companyName": (string);
+  "companyId": (OpaqueId);
+  "title": (string);
+  "reason": (string);
+  "event": (((CompanyEvent)) | ((null)));
+  "anchors": (Array<(OpaqueId)>);
+});
+
+export type ResearchAlertPreview = ({
+  "sentence": (string);
+  "criteria": (ResearchAlertCriteria);
+  "summary": (string);
+  "schedule": (string);
+  "coverage": (string);
+});
+
+export type ResearchAlertRequest = ({
+  "sentence": (string);
+  "cadence": (ResearchAlertCadence);
+});
+
+export type ResearchAlertRule = ({
+  "ruleId": (OpaqueId);
+  "enabled": (boolean);
+  "preview": (ResearchAlertPreview);
 });
 
 export type ResearchExtraction = ({
@@ -2684,6 +2748,7 @@ export interface ContractTypes {
   LedgerRecordInput: LedgerRecordInput;
   LedgerReverseInput: LedgerReverseInput;
   LedgerView: LedgerView;
+  LinkEventNews: LinkEventNews;
   ListingIdentity: ListingIdentity;
   ListingInput: ListingInput;
   ManagementGuidance: ManagementGuidance;
@@ -2765,12 +2830,22 @@ export interface ContractTypes {
   RadarLeads: RadarLeads;
   RadarMovement: RadarMovement;
   RadarStock: RadarStock;
+  RelatedEventNews: RelatedEventNews;
   ReminderEdit: ReminderEdit;
   ReminderEvidence: ReminderEvidence;
   ReminderList: ReminderList;
   ReminderScheduleChange: ReminderScheduleChange;
   ReminderSettings: ReminderSettings;
   ReportedFactInput: ReportedFactInput;
+  ResearchAlertCadence: ResearchAlertCadence;
+  ResearchAlertChange: ResearchAlertChange;
+  ResearchAlertConfirm: ResearchAlertConfirm;
+  ResearchAlertCriteria: ResearchAlertCriteria;
+  ResearchAlertIndex: ResearchAlertIndex;
+  ResearchAlertMatch: ResearchAlertMatch;
+  ResearchAlertPreview: ResearchAlertPreview;
+  ResearchAlertRequest: ResearchAlertRequest;
+  ResearchAlertRule: ResearchAlertRule;
   ResearchExtraction: ResearchExtraction;
   ResearchLocation: ResearchLocation;
   ResearchLocations: ResearchLocations;

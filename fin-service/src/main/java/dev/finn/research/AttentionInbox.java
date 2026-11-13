@@ -4,6 +4,7 @@ package dev.finn.research;
 import dev.finn.identity.CurrentUser;
 import dev.finn.ledger.Journal;
 import dev.finn.platform.ApiFailure;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
@@ -15,19 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 class AttentionInbox {
     record Holding(UUID securityId,String name,String quantity) {}
     record Reason(String label,int points) {}
-    record State(boolean read,boolean muted,String snoozedUntil) {}
-    record Item(CompanyEvents.Version event,int score,List<Reason> reasons,List<Holding> holdings,State state) {}
+    record State(boolean read,boolean muted,String snoozedUntil,@JsonInclude(JsonInclude.Include.NON_NULL) String reaction) {}
+    record Item(CompanyEvents.Version event,int score,List<Reason> reasons,List<Holding> holdings,State state,
+                @JsonInclude(JsonInclude.Include.NON_NULL) Boolean watched) {}
     record Page(String coverage,String rankedAt,List<Item> items,boolean hasMore) {}
 
-    private record Feedback(Integer readRevision,boolean muted,OffsetDateTime snoozed) {
+    private record Feedback(Integer readRevision,boolean muted,OffsetDateTime snoozed,String reaction) {
         State state(int revision,Instant now) {
             return new State(readRevision!=null&&readRevision==revision,muted,
-                    snoozed!=null&&snoozed.toInstant().isAfter(now) ? snoozed.toInstant().toString() : null);
+                    snoozed!=null&&snoozed.toInstant().isAfter(now) ? snoozed.toInstant().toString() : null,reaction);
         }
     }
     private record Security(UUID id,UUID company,String name) {}
     record Exposure(String coverage,Map<UUID,List<Holding>> byCompany) {}
-    private static final Feedback DEFAULT = new Feedback(null,false,null);
+    private static final Feedback DEFAULT = new Feedback(null,false,null,null);
     private static final ZoneId INDIA=ZoneId.of("Asia/Kolkata");
     private static final int PAGE=25;
     private final JdbcTemplate jdbc;
@@ -51,12 +53,13 @@ class AttentionInbox {
                 SELECT * FROM finn.company_event_attention WHERE owner_id=?
                 """, row->{
                     feedback.put(row.getObject("event_id",UUID.class),new Feedback(row.getObject("read_revision",Integer.class),
-                            row.getBoolean("muted"),row.getObject("snoozed_until",OffsetDateTime.class)));
+                            row.getBoolean("muted"),row.getObject("snoozed_until",OffsetDateTime.class),row.getString("reaction")));
                 },owner);
         var exposure=current.isEmpty()?new Exposure("NO_RECORDS",Map.of()):exposure(owner,now.atZone(INDIA).toLocalDate(),null);
+        var watched=current.isEmpty()?Set.<UUID>of():watchedCompanies(owner);
         List<Item> ordered=current.stream()
                 .map(event->item(event,exposure.byCompany().getOrDefault(event.companyId(),List.of()),
-                        feedback.getOrDefault(event.eventId(),DEFAULT).state(event.revision(),now)))
+                        feedback.getOrDefault(event.eventId(),DEFAULT).state(event.revision(),now),watched.contains(event.companyId())))
                 .filter(item->visible(item.state(),view))
                 .sorted(Comparator.comparingInt(Item::score).reversed()
                         .thenComparing(item->Instant.parse(item.event().reviewedAt()),Comparator.reverseOrder())
@@ -71,24 +74,27 @@ class AttentionInbox {
         var current=events.current(owner,id);
         if (current.revision()!=revision) throw ApiFailure.conflict();
         var old=jdbc.query("""
-                SELECT read_revision,muted,snoozed_until FROM finn.company_event_attention WHERE owner_id=? AND event_id=?
-                """,(row,i)->new Feedback(row.getObject(1,Integer.class),row.getBoolean(2),row.getObject(3,OffsetDateTime.class)),
+                SELECT read_revision,muted,snoozed_until,reaction FROM finn.company_event_attention WHERE owner_id=? AND event_id=?
+                """,(row,i)->new Feedback(row.getObject(1,Integer.class),row.getBoolean(2),row.getObject(3,OffsetDateTime.class),row.getString(4)),
                 owner,id).stream().findFirst().orElse(DEFAULT);
         if (action.equals("SNOOZE")!=(snoozeUntil!=null)) throw ApiFailure.invalid();
         var now=Instant.now();
         Feedback next=switch(action){
-            case "READ" -> new Feedback(revision,old.muted(),old.snoozed());
-            case "UNREAD" -> new Feedback(null,old.muted(),old.snoozed());
-            case "MUTE" -> new Feedback(old.readRevision(),true,old.snoozed());
-            case "UNMUTE" -> new Feedback(old.readRevision(),false,old.snoozed());
-            case "SNOOZE" -> new Feedback(old.readRevision(),old.muted(),future(snoozeUntil,now));
-            case "UNSNOOZE" -> new Feedback(old.readRevision(),old.muted(),null);
+            case "READ" -> new Feedback(revision,old.muted(),old.snoozed(),old.reaction());
+            case "UNREAD" -> new Feedback(null,old.muted(),old.snoozed(),old.reaction());
+            case "MUTE" -> new Feedback(old.readRevision(),true,old.snoozed(),old.reaction());
+            case "UNMUTE" -> new Feedback(old.readRevision(),false,old.snoozed(),old.reaction());
+            case "SNOOZE" -> new Feedback(old.readRevision(),old.muted(),future(snoozeUntil,now),old.reaction());
+            case "UNSNOOZE" -> new Feedback(old.readRevision(),old.muted(),null,old.reaction());
+            case "USEFUL","ALREADY_KNEW","TOO_MANY" -> new Feedback(revision,old.muted(),old.snoozed(),action);
+            case "CLEAR_REACTION" -> new Feedback(old.readRevision(),old.muted(),old.snoozed(),null);
             default -> throw ApiFailure.invalid();
         };
         jdbc.update("""
-                INSERT INTO finn.company_event_attention(owner_id,event_id,read_revision,muted,snoozed_until) VALUES (?,?,?,?,?)
-                ON CONFLICT(owner_id,event_id) DO UPDATE SET read_revision=excluded.read_revision,muted=excluded.muted,snoozed_until=excluded.snoozed_until
-                """,owner,id,next.readRevision(),next.muted(),next.snoozed());
+                INSERT INTO finn.company_event_attention(owner_id,event_id,read_revision,muted,snoozed_until,reaction) VALUES (?,?,?,?,?,?)
+                ON CONFLICT(owner_id,event_id) DO UPDATE SET read_revision=excluded.read_revision,muted=excluded.muted,
+                    snoozed_until=excluded.snoozed_until,reaction=excluded.reaction
+                """,owner,id,next.readRevision(),next.muted(),next.snoozed(),next.reaction());
         return next.state(revision,now);
     }
 
@@ -127,7 +133,14 @@ class AttentionInbox {
         return new Exposure(partial||truncated?"PARTIAL":"RECORDED_ACCOUNTS",grouped);
     }
 
-    private static Item item(CompanyEvents.Version event,List<Holding> holdings,State state) {
+    Set<UUID> watchedCompanies(UUID owner) {
+        return new HashSet<>(jdbc.query("""
+                SELECT DISTINCT s.company_id FROM finn.watchlist_item w JOIN finn.listing l USING(owner_id,listing_id)
+                JOIN finn.security s USING(owner_id,security_id) WHERE w.owner_id=?
+                """,(row,i)->row.getObject(1,UUID.class),owner));
+    }
+
+    private static Item item(CompanyEvents.Version event,List<Holding> holdings,State state,boolean watched) {
         var reasons=new ArrayList<Reason>();
         switch(event.materiality()){
             case "HIGH" -> reasons.add(new Reason("Reviewed high materiality",40));
@@ -136,9 +149,11 @@ class AttentionInbox {
             default -> reasons.add(new Reason("Materiality unknown",0));
         }
         if (!holdings.isEmpty()) reasons.add(new Reason("Company has recorded holdings",25));
+        if (watched) reasons.add(new Reason("Company is on a watchlist",10));
         if (event.novelty().equals("CORRECTION")||event.stage().equals("CANCELLED")) reasons.add(new Reason("Correction or cancellation",10));
+        if("TOO_MANY".equals(state.reaction()))reasons.add(new Reason("Lower priority from your feedback",-15));
         int score=reasons.stream().mapToInt(Reason::points).sum();
-        return new Item(event,score,List.copyOf(reasons),holdings,state);
+        return new Item(event,Math.max(0,score),List.copyOf(reasons),holdings,state,watched);
     }
 
     private static boolean visible(State state,String view) {

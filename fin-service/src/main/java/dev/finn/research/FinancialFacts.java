@@ -14,10 +14,12 @@ import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 class FinancialFacts {
     record Dimensions(String metric,String basis,String periodKind,LocalDate periodStart,LocalDate periodEnd,String unit,String currency) {}
+    record Reviewed(UUID owner,Fact fact) {}
     record Operand(UUID factId,int revision) {}
     record Fact(UUID factId,UUID companyId,int revision,Dimensions dimensions,String amount,String scale,String normalizedAmount,
                 String origin,UUID anchorId,String sourceTitle,int documentRevision,String publishedAt,String reviewedAt,List<Operand> operands) {}
@@ -38,8 +40,11 @@ class FinancialFacts {
     private final JdbcTemplate jdbc;
     private final CurrentUser users;
     private final ResearchEvidence evidence;
+    private final ApplicationEventPublisher publisher;
 
-    FinancialFacts(JdbcTemplate jdbc,CurrentUser users,ResearchEvidence evidence){this.jdbc=jdbc;this.users=users;this.evidence=evidence;}
+    FinancialFacts(JdbcTemplate jdbc,CurrentUser users,ResearchEvidence evidence,ApplicationEventPublisher publisher){
+        this.jdbc=jdbc;this.users=users;this.evidence=evidence;this.publisher=publisher;
+    }
 
     @Transactional public Page list(UUID company,int offset){return listFor(users.requireId(),company,offset);}
 
@@ -173,7 +178,9 @@ class FinancialFacts {
                 value.a()==null?null:value.a().factId(),value.a()==null?null:value.a().revision(),
                 value.b()==null?null:value.b().factId(),value.b()==null?null:value.b().revision(),
                 value.publishedAt()==null?null:OffsetDateTime.parse(value.publishedAt()));
-        return require(owner,id,next);
+        var saved=require(owner,id,next);
+        publisher.publishEvent(new Reviewed(owner,saved));
+        return saved;
     }
 
     private static String latestPublication(String left,String right) {

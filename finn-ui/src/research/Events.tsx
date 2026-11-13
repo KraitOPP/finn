@@ -10,6 +10,7 @@ import { useResource } from "../api/useResource.ts";
 import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { AnnouncedDates, EditAnnouncedDates } from "./AnnouncedDates.tsx";
 import { OrderEvidence } from "./OrderEvidence.tsx";
+import { RelatedNews } from "./RelatedNews.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
 const path = "/api/v1/research/events";
@@ -168,6 +169,7 @@ export function EventHistory({ id }: { id: string }) {
           </label>
           <EventLabels event={selected} />
           <AnnouncedDates dates={selected.dates} />
+          <RelatedNews event={selected} />
           {selected.subtype === "ORDER" &&
             selected === versions.value.items[0] && (
               <OrderEvidence

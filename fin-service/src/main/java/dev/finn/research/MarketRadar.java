@@ -52,7 +52,7 @@ class MarketRadar {
         var today=LocalDate.now(INDIA);
         requirePortfolio(owner,portfolio);
         var exposure=attention.exposure(owner,today,portfolio);
-        var stocks=contexts(owner,exposure.byCompany().keySet(),watchedCompanies(owner));
+        var stocks=contexts(owner,exposure.byCompany().keySet(),attention.watchedCompanies(owner));
         return upcoming(today,exposure.coverage(),stocks.stream().filter(Context::held).toList(),announcements(owner));
     }
 
@@ -60,7 +60,7 @@ class MarketRadar {
         var today=now.atZone(INDIA).toLocalDate();
         requirePortfolio(owner,filter.portfolioId());
         var exposure=attention.exposure(owner,today,filter.portfolioId());
-        var watched=watchedCompanies(owner);
+        var watched=attention.watchedCompanies(owner);
         var announcements=announcements(owner);
         var stocks=contexts(owner,exposure.byCompany().keySet(),watched);
         var eligible=stocks.stream().filter(stock->inScope(stock,filter.scope())&&sectorMatches(stock,filter)).toList();
@@ -120,13 +120,6 @@ class MarketRadar {
         return jdbc.query(CompanyEvents.SELECT+" WHERE e.owner_id=? AND v.revision=e.revision ORDER BY v.reviewed_at DESC,e.event_id LIMIT 300",
                 (row,i)->new Announcement(CompanyEvents.version(row,i),SourceDocuments.instant(row,"published_at"),
                         row.getString("url"),row.getString("source_name")),owner);
-    }
-
-    Set<UUID> watchedCompanies(UUID owner) {
-        return new HashSet<>(jdbc.query("""
-                SELECT DISTINCT s.company_id FROM finn.watchlist_item w JOIN finn.listing l USING(owner_id,listing_id)
-                JOIN finn.security s USING(owner_id,security_id) WHERE w.owner_id=?
-                """,(row,i)->row.getObject(1,UUID.class),owner));
     }
 
     private List<Context> contexts(UUID owner,Set<UUID> held,Set<UUID> watched) {

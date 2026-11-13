@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 class CompanyEventsController {
     record DateInput(@NotNull @Pattern(regexp="MEETING|RESULTS|EX_DATE|RECORD_DATE|OTHER") String type,@NotNull LocalDate date,
                      @NotNull @Pattern(regexp="CONFIRMED|TENTATIVE|CANCELLED") String certainty) {}
+    record LinkNews(@NotNull UUID documentId,@NotNull @Min(1) @Max(50) Integer revision) {}
     record Input(@NotNull UUID documentId,@NotNull @Min(1) @Max(50) Integer documentRevision,UUID eventId,
                  @Min(1) @Max(100) Integer expectedRevision,@NotBlank @Size(max=120) String title,@Size(max=80) String groupingKey,
                  @NotNull EventClassifier.Subtype subtype,
@@ -36,4 +37,8 @@ class CompanyEventsController {
     }
     @PostMapping CompanyEvents.Version classify(@Valid @RequestBody Input input) { return events.classify(input.value()); }
     @GetMapping("/{id}/versions") CompanyEvents.History history(@PathVariable UUID id) { return events.history(id); }
+    @GetMapping("/{id}/news") CompanyEvents.RelatedNews related(@PathVariable UUID id){return events.relatedNews(id,null,null);}
+    @PostMapping("/{id}/news") CompanyEvents.RelatedNews attach(@PathVariable UUID id,@Valid @RequestBody LinkNews link){
+        return events.relatedNews(id,link.documentId(),link.revision());
+    }
 }

@@ -1,6 +1,7 @@
 
 package dev.finn.monitoring;
 
+import dev.finn.research.ResearchAlerts;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,13 +15,15 @@ class MonitoringSchedule {
     private final ReviewReminders reminders;
     private final Indicators indicators;
     private final PortfolioBriefs briefs;
+    private final ResearchAlerts researchAlerts;
     MonitoringSchedule(PriceEvaluationWorker prices, DeliveryWorker deliveries, ReviewReminders reminders, Indicators indicators,
-                       PortfolioBriefs briefs) {
+                       PortfolioBriefs briefs,ResearchAlerts researchAlerts) {
         this.prices = prices;
         this.deliveries = deliveries;
         this.reminders = reminders;
         this.indicators = indicators;
         this.briefs = briefs;
+        this.researchAlerts=researchAlerts;
     }
 
     @Scheduled(fixedDelay=15000)
@@ -75,6 +78,17 @@ class MonitoringSchedule {
             }
         } catch (RuntimeException failure) {
             LoggerFactory.getLogger(MonitoringSchedule.class).warn("Portfolio brief scheduling temporarily unavailable");
+        }
+    }
+
+    @Scheduled(fixedDelay=20000)
+    void researchAlerts() {
+        try {
+            for(int i=0;i<8&&researchAlerts.processNext();i++){
+                // Each scheduled digest commits its delivery separately.
+            }
+        }catch(RuntimeException failure){
+            LoggerFactory.getLogger(MonitoringSchedule.class).warn("Research alert scheduling temporarily unavailable");
         }
     }
 }

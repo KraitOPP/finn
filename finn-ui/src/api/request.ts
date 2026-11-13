@@ -5,6 +5,12 @@ import type {
 } from "../../contracts/generated/models.ts";
 
 const safeMessages: Record<string, string> = {
+  ALERT_LANGUAGE_UNSUPPORTED:
+    "This wording is outside the supported alert rules. Start with an example and preview the exact conditions.",
+  RESEARCH_ALERT_LIMIT:
+    "This workspace has reached its limit of 20 research alert rules.",
+  EARNINGS_INPUT_LIMIT:
+    "This workspace has reached its limit for reviewed earnings inputs.",
   CHART_NOT_CONFIGURED:
     "Yahoo price history is unavailable. Try saved closes if you have them.",
   CHART_BUSY: "Price history is busy. Try again in a moment.",
