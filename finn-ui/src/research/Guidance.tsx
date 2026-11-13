@@ -1,3 +1,9 @@
+import Button from "@mui/material/Button";
+import MenuItem from "@mui/material/MenuItem";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import type {
   ManagementGuidance,
@@ -56,33 +62,40 @@ export function GuidancePanel({ company }: { company: string }) {
       )}
       {data.value && (
         <>
-          <label>
-            Commitment{" "}
-            <select
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            sx={{ my: 1.5, alignItems: { sm: "center" } }}
+          >
+            <TextField
+              select
+              label="Commitment"
+              size="small"
+              sx={{ minWidth: { sm: 220 }, flex: 1 }}
               value={selected}
               onChange={(event) => {
                 setSelected(event.target.value);
                 setEditing(false);
               }}
             >
-              <option value="">Choose a commitment</option>
+              <MenuItem value="">Choose a commitment</MenuItem>
               {data.value.items.map((item) => (
-                <option key={item.guidanceId} value={item.guidanceId}>
+                <MenuItem key={item.guidanceId} value={item.guidanceId}>
                   {item.statementDate ?? "Undated"} · {item.title} ·{" "}
                   {stages[item.stage]}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            onClick={() => {
-              setSelected("");
-              setEditing(true);
-            }}
-          >
-            Add guidance from a source
-          </button>
+            </TextField>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSelected("");
+                setEditing(true);
+              }}
+            >
+              Add guidance from a source
+            </Button>
+          </Stack>
           {editing ? (
             <GuidanceForm
               key={selected}
@@ -117,43 +130,83 @@ function GuidanceTimeline({
   guidance: ManagementGuidance;
   onEdit: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const data = useResource(
     "ManagementGuidanceList",
-    open ? `${root}/guidance/${guidance.guidanceId}/versions` : null,
+    `${root}/guidance/${guidance.guidanceId}/versions`,
+  );
+  const older =
+    data.value?.items.filter((item) => item.revision < guidance.revision) ?? [];
+  const original = older.filter((item) => item.stage === "CONFIRMED").at(-1);
+  const intermediate = older.filter(
+    (item) => item.revision !== original?.revision,
   );
   return (
-    <div className="settings-card">
-      <GuidanceVersion item={guidance} />
-      <button type="button" onClick={onEdit}>
-        Review or revise guidance
-      </button>
-      <details onToggle={(event) => setOpen(event.currentTarget.open)}>
-        <summary>Guidance timeline</summary>
-        {data.error && <p role="alert">{data.error}</p>}
-        {data.value?.items.length === 1 && (
-          <p>The first version is the only one saved.</p>
+    <Stack spacing={1.5}>
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
+        {original && (
+          <GuidanceVersion item={original} label="Original commitment" />
         )}
-        {data.value?.items
-          .filter((item) => item.revision !== guidance.revision)
-          .map((item) => (
-            <GuidanceVersion key={item.revision} item={item} />
-          ))}
-      </details>
-    </div>
+        <GuidanceVersion
+          item={guidance}
+          label="Latest saved statement"
+          allowCompletion
+        />
+      </Stack>
+      <Button variant="outlined" onClick={onEdit} sx={{ alignSelf: "start" }}>
+        Review or revise guidance
+      </Button>
+      {data.error && <p role="alert">{data.error}</p>}
+      {intermediate.length > 0 && (
+        <details>
+          <summary>Other saved revisions ({intermediate.length})</summary>
+          <Stack spacing={1.5} sx={{ mt: 1 }}>
+            {intermediate.map((item) => (
+              <GuidanceVersion key={item.revision} item={item} />
+            ))}
+          </Stack>
+        </details>
+      )}
+    </Stack>
   );
 }
 
-function GuidanceVersion({ item }: { item: ManagementGuidance }) {
+function GuidanceVersion({
+  item,
+  label,
+  allowCompletion = false,
+}: {
+  item: ManagementGuidance;
+  label?: string;
+  allowCompletion?: boolean;
+}) {
   const [evidence, setEvidence] = useState(false);
   return (
-    <article>
+    <Paper
+      component="article"
+      variant="outlined"
+      sx={{
+        p: { xs: 1.5, sm: 2 },
+        flex: 1,
+        minWidth: 0,
+        overflowWrap: "anywhere",
+      }}
+    >
+      {label && (
+        <Typography variant="overline" color="text.secondary">
+          {label}
+        </Typography>
+      )}
       <h4>
         {item.title} · version {item.revision}
       </h4>
       <p>
         {kinds[item.kind]} · {stages[item.stage]}
       </p>
+      {item.targetDate && (
+        <p>
+          <strong>Target date</strong> {item.targetDate}
+        </p>
+      )}
       <p>
         Stated {item.statementDate ?? "on an unverified date"} · Published{" "}
         {item.publishedAt ? (
@@ -169,8 +222,8 @@ function GuidanceVersion({ item }: { item: ManagementGuidance }) {
         <summary>Open the source statement</summary>
         {evidence && <AnchorEvidence id={item.anchorId} />}
       </details>
-      <DeliveryComparison item={item} />
-    </article>
+      <DeliveryComparison item={item} allowCompletion={allowCompletion} />
+    </Paper>
   );
 }
 
@@ -221,6 +274,7 @@ function GuidanceForm({
     kind: guidance?.kind ?? "QUALITATIVE",
     stage: "DRAFT",
     statementDate: guidance?.statementDate ?? null,
+    targetDate: guidance?.targetDate ?? null,
     dimensions: guidance?.dimensions ?? null,
     lower: guidance?.lower ?? null,
     upper: guidance?.upper ?? null,
@@ -240,6 +294,7 @@ function GuidanceForm({
     setDraft({
       ...draft,
       kind,
+      targetDate: kind === "QUALITATIVE" ? draft.targetDate : null,
       dimensions:
         kind === "QUALITATIVE" ? null : (draft.dimensions ?? emptyTarget),
       scale: kind === "QUALITATIVE" ? "ONES" : draft.scale,
@@ -299,6 +354,7 @@ function GuidanceForm({
                     ...draft,
                     stage,
                     kind: guidance.kind,
+                    targetDate: guidance.targetDate,
                     dimensions: guidance.dimensions,
                     lower: guidance.lower,
                     upper: guidance.upper,
@@ -366,6 +422,18 @@ function GuidanceForm({
               ))}
             </select>
           </label>
+          {!numeric && (
+            <TextField
+              label="Published milestone target date"
+              type="date"
+              value={draft.targetDate ?? ""}
+              onChange={(event) =>
+                setDraft({ ...draft, targetDate: event.target.value || null })
+              }
+              helperText="Optional. Use the deadline supported by the selected statement."
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          )}
           {numeric && (
             <MetricTargetFields
               value={draft.dimensions ?? emptyTarget}

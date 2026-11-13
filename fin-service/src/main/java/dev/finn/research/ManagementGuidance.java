@@ -18,7 +18,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Service
 class ManagementGuidance {
     record Version(UUID guidanceId,UUID companyId,int revision,String title,String kind,String stage,LocalDate statementDate,
-                   String publishedAt,FinancialFacts.Dimensions dimensions,String lower,String upper,String scale,String caveats,
+                   LocalDate targetDate,String publishedAt,FinancialFacts.Dimensions dimensions,String lower,String upper,String scale,String caveats,
                    UUID anchorId,String savedAt) {}
     record Versions(List<Version> items) {}
     record Candidates(ResearchEvidence.Location evidence,List<String> printedNumbers) {}
@@ -30,10 +30,11 @@ class ManagementGuidance {
     private final CurrentUser users;
     private final ResearchEvidence evidence;
     private final FinancialFacts facts;
+    private final SourceDocuments sources;
     private final JsonMapper json;
 
-    ManagementGuidance(JdbcTemplate jdbc,CurrentUser users,ResearchEvidence evidence,FinancialFacts facts,JsonMapper json) {
-        this.jdbc=jdbc;this.users=users;this.evidence=evidence;this.facts=facts;this.json=json;
+    ManagementGuidance(JdbcTemplate jdbc,CurrentUser users,ResearchEvidence evidence,FinancialFacts facts,SourceDocuments sources,JsonMapper json) {
+        this.jdbc=jdbc;this.users=users;this.evidence=evidence;this.facts=facts;this.sources=sources;this.json=json;
     }
 
     @Transactional public Candidates candidates(UUID anchor) {
@@ -78,7 +79,8 @@ class ManagementGuidance {
         UUID owner=users.requireId();
         var previous=current(owner,id);
         if(previous.revision()!=expected||expected>=50)throw ApiFailure.conflict();
-        jdbc.update("UPDATE finn.management_guidance SET revision=revision+1 WHERE owner_id=? AND guidance_id=?",owner,id);
+        if(jdbc.update("UPDATE finn.management_guidance SET revision=revision+1 WHERE owner_id=? AND guidance_id=? AND revision=?",
+                owner,id,expected)!=1)throw ApiFailure.conflict();
         return append(owner,previous.companyId(),id,expected+1,input,previous);
     }
 
@@ -113,7 +115,10 @@ class ManagementGuidance {
         if(dimensions!=null)FactPolicy.validateTarget(dimensions,scale);
         if(low!=null&&high!=null&&low.compareTo(high)>0)throw ApiFailure.invalid();
         boolean qualitative=input.kind().equals("QUALITATIVE");
+        var target=input.targetDate();
         if(qualitative&&(dimensions!=null||low!=null||high!=null||scale!=FactPolicy.Scale.ONES))throw ApiFailure.invalid();
+        if(target!=null&&(!qualitative||target.isBefore(LocalDate.of(1900,1,1))||target.isAfter(today.plusYears(10))))
+            throw ApiFailure.invalid();
         if(!input.stage().equals("DRAFT")){
             if(day==null||publishedDate==null||publishedDate.isAfter(today))throw new ApiFailure(422,"GUIDANCE_DATE_UNVERIFIED");
             if(previous!=null&&previous.statementDate()!=null&&day.isBefore(previous.statementDate()))throw ApiFailure.invalid();
@@ -121,7 +126,11 @@ class ManagementGuidance {
                 if(previous==null||!previous.stage().equals("CONFIRMED")||input.caveats().isBlank()
                         ||location.anchorId().equals(previous.anchorId())||!sameTarget(previous,input,dimensions,low,high))
                     throw ApiFailure.invalid();
-            }else if(!qualitative){
+            }else if(qualitative){
+                if(target!=null&&(target.isBefore(day)
+                        ||!sources.evidence(owner,location.documentId(),location.documentRevision()).source().sourceType().equals("PRIMARY")))
+                    throw new ApiFailure(422,"GUIDANCE_EVIDENCE_REQUIRED");
+            }else{
                 boolean bounds=switch(input.kind()){
                     case "AT_LEAST" -> low!=null&&high==null;
                     case "AT_MOST" -> low==null&&high!=null;
@@ -136,14 +145,15 @@ class ManagementGuidance {
         }
         jdbc.update("""
                 INSERT INTO finn.management_guidance_version(owner_id,guidance_id,revision,title,kind,stage,statement_date,published_at,
-                    dimensions,lower_bound,upper_bound,scale,caveats,anchor_id) VALUES (?,?,?,?,?,?,?,?,?::jsonb,?,?,?,?,?)
+                    dimensions,lower_bound,upper_bound,scale,caveats,anchor_id,target_date) VALUES (?,?,?,?,?,?,?,?,?::jsonb,?,?,?,?,?,?)
                 """,owner,id,revision,input.title().strip(),input.kind(),input.stage(),day,published,
-                dimensions==null?null:json.writeValueAsString(dimensions),low,high,input.scale(),input.caveats().strip(),input.anchorId());
+                dimensions==null?null:json.writeValueAsString(dimensions),low,high,input.scale(),input.caveats().strip(),input.anchorId(),target);
         return version(owner,id,revision);
     }
 
     private static boolean sameTarget(Version previous,GuidanceController.Input input,FinancialFacts.Dimensions dimensions,BigDecimal low,BigDecimal high){
         return previous.kind().equals(input.kind())&&Objects.equals(previous.dimensions(),dimensions)&&previous.scale().equals(input.scale())
+                &&Objects.equals(previous.targetDate(),input.targetDate())
                 &&Objects.equals(previous.lower(),decimal(low))&&Objects.equals(previous.upper(),decimal(high));
     }
 
@@ -151,7 +161,8 @@ class ManagementGuidance {
         String dimensions=row.getString("dimensions");
         return new Version(row.getObject("guidance_id",UUID.class),row.getObject("company_id",UUID.class),row.getInt("revision"),
                 row.getString("title"),row.getString("kind"),row.getString("stage"),row.getObject("statement_date",LocalDate.class),
-                SourceDocuments.instant(row,"published_at"),dimensions==null?null:json.readValue(dimensions,FinancialFacts.Dimensions.class),
+                row.getObject("target_date",LocalDate.class),SourceDocuments.instant(row,"published_at"),
+                dimensions==null?null:json.readValue(dimensions,FinancialFacts.Dimensions.class),
                 decimal(row.getBigDecimal("lower_bound")),decimal(row.getBigDecimal("upper_bound")),row.getString("scale"),
                 row.getString("caveats"),row.getObject("anchor_id",UUID.class),SourceDocuments.instant(row,"saved_at"));
     }

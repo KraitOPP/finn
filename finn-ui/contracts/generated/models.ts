@@ -408,7 +408,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.55.0") & (string);
+export type ContractVersion = ("0.56.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -759,9 +759,10 @@ export type GuidanceDelivery = ({
   "guidanceRevision": (number);
   "asOf": (SessionDate);
   "state": ("MET" | "MISSED" | "PARTIAL" | "WITHDRAWN" | "REVISED" | "NOT_DUE" | "INSUFFICIENT_EVIDENCE") & (string);
-  "reason": ("PERIOD_OPEN" | "FACT_MISSING" | "DIMENSIONS_MISMATCH" | "PUBLICATION_UNKNOWN" | "PUBLISHED_AFTER_CUTOFF" | "PERIOD_PUBLICATION_INVALID" | "SOURCE_REVISED" | "DERIVATION_REVIEW_REQUIRED" | "COMPARABLE_FACT" | "GUIDANCE_UNCONFIRMED" | "GUIDANCE_NOT_PUBLISHED" | "WITHDRAWAL_PUBLISHED" | "REVISION_PUBLISHED" | "QUALITATIVE_STATEMENT" | "OUTCOME_PREDATES_GUIDANCE" | "INTERIM_YTD_ONLY") & (string);
+  "reason": ("PERIOD_OPEN" | "FACT_MISSING" | "DIMENSIONS_MISMATCH" | "PUBLICATION_UNKNOWN" | "PUBLISHED_AFTER_CUTOFF" | "PERIOD_PUBLICATION_INVALID" | "SOURCE_REVISED" | "DERIVATION_REVIEW_REQUIRED" | "COMPARABLE_FACT" | "GUIDANCE_UNCONFIRMED" | "GUIDANCE_NOT_PUBLISHED" | "WITHDRAWAL_PUBLISHED" | "REVISION_PUBLISHED" | "QUALITATIVE_STATEMENT" | "OUTCOME_PREDATES_GUIDANCE" | "INTERIM_YTD_ONLY" | "MILESTONE_ON_TIME" | "MILESTONE_LATE" | "MILESTONE_UNVERIFIED") & (string);
   "actual": (((FinancialFact)) | ((null)));
   "successor": (((ManagementGuidance)) | ((null)));
+  "milestone"?: (((MilestoneCompletion)) | ((null)));
 });
 
 export type HistoryCoverage = ({
@@ -1195,6 +1196,7 @@ export type ManagementGuidance = ({
   "kind": ("QUALITATIVE" | "AT_LEAST" | "AT_MOST" | "RANGE") & (string);
   "stage": ("DRAFT" | "CONFIRMED" | "WITHDRAWN") & (string);
   "statementDate": (((SessionDate)) | ((null)));
+  "targetDate"?: (((SessionDate)) | ((null)));
   "dimensions": (((FinancialDimensions)) | ((null)));
   "lower": (((DecimalString)) | ((null)));
   "upper": (((DecimalString)) | ((null)));
@@ -1218,6 +1220,7 @@ export type ManagementGuidanceInput = ({
   "kind": ("QUALITATIVE" | "AT_LEAST" | "AT_MOST" | "RANGE") & (string);
   "stage": ("DRAFT" | "CONFIRMED" | "WITHDRAWN") & (string);
   "statementDate": (((SessionDate)) | ((null)));
+  "targetDate"?: (((SessionDate)) | ((null)));
   "dimensions": (((FinancialDimensions)) | ((null)));
   "lower": (((DecimalString)) | ((null)));
   "upper": (((DecimalString)) | ((null)));
@@ -1288,6 +1291,19 @@ export type MarketRadar = ({
   "holdingsCoverage": ("NO_RECORDS" | "PARTIAL" | "RECORDED_ACCOUNTS") & (string);
   "items": (Array<(RadarEntry)>);
   "truncated": (boolean);
+});
+
+export type MilestoneCompletion = ({
+  "deliveryId": (OpaqueId);
+  "actualDate": (SessionDate);
+  "publishedAt": (UtcInstant);
+  "anchorId": (OpaqueId);
+});
+
+export type MilestoneCompletionInput = ({
+  "actualDate": (SessionDate);
+  "anchorId": (OpaqueId);
+  "reviewed": (true);
 });
 
 export type NonNegativeDecimalString = (string);
@@ -1760,7 +1776,7 @@ export type Problem = ({
   "status": (number);
   "detail": (string);
   "instance": (string);
-  "code": ("MALFORMED_REQUEST" | "VALIDATION_FAILED" | "AUTHENTICATION_REQUIRED" | "RESOURCE_NOT_FOUND" | "OPERATION_FORBIDDEN" | "CONFLICT" | "RATE_LIMITED" | "DATA_SOURCE_UNAVAILABLE" | "INTERNAL_ERROR" | "ALERT_LANGUAGE_UNSUPPORTED" | "RESEARCH_ALERT_LIMIT" | "EARNINGS_INPUT_LIMIT" | "GROQ_SEARCH_FAILED" | "GROQ_NOT_CONFIGURED" | "GROQ_ACCESS_REJECTED" | "GROQ_REQUEST_REJECTED" | "GROQ_QUOTA" | "GROQ_RATE_LIMIT" | "GROQ_TIMEOUT" | "GROQ_UNAVAILABLE" | "GROQ_NO_RESULT" | "GROQ_NO_SOURCES" | "GEMINI_NOT_CONFIGURED" | "GEMINI_ACCESS_REJECTED" | "GEMINI_REQUEST_REJECTED" | "GEMINI_QUOTA" | "GEMINI_RATE_LIMIT" | "GEMINI_TIMEOUT" | "GEMINI_UNAVAILABLE" | "GEMINI_NO_RESULT" | "GEMINI_NO_SOURCES") & (string);
+  "code": ("MALFORMED_REQUEST" | "VALIDATION_FAILED" | "AUTHENTICATION_REQUIRED" | "RESOURCE_NOT_FOUND" | "OPERATION_FORBIDDEN" | "CONFLICT" | "RATE_LIMITED" | "DATA_SOURCE_UNAVAILABLE" | "INTERNAL_ERROR" | "ALERT_LANGUAGE_UNSUPPORTED" | "RESEARCH_ALERT_LIMIT" | "EARNINGS_INPUT_LIMIT" | "MILESTONE_EVIDENCE_REQUIRED" | "GUIDANCE_EVIDENCE_REQUIRED" | "GROQ_SEARCH_FAILED" | "GROQ_NOT_CONFIGURED" | "GROQ_ACCESS_REJECTED" | "GROQ_REQUEST_REJECTED" | "GROQ_QUOTA" | "GROQ_RATE_LIMIT" | "GROQ_TIMEOUT" | "GROQ_UNAVAILABLE" | "GROQ_NO_RESULT" | "GROQ_NO_SOURCES" | "GEMINI_NOT_CONFIGURED" | "GEMINI_ACCESS_REJECTED" | "GEMINI_REQUEST_REJECTED" | "GEMINI_QUOTA" | "GEMINI_RATE_LIMIT" | "GEMINI_TIMEOUT" | "GEMINI_UNAVAILABLE" | "GEMINI_NO_RESULT" | "GEMINI_NO_SOURCES") & (string);
   "traceId": (OpaqueId);
   "errors"?: (Array<(ProblemField)>);
 });
@@ -2823,6 +2839,8 @@ export interface ContractTypes {
   MarketDiagnostics: MarketDiagnostics;
   MarketFeed: MarketFeed;
   MarketRadar: MarketRadar;
+  MilestoneCompletion: MilestoneCompletion;
+  MilestoneCompletionInput: MilestoneCompletionInput;
   NonNegativeDecimalString: NonNegativeDecimalString;
   Notification: Notification;
   NotificationAttempt: NotificationAttempt;

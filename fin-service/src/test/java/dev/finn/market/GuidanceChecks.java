@@ -87,4 +87,41 @@ public final class GuidanceChecks {
         read(mvc,delivery+"2025-06-19",owner).andExpect(status().isOk()).andExpect(jsonPath("$.state").value("NOT_DUE"));
         read(mvc,delivery+"2025-06-21",owner).andExpect(status().isOk()).andExpect(jsonPath("$.state").value("REVISED"));
     }
+
+    public static void showsOriginalMilestoneUpdatedTimelineAndActualCompletion(MockMvc mvc,ResearchExtractionWorker worker)throws Exception{
+        String owner="fictional-milestone-owner",other="fictional-milestone-other",company=company(mvc,owner);
+        String path=ROOT+"/companies/"+company+"/guidance";
+        String initial=index(mvc,worker,owner,document(mvc,owner,filing(company,"Fictional capex announcement",
+                "The new facility is expected to start production by 30 June 2025.","2025-04-15T10:00:00Z")),1);
+        String confirmed=milestone(initial,"2025-04-15","2025-06-30");
+        String id=ok(submit(mvc,path,owner,confirmed)).path("guidanceId").asText();
+        String base=ROOT+"/guidance/"+id;
+        read(mvc,base+"/versions/1/delivery?asOf=2025-05-20",owner).andExpect(status().isOk())
+                .andExpect(jsonPath("$.state").value("NOT_DUE"));
+        String revision=index(mvc,worker,owner,document(mvc,owner,filing(company,"Fictional capex update",
+                "The new commissioning deadline is 30 September 2025.","2025-06-12T10:00:00Z")),1);
+        ok(submit(mvc,base,owner,"{\"expectedRevision\":1,\"guidance\":"+milestone(revision,"2025-06-12","2025-09-30")+"}"));
+        read(mvc,base+"/versions/1/delivery?asOf=2025-07-01",owner).andExpect(status().isOk())
+                .andExpect(jsonPath("$.state").value("REVISED")).andExpect(jsonPath("$.successor.targetDate").value("2025-09-30"));
+        String completion=index(mvc,worker,owner,document(mvc,owner,filing(company,"Fictional commissioning confirmation",
+                "The facility started commercial production on 8 October 2025.","2025-10-09T10:00:00Z")),1);
+        String actual=base+"/versions/2/delivery";
+        String input="{\"actualDate\":\"2025-10-08\",\"anchorId\":\""+completion+"\",\"reviewed\":true}";
+        submit(mvc,actual,owner,input.replace("2025-10-08","2025-10-10")).andExpect(status().isUnprocessableContent());
+        submit(mvc,actual,other,input).andExpect(status().isNotFound());
+        String delivery=ok(submit(mvc,actual,owner,input)).path("deliveryId").asText();
+        submit(mvc,actual,owner,input).andExpect(status().isOk()).andExpect(jsonPath("$.deliveryId").value(delivery));
+        read(mvc,actual+"?asOf=2025-10-08",owner).andExpect(status().isOk())
+                .andExpect(jsonPath("$.reason").value("MILESTONE_UNVERIFIED"));
+        read(mvc,actual+"?asOf=2025-10-10",owner).andExpect(status().isOk())
+                .andExpect(jsonPath("$.state").value("MISSED")).andExpect(jsonPath("$.reason").value("MILESTONE_LATE"))
+                .andExpect(jsonPath("$.milestone.anchorId").value(completion));
+    }
+
+    private static String milestone(String anchor,String statement,String target){
+        return """
+                {"title":"Fictional plant commissioning","kind":"QUALITATIVE","stage":"CONFIRMED","statementDate":"%s",
+                 "targetDate":"%s","dimensions":null,"lower":null,"upper":null,"scale":"ONES","caveats":"","anchorId":"%s"}
+                """.formatted(statement,target,anchor);
+    }
 }

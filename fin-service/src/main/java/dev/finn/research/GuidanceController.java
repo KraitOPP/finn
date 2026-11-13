@@ -11,7 +11,7 @@ import tools.jackson.databind.JsonNode;
 @RequestMapping("/api/v1/research")
 class GuidanceController {
     record Input(@NotBlank @Size(max=120) String title,@NotNull @Pattern(regexp="QUALITATIVE|AT_LEAST|AT_MOST|RANGE") String kind,
-                 @NotNull @Pattern(regexp="DRAFT|CONFIRMED|WITHDRAWN") String stage,LocalDate statementDate,
+                 @NotNull @Pattern(regexp="DRAFT|CONFIRMED|WITHDRAWN") String stage,LocalDate statementDate,LocalDate targetDate,
                  @Valid FinancialFactsController.Dimensions dimensions,JsonNode lower,JsonNode upper,
                  @NotNull @Pattern(regexp="ONES|THOUSAND|LAKH|MILLION|CRORE|BILLION") String scale,
                  @NotNull @Size(max=1200) String caveats,@NotNull UUID anchorId) {}

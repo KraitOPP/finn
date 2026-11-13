@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.55.0",
+    "version": "0.56.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -9701,6 +9701,147 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordMilestoneCompletion",
+        "summary": "Save reviewed company evidence for completion of a dated commitment",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneCompletion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneCompletionInput"
               }
             }
           }
@@ -20361,7 +20502,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.55.0"
+        "const": "0.56.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -27342,6 +27483,16 @@
               }
             ]
           },
+          "targetDate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "dimensions": {
             "anyOf": [
               {
@@ -27450,6 +27601,16 @@
             ]
           },
           "statementDate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetDate": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/SessionDate"
@@ -27590,6 +27751,50 @@
         ],
         "additionalProperties": false
       },
+      "MilestoneCompletionInput": {
+        "type": "object",
+        "properties": {
+          "actualDate": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "anchorId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "reviewed": {
+            "const": true
+          }
+        },
+        "required": [
+          "actualDate",
+          "anchorId",
+          "reviewed"
+        ],
+        "additionalProperties": false
+      },
+      "MilestoneCompletion": {
+        "type": "object",
+        "properties": {
+          "deliveryId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "actualDate": {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          "publishedAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "anchorId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          }
+        },
+        "required": [
+          "deliveryId",
+          "actualDate",
+          "publishedAt",
+          "anchorId"
+        ],
+        "additionalProperties": false
+      },
       "GuidanceDelivery": {
         "type": "object",
         "properties": {
@@ -27634,7 +27839,10 @@
               "REVISION_PUBLISHED",
               "QUALITATIVE_STATEMENT",
               "OUTCOME_PREDATES_GUIDANCE",
-              "INTERIM_YTD_ONLY"
+              "INTERIM_YTD_ONLY",
+              "MILESTONE_ON_TIME",
+              "MILESTONE_LATE",
+              "MILESTONE_UNVERIFIED"
             ]
           },
           "actual": {
@@ -27651,6 +27859,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ManagementGuidance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MilestoneCompletion"
               },
               {
                 "type": "null"
@@ -31471,6 +31689,8 @@
               "ALERT_LANGUAGE_UNSUPPORTED",
               "RESEARCH_ALERT_LIMIT",
               "EARNINGS_INPUT_LIMIT",
+              "MILESTONE_EVIDENCE_REQUIRED",
+              "GUIDANCE_EVIDENCE_REQUIRED",
               "GROQ_SEARCH_FAILED",
               "GROQ_NOT_CONFIGURED",
               "GROQ_ACCESS_REJECTED",

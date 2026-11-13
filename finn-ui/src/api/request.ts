@@ -11,6 +11,10 @@ const safeMessages: Record<string, string> = {
     "This workspace has reached its limit of 20 research alert rules.",
   EARNINGS_INPUT_LIMIT:
     "This workspace has reached its limit for reviewed earnings inputs.",
+  GUIDANCE_EVIDENCE_REQUIRED:
+    "Use a source that supports the target and its dates.",
+  MILESTONE_EVIDENCE_REQUIRED:
+    "Use a dated company source that confirms completion after the original statement.",
   CHART_NOT_CONFIGURED:
     "Yahoo price history is unavailable. Try saved closes if you have them.",
   CHART_BUSY: "Price history is busy. Try again in a moment.",

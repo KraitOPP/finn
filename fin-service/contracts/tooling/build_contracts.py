@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.55.0"
+VERSION = "0.56.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -29,6 +29,7 @@ PROBLEM_STATUSES = {
     "OPERATION_FORBIDDEN": (403,), "CONFLICT": (409,), "RATE_LIMITED": (429,),
     "DATA_SOURCE_UNAVAILABLE": (503,), "INTERNAL_ERROR": (500,),
     "ALERT_LANGUAGE_UNSUPPORTED": (422,), "RESEARCH_ALERT_LIMIT": (429,), "EARNINGS_INPUT_LIMIT": (429,),
+    "MILESTONE_EVIDENCE_REQUIRED": (422,), "GUIDANCE_EVIDENCE_REQUIRED": (422,),
     "GROQ_SEARCH_FAILED": (502,),
     **{
         f"{provider}_{reason}": statuses
@@ -606,19 +607,25 @@ def definitions() -> dict:
     d["ThesisConditions"] = obj({"items":array(ref("ThesisCondition"),maxItems=20)})
     guidance_input = {"title":text(minLength=1,maxLength=120),"kind":enum(["QUALITATIVE","AT_LEAST","AT_MOST","RANGE"]),
         "stage":enum(["DRAFT","CONFIRMED","WITHDRAWN"]),"statementDate":nullable(ref("SessionDate")),
+        "targetDate":nullable(ref("SessionDate")),
         "dimensions":nullable(ref("FinancialDimensions")),"lower":nullable(ref("DecimalString")),"upper":nullable(ref("DecimalString")),
         "scale":fact_scale,"caveats":text(maxLength=1200),"anchorId":ref("OpaqueId")}
-    d["ManagementGuidanceInput"] = obj(guidance_input)
+    d["ManagementGuidanceInput"] = obj(guidance_input,optional=("targetDate",))
     d["ManagementGuidanceEdit"] = obj({"expectedRevision":source_revision,"guidance":ref("ManagementGuidanceInput")})
     d["ManagementGuidance"] = obj({**guidance_input,"guidanceId":ref("OpaqueId"),"companyId":ref("OpaqueId"),
-        "revision":source_revision,"publishedAt":nullable(ref("UtcInstant")),"savedAt":ref("UtcInstant")})
+        "revision":source_revision,"publishedAt":nullable(ref("UtcInstant")),"savedAt":ref("UtcInstant")},optional=("targetDate",))
     d["ManagementGuidanceList"] = obj({"items":array(ref("ManagementGuidance"),maxItems=50)})
     d["GuidanceCandidates"] = obj({"evidence":ref("ResearchLocation"),"printedNumbers":array(text(minLength=1,maxLength=80),maxItems=12)})
+    d["MilestoneCompletionInput"] = obj({"actualDate":ref("SessionDate"),"anchorId":ref("OpaqueId"),"reviewed":{"const":True}})
+    d["MilestoneCompletion"] = obj({"deliveryId":ref("OpaqueId"),"actualDate":ref("SessionDate"),
+        "publishedAt":ref("UtcInstant"),"anchorId":ref("OpaqueId")})
     d["GuidanceDelivery"] = obj({"guidanceId":ref("OpaqueId"),"guidanceRevision":source_revision,"asOf":ref("SessionDate"),
         "state":enum(["MET","MISSED","PARTIAL","WITHDRAWN","REVISED","NOT_DUE","INSUFFICIENT_EVIDENCE"]),
         "reason":enum([*fact_evaluation_reason["enum"],"GUIDANCE_UNCONFIRMED","GUIDANCE_NOT_PUBLISHED","WITHDRAWAL_PUBLISHED",
-            "REVISION_PUBLISHED","QUALITATIVE_STATEMENT","OUTCOME_PREDATES_GUIDANCE","INTERIM_YTD_ONLY"]),
-        "actual":nullable(ref("FinancialFact")),"successor":nullable(ref("ManagementGuidance"))})
+            "REVISION_PUBLISHED","QUALITATIVE_STATEMENT","OUTCOME_PREDATES_GUIDANCE","INTERIM_YTD_ONLY",
+            "MILESTONE_ON_TIME","MILESTONE_LATE","MILESTONE_UNVERIFIED"]),
+        "actual":nullable(ref("FinancialFact")),"successor":nullable(ref("ManagementGuidance")),
+        "milestone":nullable(ref("MilestoneCompletion"))},optional=("milestone",))
     review_relation = enum(["CONTEXT","SUPPORTS","CHALLENGES"])
     review_decision = {"action":enum(["REAFFIRM","REVISE","PAUSE","CLOSE","DISMISS"]),
         "note":text(minLength=1,maxLength=1200),"anchorId":nullable(ref("OpaqueId"))}
@@ -1346,9 +1353,11 @@ def public_api_document() -> dict:
             "ManagementGuidance",identifier,"ManagementGuidanceEdit")},
         "/api/v1/research/guidance/{id}/versions":{"get":maintained("readGuidanceTimeline","Read source-linked guidance versions",
             "ManagementGuidanceList",identifier)},
-        "/api/v1/research/guidance/{id}/versions/{revision}/delivery":{"get":maintained("compareGuidanceDelivery",
-            "Compare the statement and outcome known on the selected date","GuidanceDelivery",
-            [*source_version_params,parameter("asOf","query",ref("SessionDate"))])},
+        "/api/v1/research/guidance/{id}/versions/{revision}/delivery":{
+            "get":maintained("compareGuidanceDelivery","Compare the statement and outcome known on the selected date",
+                "GuidanceDelivery",[*source_version_params,parameter("asOf","query",ref("SessionDate"))]),
+            "post":maintained("recordMilestoneCompletion","Save reviewed company evidence for completion of a dated commitment",
+                "MilestoneCompletion",source_version_params,"MilestoneCompletionInput")},
         "/api/v1/research/guidance/candidates/{anchor}":{"get":maintained("readGuidanceCandidates","Inspect the selected source and its printed numbers",
             "GuidanceCandidates",[parameter("anchor","path",text(format="uuid"),True)])},
         "/api/v1/research/report-capabilities":{"get":maintained(

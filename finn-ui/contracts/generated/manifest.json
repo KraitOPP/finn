@@ -1,8 +1,8 @@
 {
-  "contractVersion": "0.55.0",
+  "contractVersion": "0.56.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "289fa53be48c6e0bd6dbe48154c5b94c9dd3bfec0dfe26dc99bfe33b04c246a2",
+  "sourceSha256": "8911b1f9766a844511213e4b13c642109df63aafe0fe15f39a834d28d0be5cef",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -151,6 +151,8 @@
     "MarketDiagnostics",
     "MarketFeed",
     "MarketRadar",
+    "MilestoneCompletion",
+    "MilestoneCompletionInput",
     "NonNegativeDecimalString",
     "Notification",
     "NotificationAttempt",

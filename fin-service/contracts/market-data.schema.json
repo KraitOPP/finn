@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.55.0",
+  "$id": "urn:finn:contracts:market-data:0.56.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.55.0"
+      "const": "0.56.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -6988,6 +6988,16 @@
             }
           ]
         },
+        "targetDate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "dimensions": {
           "anyOf": [
             {
@@ -7096,6 +7106,16 @@
           ]
         },
         "statementDate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetDate": {
           "anyOf": [
             {
               "$ref": "#/$defs/SessionDate"
@@ -7236,6 +7256,50 @@
       ],
       "additionalProperties": false
     },
+    "MilestoneCompletionInput": {
+      "type": "object",
+      "properties": {
+        "actualDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "anchorId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "actualDate",
+        "anchorId",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "MilestoneCompletion": {
+      "type": "object",
+      "properties": {
+        "deliveryId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "actualDate": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "publishedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "anchorId": {
+          "$ref": "#/$defs/OpaqueId"
+        }
+      },
+      "required": [
+        "deliveryId",
+        "actualDate",
+        "publishedAt",
+        "anchorId"
+      ],
+      "additionalProperties": false
+    },
     "GuidanceDelivery": {
       "type": "object",
       "properties": {
@@ -7280,7 +7344,10 @@
             "REVISION_PUBLISHED",
             "QUALITATIVE_STATEMENT",
             "OUTCOME_PREDATES_GUIDANCE",
-            "INTERIM_YTD_ONLY"
+            "INTERIM_YTD_ONLY",
+            "MILESTONE_ON_TIME",
+            "MILESTONE_LATE",
+            "MILESTONE_UNVERIFIED"
           ]
         },
         "actual": {
@@ -7297,6 +7364,16 @@
           "anyOf": [
             {
               "$ref": "#/$defs/ManagementGuidance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "milestone": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MilestoneCompletion"
             },
             {
               "type": "null"
@@ -11117,6 +11194,8 @@
             "ALERT_LANGUAGE_UNSUPPORTED",
             "RESEARCH_ALERT_LIMIT",
             "EARNINGS_INPUT_LIMIT",
+            "MILESTONE_EVIDENCE_REQUIRED",
+            "GUIDANCE_EVIDENCE_REQUIRED",
             "GROQ_SEARCH_FAILED",
             "GROQ_NOT_CONFIGURED",
             "GROQ_ACCESS_REJECTED",

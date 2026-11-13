@@ -25,7 +25,7 @@ class ThesisReviews {
                 UUID anchorId,ThesisConditions.Check condition,GuidanceLink guidance,Decision decision,String createdAt) {}
     private record Stored(UUID id,UUID thesis,int revision,UUID event,String fingerprint,String relation,UUID anchor,
                           UUID check,UUID guidance,Integer guidanceRevision,String state,String reason,LocalDate asOf,
-                          Integer successor,UUID fact,Integer factRevision,String createdAt) {}
+                          Integer successor,UUID fact,Integer factRevision,UUID milestone,String createdAt) {}
 
     private final JdbcTemplate jdbc;
     private final CurrentUser users;
@@ -97,11 +97,12 @@ class ThesisReviews {
         jdbc.update("""
                 INSERT INTO finn.thesis_review_task(review_id,owner_id,thesis_id,thesis_revision,event_version_id,fingerprint,
                    relation,anchor_id,condition_check_id,guidance_id,guidance_revision,guidance_state,guidance_reason,guidance_as_of,
-                   successor_revision,actual_fact_id,actual_fact_revision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   successor_revision,actual_fact_id,actual_fact_revision,milestone_delivery_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,id,owner,thesis,root.revision(),event.versionId(),fingerprint,input.relation(),input.anchorId(),input.conditionCheckId(),
                 commitment==null?null:commitment.guidanceId(),commitment==null?null:commitment.revision(),outcome==null?null:outcome.state(),
                 outcome==null?null:outcome.reason(),outcome==null?null:outcome.asOf(),outcome==null||outcome.successor()==null?null:outcome.successor().revision(),
-                actual==null?null:actual.factId(),actual==null?null:actual.revision());
+                actual==null?null:actual.factId(),actual==null?null:actual.revision(),
+                outcome==null||outcome.milestone()==null?null:outcome.milestone().deliveryId());
         activity.add(owner,ActivityWriter.Kind.THESIS_REVIEW,thesis,id.toString(),"Thesis review: "+event.title(),id,OffsetDateTime.now(ZoneOffset.UTC));
         return view(owner,require(owner,id));
     }
@@ -142,8 +143,9 @@ class ThesisReviews {
         var statement=guidance.version(owner,task.guidance(),task.guidanceRevision());
         var successor=task.successor()==null?null:guidance.version(owner,task.guidance(),task.successor());
         var actual=task.fact()==null?null:facts.require(owner,task.fact(),task.factRevision());
+        var milestone=task.milestone()==null?null:delivery.savedMilestone(owner,task.milestone());
         return new GuidanceLink(statement,new GuidanceDelivery.Outcome(task.guidance(),task.guidanceRevision(),task.asOf(),
-                task.state(),task.reason(),actual,successor));
+                task.state(),task.reason(),actual,successor,milestone));
     }
 
     private Decision decision(UUID owner,UUID id){
@@ -163,6 +165,6 @@ class ThesisReviews {
                 row.getObject("condition_check_id",UUID.class),row.getObject("guidance_id",UUID.class),row.getObject("guidance_revision",Integer.class),
                 row.getString("guidance_state"),row.getString("guidance_reason"),row.getObject("guidance_as_of",LocalDate.class),
                 row.getObject("successor_revision",Integer.class),row.getObject("actual_fact_id",UUID.class),row.getObject("actual_fact_revision",Integer.class),
-                SourceDocuments.instant(row,"created_at"));
+                row.getObject("milestone_delivery_id",UUID.class),SourceDocuments.instant(row,"created_at"));
     }
 }

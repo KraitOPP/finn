@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.55.0",
+  "contractVersion": "0.56.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "289fa53be48c6e0bd6dbe48154c5b94c9dd3bfec0dfe26dc99bfe33b04c246a2",
+  "sourceSha256": "8911b1f9766a844511213e4b13c642109df63aafe0fe15f39a834d28d0be5cef",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -152,6 +152,8 @@ export const contractMetadata = {
     "MarketDiagnostics",
     "MarketFeed",
     "MarketRadar",
+    "MilestoneCompletion",
+    "MilestoneCompletionInput",
     "NonNegativeDecimalString",
     "Notification",
     "NotificationAttempt",
@@ -2462,7 +2464,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.55.0"
+    "const": "0.56.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -4459,7 +4461,10 @@ export const contractSchemas = {
           "REVISION_PUBLISHED",
           "QUALITATIVE_STATEMENT",
           "OUTCOME_PREDATES_GUIDANCE",
-          "INTERIM_YTD_ONLY"
+          "INTERIM_YTD_ONLY",
+          "MILESTONE_ON_TIME",
+          "MILESTONE_LATE",
+          "MILESTONE_UNVERIFIED"
         ]
       },
       "actual": {
@@ -4476,6 +4481,16 @@ export const contractSchemas = {
         "anyOf": [
           {
             "$ref": "#/components/schemas/ManagementGuidance"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "milestone": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/MilestoneCompletion"
           },
           {
             "type": "null"
@@ -7089,6 +7104,16 @@ export const contractSchemas = {
           }
         ]
       },
+      "targetDate": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "dimensions": {
         "anyOf": [
           {
@@ -7226,6 +7251,16 @@ export const contractSchemas = {
         ]
       },
       "statementDate": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "targetDate": {
         "anyOf": [
           {
             "$ref": "#/components/schemas/SessionDate"
@@ -7694,6 +7729,50 @@ export const contractSchemas = {
       "holdingsCoverage",
       "items",
       "truncated"
+    ],
+    "additionalProperties": false
+  },
+  "MilestoneCompletion": {
+    "type": "object",
+    "properties": {
+      "deliveryId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "actualDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "publishedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      }
+    },
+    "required": [
+      "deliveryId",
+      "actualDate",
+      "publishedAt",
+      "anchorId"
+    ],
+    "additionalProperties": false
+  },
+  "MilestoneCompletionInput": {
+    "type": "object",
+    "properties": {
+      "actualDate": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "reviewed": {
+        "const": true
+      }
+    },
+    "required": [
+      "actualDate",
+      "anchorId",
+      "reviewed"
     ],
     "additionalProperties": false
   },
@@ -10241,6 +10320,8 @@ export const contractSchemas = {
           "ALERT_LANGUAGE_UNSUPPORTED",
           "RESEARCH_ALERT_LIMIT",
           "EARNINGS_INPUT_LIMIT",
+          "MILESTONE_EVIDENCE_REQUIRED",
+          "GUIDANCE_EVIDENCE_REQUIRED",
           "GROQ_SEARCH_FAILED",
           "GROQ_NOT_CONFIGURED",
           "GROQ_ACCESS_REJECTED",
