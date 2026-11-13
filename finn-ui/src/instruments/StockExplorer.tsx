@@ -15,7 +15,7 @@ import { StockSearch } from "./StockSearch.tsx";
 
 type DetailView = "prices" | "news";
 
-export function StockExplorer({ home = false }: { home?: boolean }) {
+export function StockExplorer({ embedded = false }: { embedded?: boolean }) {
   const [view, setView] = useState<DetailView>("prices");
   const [opened, setOpened] = useState<{
     stock: StockSuggestion;
@@ -25,8 +25,8 @@ export function StockExplorer({ home = false }: { home?: boolean }) {
   const listing = opened?.value.listing;
   return (
     <section className="stock-workspace">
-      <RouteHeading>{home ? "Overview" : "Stocks"}</RouteHeading>
-      <div className={home && !opened ? "stock-layout" : undefined}>
+      {!embedded && <RouteHeading>Stocks</RouteHeading>}
+      <div>
         <StockSearch
           description="Choose a company to see prices, news and research."
           onOpen={(stock, value) => {
@@ -34,22 +34,6 @@ export function StockExplorer({ home = false }: { home?: boolean }) {
             setView("prices");
           }}
         />
-        {home && !opened && (
-          <nav className="workspace-actions" aria-label="Workspace shortcuts">
-            <Paper component="a" variant="outlined" href="#/portfolio">
-              <strong>Portfolio</strong>
-              <span>Holdings and Groww imports</span>
-            </Paper>
-            <Paper component="a" variant="outlined" href="#/research">
-              <strong>Research</strong>
-              <span>Ask about a company or review its filings</span>
-            </Paper>
-            <Paper component="a" variant="outlined" href="#/inbox">
-              <strong>Inbox</strong>
-              <span>Alerts and reminders</span>
-            </Paper>
-          </nav>
-        )}
       </div>
       {opened && listing && (
         <Paper

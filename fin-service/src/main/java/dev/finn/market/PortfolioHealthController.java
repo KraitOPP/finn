@@ -3,6 +3,7 @@ package dev.finn.market;
 import dev.finn.platform.ApiFailure;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,8 @@ import tools.jackson.databind.JsonNode;
 @RequestMapping("/api/v1/portfolios/{portfolio}")
 class PortfolioHealthController {
     record ScenarioInput(@NotNull UUID listingId,@NotNull JsonNode cashAllocation,@NotNull JsonNode shockPercent) {}
+    record SectorInput(@NotNull @Pattern(regexp="BANKING|FINANCIAL_SERVICES|MANUFACTURING|TECHNOLOGY|CONSUMER|ENERGY|OTHER") String sector,
+                       @NotNull JsonNode shockPercent) {}
     private final PortfolioHealth health;
     private final PortfolioRisk risk;
 
@@ -24,6 +27,11 @@ class PortfolioHealthController {
         if(allocation.signum()<0||shock.compareTo(BigDecimal.valueOf(-100))<0||shock.compareTo(BigDecimal.valueOf(500))>0)
             throw ApiFailure.invalid();
         return health.simulate(portfolio,new PortfolioHealth.Assumptions(input.listingId(),allocation,shock));
+    }
+    @PostMapping("/health/sector-scenario") PortfolioHealth.SectorScenario sector(@PathVariable UUID portfolio,@Valid @RequestBody SectorInput input){
+        var shock=decimal(input.shockPercent());
+        if(shock.compareTo(BigDecimal.valueOf(-100))<0||shock.compareTo(BigDecimal.valueOf(500))>0)throw ApiFailure.invalid();
+        return health.sectorScenario(portfolio,input.sector(),shock);
     }
     @PostMapping("/health/risk") PortfolioRisk.Result risk(@PathVariable UUID portfolio,@Valid @RequestBody PortfolioPerformanceController.Input input){
         return risk.report(portfolio,new PortfolioPerformance.Window(input.start(),input.end(),input.reviewed()));

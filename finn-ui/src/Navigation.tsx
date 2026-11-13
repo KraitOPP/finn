@@ -30,12 +30,31 @@ export function useRoute() {
   return readRoute(hash);
 }
 
-export function Navigation({ route }: { route: Route | null }) {
+export function Navigation({
+  route,
+  signedIn = false,
+}: {
+  route: Route | null;
+  signedIn?: boolean;
+}) {
   const primary = destinations.filter(([value]) =>
-    ["overview", "portfolio", "instruments", "research", "inbox"].includes(
-      value,
-    ),
+    [
+      "overview",
+      "portfolio",
+      "instruments",
+      "research",
+      "inbox",
+      "discover",
+    ].includes(value),
   );
+  const order: Route[] = [
+    "overview",
+    "discover",
+    "research",
+    "instruments",
+    "portfolio",
+    "inbox",
+  ];
   const secondary = destinations.filter(
     ([value]) => !primary.some(([key]) => key === value),
   );
@@ -49,13 +68,17 @@ export function Navigation({ route }: { route: Route | null }) {
         sx={{ minWidth: 0 }}
         onClick={() => setMore(false)}
       >
-        {label}
+        {signedIn && value === "overview" ? "Today" : label}
       </Button>
     );
   }
   return (
     <nav className="main-navigation" aria-label="Workspace">
-      {primary.map(link)}
+      {primary
+        .sort(
+          ([first], [second]) => order.indexOf(first) - order.indexOf(second),
+        )
+        .map(link)}
       <Button
         type="button"
         aria-expanded={more}

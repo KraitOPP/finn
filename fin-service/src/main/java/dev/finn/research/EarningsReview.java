@@ -28,7 +28,8 @@ class EarningsReview {
     record Segment(Input actual, Input previous, String difference, String percent) {}
     record Expectation(Input estimate, FinancialFacts.Fact actual, String difference, String percent, String result) {}
     record Report(Basis basis,Period kind,Currency currency,PeriodDates current,PeriodDates previousYear,PeriodDates previousQuarter,
-                  List<Metric> metrics,List<Segment> segments,List<Expectation> expectations,boolean truncated) {}
+                  List<Metric> metrics,List<Segment> segments,List<Expectation> expectations,List<ManagementGuidance.Version> guidance,
+                  boolean truncated) {}
     private static final Set<String> SEGMENT_METRICS=Set.of("REVENUE","OPERATING_PROFIT");
     private static final Set<String> ESTIMATE_METRICS=Set.of("REVENUE","OPERATING_PROFIT","PROFIT_AFTER_TAX","EPS_BASIC");
 
@@ -37,9 +38,12 @@ class EarningsReview {
     private final FinancialFacts facts;
     private final FactEvaluation evaluation;
     private final ResearchEvidence evidence;
+    private final ManagementGuidance guidance;
 
-    EarningsReview(JdbcTemplate jdbc,CurrentUser users,FinancialFacts facts,FactEvaluation evaluation,ResearchEvidence evidence) {
+    EarningsReview(JdbcTemplate jdbc,CurrentUser users,FinancialFacts facts,FactEvaluation evaluation,ResearchEvidence evidence,
+                   ManagementGuidance guidance) {
         this.jdbc=jdbc;this.users=users;this.facts=facts;this.evaluation=evaluation;this.evidence=evidence;
+        this.guidance=guidance;
     }
 
     @Transactional
@@ -55,7 +59,7 @@ class EarningsReview {
         var periods=candidates.stream().filter(row->row.dimensions().periodKind().equals(kind.name()))
                 .map(EarningsReview::dates).distinct().toList();
         var current=periods.stream().filter(period->periodEnd==null||period.end().equals(periodEnd)).findFirst().orElse(null);
-        if(current==null)return new Report(basis,kind,currency,null,null,null,List.of(),List.of(),List.of(),all.size()>300);
+        if(current==null)return new Report(basis,kind,currency,null,null,null,List.of(),List.of(),List.of(),List.of(),all.size()>300);
         // Find the same fiscal slot a year earlier. A week of drift accommodates week-based reports.
         var year=periods.stream().filter(period->near(period.start(),current.start().minusYears(1))
                 &&near(period.end(),current.end().minusYears(1))&&period.end().isBefore(current.start())).findFirst().orElse(null);
@@ -74,7 +78,9 @@ class EarningsReview {
                 ? new PeriodDates(current.start().minusYears(1),current.end().minusYears(1)) : year);
         var segments=segments(currentInputs,priorInputs);
         var expectations=expectations(currentInputs,actuals);
-        return new Report(basis,kind,currency,current,year,quarter,metrics,segments,expectations,
+        var statements=guidance.atPeriod(owner,company,basis.name(),current.start(),current.end()).stream()
+                .filter(item->item.dimensions().currency()==null||item.dimensions().currency().equals(currency.name())).toList();
+        return new Report(basis,kind,currency,current,year,quarter,metrics,segments,expectations,statements,
                 all.size()>300||currentInputs.size()>50||priorInputs.size()>50);
     }
 

@@ -22,10 +22,15 @@ import org.springframework.transaction.annotation.Transactional;
 class PortfolioHealth {
     record Holding(UUID securityId,String name,String sector,String value,String equityWeight,String unrealisedContribution) {}
     record Sector(String sector,String value,String equityWeight) {}
+    record ExposureEvidence(UUID companyId,String companyName,UUID anchorId) {}
+    record SharedExposure(String name,int companies,String equityWeight,List<ExposureEvidence> evidence) {}
+    record EventImpact(UUID companyId,String companyName,String equityWeight,List<UUID> securities) {}
     record Current(UUID portfolioId,LocalDate asOf,LocalDate priceSession,String state,String currency,int unpricedPositions,
                    int stalePositions,int providerEstimates,String equity,String cash,String largestWeight,String topFiveWeight,
-                   List<Holding> holdings,List<Sector> sectors) {}
+                   List<Holding> holdings,List<Sector> sectors,List<SharedExposure> sharedExposures,List<EventImpact> eventImpact) {}
     record Assumptions(UUID listingId,BigDecimal cashAllocation,BigDecimal shockPercent) {}
+    record SectorScenario(UUID portfolioId,String state,LocalDate priceSession,String sector,String shockPercent,
+                          String beforeEquity,String afterEquity,String valueChange,String affectedEquityWeight) {}
     record Scenario(UUID portfolioId,String state,LocalDate priceSession,UUID listingId,String targetName,String cashAllocation,
                     String shockPercent,String beforeEquity,String afterEquity,String beforeCash,String afterCash,
                     String beforeTotal,String afterTotal,String valueChange,String beforeTargetWeight,String afterTargetWeight) {}
@@ -49,7 +54,8 @@ class PortfolioHealth {
     }
 
     @Transactional public Current health(UUID portfolio){
-        var exposure=exposure(users.requireId(),portfolio);
+        var owner=users.requireId();
+        var exposure=exposure(owner,portfolio);
         var equity=exposure.equity();
         var inputs=exposure.holdings().values().stream().sorted(Comparator
                 .comparing(HoldingInput::value,Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(HoldingInput::id)).toList();
@@ -64,7 +70,20 @@ class PortfolioHealth {
         String largest=holdings.isEmpty()?null:holdings.getFirst().equityWeight();
         String topFive=equity==null?null:weight(inputs.stream().limit(5).map(HoldingInput::value).reduce(BigDecimal.ZERO,BigDecimal::add),equity);
         return new Current(portfolio,exposure.date(),exposure.session(),exposure.state(),"INR",exposure.unpriced(),exposure.stale(),
-                exposure.estimates(),text(equity),text(exposure.cash()),largest,topFive,holdings,sectorRows);
+                exposure.estimates(),text(equity),text(exposure.cash()),largest,topFive,holdings,sectorRows,
+                shared(owner,exposure),companyImpact(owner,exposure));
+    }
+
+    @Transactional public SectorScenario sectorScenario(UUID portfolio,String sector,BigDecimal shock){
+        var exposure=exposure(users.requireId(),portfolio);
+        var equity=exposure.equity();
+        var affected=exposure.holdings().values().stream().filter(item->sector.equals(item.sector())).toList();
+        if(equity==null||affected.isEmpty())return new SectorScenario(portfolio,
+                equity==null?exposure.state():"TARGET_NOT_HELD",exposure.session(),sector,text(shock),text(equity),null,null,null);
+        var position=affected.stream().map(HoldingInput::value).reduce(BigDecimal.ZERO,BigDecimal::add);
+        var change=position.multiply(shock.movePointLeft(2));
+        return new SectorScenario(portfolio,"SIMULATED",exposure.session(),sector,text(shock),text(equity),
+                text(equity.add(change)),text(change),weight(position,equity));
     }
 
     @Transactional public Scenario simulate(UUID portfolio,Assumptions input){
@@ -133,6 +152,64 @@ class PortfolioHealth {
                 WHERE s.owner_id=?
                 """,row->{labels.put(row.getObject("security_id",UUID.class),row.getString("sector"));},owner);
         return labels;
+    }
+
+    private List<EventImpact> companyImpact(UUID owner,Exposure exposure){
+        if(exposure.holdings().isEmpty())return List.of();
+        record Company(UUID id,String name) {}
+        Map<UUID,Company> companies=new HashMap<>();
+        jdbc.query("""
+                SELECT s.security_id,c.company_id,c.name FROM finn.security s JOIN finn.company c USING(owner_id,company_id)
+                WHERE s.owner_id=? AND s.security_id=ANY(?::uuid[])
+                """,row->{companies.put(row.getObject(1,UUID.class),new Company(row.getObject(2,UUID.class),row.getString(3)));},
+                owner,securityArray(exposure));
+        var groups=new HashMap<UUID,List<HoldingInput>>();
+        for(var holding:exposure.holdings().values()){
+            var company=companies.get(holding.id());
+            if(company!=null)groups.computeIfAbsent(company.id(),key->new ArrayList<>()).add(holding);
+        }
+        return groups.entrySet().stream().map(entry->{
+            var held=entry.getValue();
+            var company=companies.get(held.getFirst().id());
+            var value=exposure.equity()==null?null:held.stream().map(HoldingInput::value).reduce(BigDecimal.ZERO,BigDecimal::add);
+            return new EventImpact(entry.getKey(),company.name(),weight(value,exposure.equity()),
+                    held.stream().map(HoldingInput::id).sorted().toList());
+        }).sorted(Comparator.comparing(EventImpact::companyName).thenComparing(EventImpact::companyId)).toList();
+    }
+
+    private List<SharedExposure> shared(UUID owner,Exposure exposure){
+        if(exposure.holdings().isEmpty())return List.of();
+        record Note(String label,UUID security,ExposureEvidence evidence) {}
+        var notes=jdbc.query("""
+                SELECT n.title,n.company_id,c.name,n.anchor_id,s.security_id
+                FROM finn.company_research_note n JOIN finn.company c USING(owner_id,company_id)
+                JOIN finn.security s USING(owner_id,company_id)
+                JOIN finn.research_anchor a ON a.owner_id=n.owner_id AND a.anchor_id=n.anchor_id
+                JOIN finn.research_extraction x ON x.owner_id=a.owner_id AND x.extraction_id=a.extraction_id
+                JOIN finn.source_document d ON d.owner_id=x.owner_id AND d.document_id=x.document_id
+                WHERE n.owner_id=? AND n.kind='EXPOSURE' AND d.revision=x.document_revision AND s.security_id=ANY(?::uuid[])
+                ORDER BY lower(n.title),n.note_id,s.security_id LIMIT 1000
+                """,(row,i)->new Note(row.getString(1),row.getObject(5,UUID.class),new ExposureEvidence(
+                row.getObject(2,UUID.class),row.getString(3),row.getObject(4,UUID.class))),owner,
+                securityArray(exposure));
+        var groups=new java.util.TreeMap<String,List<Note>>();
+        for(var note:notes)groups.computeIfAbsent(note.label().strip().toLowerCase(java.util.Locale.ROOT),key->new ArrayList<>()).add(note);
+        var result=new ArrayList<SharedExposure>();
+        for(var group:groups.values()){
+            var evidence=new java.util.LinkedHashMap<UUID,ExposureEvidence>();
+            for(var note:group)evidence.putIfAbsent(note.evidence().companyId(),note.evidence());
+            if(evidence.size()<2)continue;
+            var value=exposure.equity()==null?null:group.stream().map(Note::security).distinct()
+                    .map(exposure.holdings()::get).map(HoldingInput::value).reduce(BigDecimal.ZERO,BigDecimal::add);
+            result.add(new SharedExposure(group.getFirst().label(),evidence.size(),weight(value,exposure.equity()),
+                    evidence.values().stream().limit(50).toList()));
+        }
+        return result.stream().limit(25).toList();
+    }
+
+    private static String securityArray(Exposure exposure){
+        return exposure.holdings().keySet().stream().map(UUID::toString)
+                .collect(java.util.stream.Collectors.joining(",","{","}"));
     }
 
     private static Exposure unavailable(String reason,LocalDate today){

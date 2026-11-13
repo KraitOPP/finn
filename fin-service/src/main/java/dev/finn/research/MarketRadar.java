@@ -19,14 +19,16 @@ class MarketRadar {
     enum Scope { ALL, HELD, WATCHLIST }
     enum Kind { ALL, ANNOUNCEMENTS, MOVES }
     enum Liquidity { ALL, TURNOVER_1_CRORE, TURNOVER_10_CRORE }
+    enum Size { ALL, BELOW_5000_CRORE, FROM_5000_TO_20000_CRORE, ABOVE_20000_CRORE }
     record Filter(int days, Scope scope, Kind kind, DiscoveryUniverse.Sector sector, EventClassifier.Subtype eventType,
-                  Liquidity liquidity, UUID portfolioId) {}
+                  Liquidity liquidity, Size size, UUID portfolioId) {}
     record Context(String companyName, UUID companyId, UUID listingId, String symbol, String exchange,
                    DiscoveryUniverse.Sector sector, boolean held, boolean watched) {}
     record Announcement(CompanyEvents.Version event, String publishedAt, String sourceUrl, String sourceName) {}
     record SectorMove(int peers, String medianChangePercent) {}
     record Reason(String label, int points) {}
     record Entry(Context stock, Announcement announcement, DailyMovement.Signal movement, SectorMove sectorMove,
+                 FinancialFacts.Fact marketCapitalization,
                  int score, List<Reason> reasons) {}
     record Radar(LocalDate asOf, int listingsChecked, int listingsWithRecentPrices, boolean listingLimitReached,
                  String holdingsCoverage, List<Entry> items, boolean truncated) {}
@@ -38,9 +40,13 @@ class MarketRadar {
     private final CurrentUser users;
     private final AttentionInbox attention;
     private final DailyMovement movement;
+    private final FinancialFacts facts;
+    private final FactEvaluation factEvaluation;
 
-    MarketRadar(JdbcTemplate jdbc,CurrentUser users,AttentionInbox attention,DailyMovement movement) {
+    MarketRadar(JdbcTemplate jdbc,CurrentUser users,AttentionInbox attention,DailyMovement movement,
+                FinancialFacts facts,FactEvaluation factEvaluation) {
         this.jdbc=jdbc; this.users=users; this.attention=attention; this.movement=movement;
+        this.facts=facts; this.factEvaluation=factEvaluation;
     }
 
     @Transactional
@@ -57,6 +63,10 @@ class MarketRadar {
     }
 
     Snapshot snapshot(UUID owner,Filter filter,Instant now) {
+        return snapshot(owner,filter,now,null);
+    }
+
+    Snapshot snapshot(UUID owner,Filter filter,Instant now,Instant afterReview) {
         var today=now.atZone(INDIA).toLocalDate();
         requirePortfolio(owner,filter.portfolioId());
         var exposure=attention.exposure(owner,today,filter.portfolioId());
@@ -72,6 +82,7 @@ class MarketRadar {
             var signal=movement.observed(owner,stock.listingId(),stock.exchange(),today);
             if(signal!=null)signals.put(stock.companyId(),signal);
         }
+        var caps=marketCapitalizations(owner,today);
         var start=today.minusDays(filter.days()-1L).atStartOfDay(INDIA).toInstant();
         var entries=new ArrayList<Entry>();
         var withEvents=new HashSet<UUID>();
@@ -80,17 +91,20 @@ class MarketRadar {
             var stock=byCompany.get(event.companyId());
             if(stock==null||!eligibleIds.contains(stock.companyId())
                     ||filter.kind()==Kind.MOVES||filter.eventType()!=null&&!event.subtype().equals(filter.eventType().name()))continue;
-            if(!fresh(announcement,start,now))continue;
+            if(afterReview==null ? !fresh(announcement,start,now) : !reviewedSince(event,afterReview,now))continue;
             var signal=signals.get(stock.companyId());
-            if(!liquid(signal,filter.liquidity()))continue;
-            entries.add(entry(stock,announcement,signal,benchmark(stock,signal,stocks,signals),today));
+            var cap=caps.get(stock.companyId());
+            if(!liquid(signal,filter.liquidity())||!inSize(cap,filter.size()))continue;
+            entries.add(entry(stock,announcement,signal,benchmark(stock,signal,stocks,signals),cap,today));
             withEvents.add(stock.companyId());
         }
         if(filter.kind()!=Kind.ANNOUNCEMENTS&&filter.eventType()==null) for(var stock:eligible){
             var signal=signals.get(stock.companyId());
             if(!withEvents.contains(stock.companyId())&&DailyMovement.recent(signal,stock.exchange(),today)
-                    &&(signal.unusualPrice()||signal.unusualVolume())&&liquid(signal,filter.liquidity()))
-                entries.add(entry(stock,null,signal,benchmark(stock,signal,stocks,signals),today));
+                    &&(afterReview==null||signal.session().atTime(16,0).atZone(INDIA).toInstant().isAfter(afterReview))
+                    &&(signal.unusualPrice()||signal.unusualVolume())&&liquid(signal,filter.liquidity())
+                    &&inSize(caps.get(stock.companyId()),filter.size()))
+                entries.add(entry(stock,null,signal,benchmark(stock,signal,stocks,signals),caps.get(stock.companyId()),today));
         }
         entries.sort(Comparator.comparingInt(Entry::score).reversed().thenComparing(e->e.stock().companyName())
                 .thenComparing(e->e.announcement()==null ? "" : e.announcement().event().eventId().toString()));
@@ -157,6 +171,11 @@ class MarketRadar {
         return !date.isBefore(start)&&!date.isAfter(now);
     }
 
+    private static boolean reviewedSince(CompanyEvents.Version event,Instant from,Instant through){
+        var reviewed=Instant.parse(event.reviewedAt());
+        return !event.novelty().equals("ROUTINE")&&reviewed.isAfter(from)&&!reviewed.isAfter(through);
+    }
+
     private static boolean sectorMatches(Context stock,Filter filter) {return filter.sector()==null||stock.sector()==filter.sector();}
     private static boolean inScope(Context stock,Scope scope){
         return scope==Scope.ALL||scope==Scope.HELD&&stock.held()||scope==Scope.WATCHLIST&&stock.watched();
@@ -167,7 +186,37 @@ class MarketRadar {
         return signal!=null&&signal.medianTurnover()!=null&&new BigDecimal(signal.medianTurnover()).compareTo(threshold)>=0;
     }
 
-    static Entry entry(Context stock,Announcement event,DailyMovement.Signal signal,SectorMove sector,LocalDate today){
+    private Map<UUID,FinancialFacts.Fact> marketCapitalizations(UUID owner,LocalDate today){
+        var ids=jdbc.query("""
+                SELECT DISTINCT ON(company_id) fact_id FROM finn.financial_fact
+                WHERE owner_id=? AND metric='MARKET_CAP' AND basis='CONSOLIDATED' AND currency='INR' AND period_end BETWEEN ? AND ?
+                ORDER BY company_id,period_end DESC,fact_id LIMIT 300
+                """,(row,i)->row.getObject(1,UUID.class),owner,today.minusDays(90),today);
+        Map<UUID,FinancialFacts.Fact> caps=new HashMap<>();
+        for(var id:ids){
+            var fact=facts.require(owner,id,null);
+            if(new BigDecimal(fact.normalizedAmount()).signum()>0&&factEvaluation.usable(owner,fact,today,false).equals("COMPARABLE_FACT"))
+                caps.put(fact.companyId(),fact);
+        }
+        return caps;
+    }
+
+    private static boolean inSize(FinancialFacts.Fact fact,Size size) {
+        if(size==Size.ALL)return true;
+        if(fact==null)return false;
+        var cap=new BigDecimal(fact.normalizedAmount());
+        boolean underLower=cap.compareTo(new BigDecimal("50000000000"))<0;
+        boolean underUpper=cap.compareTo(new BigDecimal("200000000000"))<0;
+        return switch(size){
+            case BELOW_5000_CRORE -> underLower;
+            case FROM_5000_TO_20000_CRORE -> !underLower&&underUpper;
+            case ABOVE_20000_CRORE -> !underUpper;
+            case ALL -> true;
+        };
+    }
+
+    static Entry entry(Context stock,Announcement event,DailyMovement.Signal signal,SectorMove sector,
+                       FinancialFacts.Fact marketCapitalization,LocalDate today){
         var reasons=new ArrayList<Reason>();
         if(event!=null){
             var version=event.event();
@@ -187,7 +236,7 @@ class MarketRadar {
             if(signal.unusualVolume())reasons.add(new Reason("Unusual trading volume",12));
             if(liquid(signal,Liquidity.TURNOVER_1_CRORE))reasons.add(new Reason("Median daily turnover above ₹1 crore",5));
         }
-        return new Entry(stock,event,signal,sector,reasons.stream().mapToInt(Reason::points).sum(),List.copyOf(reasons));
+        return new Entry(stock,event,signal,sector,marketCapitalization,reasons.stream().mapToInt(Reason::points).sum(),List.copyOf(reasons));
     }
 
     static SectorMove benchmark(Context stock,DailyMovement.Signal signal,List<Context> stocks,Map<UUID,DailyMovement.Signal> signals) {

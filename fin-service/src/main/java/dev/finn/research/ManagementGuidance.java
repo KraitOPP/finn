@@ -49,6 +49,14 @@ class ManagementGuidance {
                 """,this::row,owner,company));
     }
 
+    List<Version> atPeriod(UUID owner,UUID company,String basis,LocalDate start,LocalDate end){
+        return jdbc.query(SELECT+"""
+                WHERE g.owner_id=? AND g.company_id=? AND v.revision=g.revision AND v.stage<>'DRAFT'
+                    AND v.dimensions->>'basis'=? AND v.dimensions->>'periodStart'=? AND v.dimensions->>'periodEnd'=?
+                ORDER BY v.statement_date DESC,g.guidance_id LIMIT 6
+                """,this::row,owner,company,basis,start.toString(),end.toString());
+    }
+
     @Transactional public Versions versions(UUID id){
         UUID owner=users.requireId();
         current(owner,id);

@@ -53,6 +53,9 @@ const Inbox = lazy(() =>
     default: module.Inbox,
   })),
 );
+const Today = lazy(() =>
+  import("./Today.tsx").then((module) => ({ default: module.Today })),
+);
 
 export function App() {
   return (
@@ -113,12 +116,14 @@ function WorkspaceApp() {
         )}
         <AuthControls />
       </header>
-      <Navigation route={route} />
+      <Navigation route={route} signedIn={Boolean(signedIn)} />
       <main id="main" tabIndex={-1}>
         <SessionNotice />
         {route === "overview" && signedIn ? (
           <PrivateView>
-            <StockExplorer home />
+            <Suspense fallback={<p role="status">Loading Today…</p>}>
+              <Today />
+            </Suspense>
           </PrivateView>
         ) : showDemo ? (
           <>

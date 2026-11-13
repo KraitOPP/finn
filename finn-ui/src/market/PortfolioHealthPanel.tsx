@@ -1,15 +1,25 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import MenuItem from "@mui/material/MenuItem";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import type {
+  DiscoverySector,
   PortfolioHealth,
   PortfolioPerformanceInput,
   PortfolioRisk,
   PortfolioScenario,
   PortfolioScenarioInput,
+  SectorScenario,
 } from "../../contracts/generated/models.ts";
 import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { ListingPicker } from "../instruments/ListingPicker.tsx";
+import { AnchorEvidence } from "../research/Evidence.tsx";
 import { GapChart } from "./GapChart.tsx";
 import {
   PerformanceWindowFields,
@@ -67,6 +77,9 @@ export function PortfolioHealthPanel({
       {open && (
         <>
           <Scenario path={path} candidate={candidate} />
+          {data.value && (
+            <SectorShock path={path} sectors={data.value.sectors} />
+          )}
           <WeeklyRisk path={path} />
         </>
       )}
@@ -81,6 +94,7 @@ function Exposure({
   value: PortfolioHealth;
   onRefresh: () => void;
 }) {
+  const [anchor, setAnchor] = useState<string | null>(null);
   return (
     <section>
       <h4>Current concentration</h4>
@@ -119,6 +133,51 @@ function Exposure({
           </ul>
         </details>
       )}
+      <details>
+        <summary>Shared business exposures</summary>
+        <p className="muted-copy">
+          Use the same exposure label on source-backed company notes to group
+          holdings here.
+        </p>
+        {value.sharedExposures?.length ? (
+          <ul className="dashboard-list">
+            {value.sharedExposures.map((group) => (
+              <li key={group.name}>
+                <p>
+                  <strong>{group.name}</strong> · {group.companies} companies ·{" "}
+                  {pct(group.equityWeight)} of equity
+                </p>
+                <Stack
+                  direction="row"
+                  spacing={0.75}
+                  useFlexGap
+                  sx={{ flexWrap: "wrap" }}
+                >
+                  {group.evidence.map((item) => (
+                    <Button
+                      size="small"
+                      key={item.companyId}
+                      onClick={() =>
+                        setAnchor(
+                          anchor === item.anchorId ? null : item.anchorId,
+                        )
+                      }
+                    >
+                      {item.companyName} disclosure
+                    </Button>
+                  ))}
+                </Stack>
+                {anchor &&
+                  group.evidence.some((item) => item.anchorId === anchor) && (
+                    <AnchorEvidence key={anchor} id={anchor} />
+                  )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No shared exposures with reviewed disclosures.</p>
+        )}
+      </details>
       {value.holdings.length > 0 && (
         <details>
           <summary>Holdings and unrealised gains or losses</summary>
@@ -153,6 +212,104 @@ function Exposure({
         </details>
       )}
     </section>
+  );
+}
+
+function SectorShock({
+  path,
+  sectors,
+}: {
+  path: string;
+  sectors: PortfolioHealth["sectors"];
+}) {
+  const [sector, setSector] = useState<DiscoverySector | "">("");
+  const [shock, setShock] = useState("-10");
+  const [result, setResult] = useState<SectorScenario | null>(null);
+  const command = usePrivateCommand();
+  const options = sectors.filter((row) => row.sector !== "UNCLASSIFIED");
+  return (
+    <Stack component="section" spacing={1.5} sx={{ mt: 2 }}>
+      <Typography component="h4" variant="subtitle1" sx={{ fontWeight: 700 }}>
+        Sector scenario
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Apply the same price change to all holdings in one reviewed sector.
+      </Typography>
+      {options.length ? (
+        <Box
+          component="form"
+          className="radar-filters"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!sector) return;
+            const next = await command.run((csrf) =>
+              requestContract("SectorScenario", `${path}/sector-scenario`, {
+                method: "POST",
+                csrf,
+                body: { sector, shockPercent: shock },
+              }),
+            );
+            if (next) setResult(next);
+          }}
+        >
+          <TextField
+            select
+            label="Sector to model"
+            value={sector}
+            onChange={(event) => {
+              setSector(event.target.value as typeof sector);
+              setResult(null);
+            }}
+          >
+            <MenuItem value="">Choose a sector</MenuItem>
+            {options.map((item) => (
+              <MenuItem key={item.sector} value={item.sector}>
+                {sectorNames[item.sector]}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label="Assumed change (%)"
+            type="number"
+            value={shock}
+            required
+            onChange={(event) => {
+              setShock(event.target.value);
+              setResult(null);
+            }}
+            slotProps={{ htmlInput: { min: -100, max: 500, step: "any" } }}
+          />
+          <Button
+            type="submit"
+            variant="outlined"
+            disabled={!sector || command.busy}
+          >
+            Run sector scenario
+          </Button>
+        </Box>
+      ) : (
+        <Typography variant="body2">
+          Review sector classifications and current holding prices to model a
+          sector.
+        </Typography>
+      )}
+      {command.error && <Alert severity="warning">{command.error}</Alert>}
+      {result?.state === "SIMULATED" && (
+        <Alert severity="info">
+          {sectorNames[result.sector]} · {result.shockPercent}% price change ·{" "}
+          {pct(result.affectedEquityWeight)} of equity affected. Equity moves
+          from {money(result.beforeEquity)} to {money(result.afterEquity)} (
+          {money(result.valueChange)} change).
+        </Alert>
+      )}
+      {result && result.state !== "SIMULATED" && (
+        <Alert severity="info">
+          {result.state === "TARGET_NOT_HELD"
+            ? "No holding in this sector."
+            : labels[result.state]}
+        </Alert>
+      )}
+    </Stack>
   );
 }
 

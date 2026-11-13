@@ -31,7 +31,7 @@ const stages = {
 } as const;
 
 export function GuidancePanel({ company }: { company: string }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [selected, setSelected] = useState("");
   const [editing, setEditing] = useState(false);
   const data = useResource(
@@ -42,8 +42,11 @@ export function GuidancePanel({ company }: { company: string }) {
     (item) => item.guidanceId === selected,
   );
   return (
-    <details onToggle={(event) => setOpen(event.currentTarget.open)}>
-      <summary>Management guidance</summary>
+    <details
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>Management promises and delivery</summary>
       {data.error && <p role="alert">{data.error}</p>}
       {open && !data.value && !data.error && (
         <p role="status">Loading management guidance…</p>

@@ -30,8 +30,9 @@ class MarketRadarController {
     @GetMapping("/radar") MarketRadar.Radar radar(@RequestParam(defaultValue="7") @Min(1) @Max(30) int days,
             @RequestParam(defaultValue="ALL") MarketRadar.Scope scope,@RequestParam(defaultValue="ALL") MarketRadar.Kind kind,
             @RequestParam(required=false) DiscoveryUniverse.Sector sector,@RequestParam(required=false) EventClassifier.Subtype eventType,
-            @RequestParam(defaultValue="ALL") MarketRadar.Liquidity liquidity,@RequestParam(required=false) UUID portfolioId) {
-        return radar.radar(new MarketRadar.Filter(days,scope,kind,sector,eventType,liquidity,portfolioId));
+            @RequestParam(defaultValue="ALL") MarketRadar.Liquidity liquidity,@RequestParam(defaultValue="ALL") MarketRadar.Size size,
+            @RequestParam(required=false) UUID portfolioId) {
+        return radar.radar(new MarketRadar.Filter(days,scope,kind,sector,eventType,liquidity,size,portfolioId));
     }
 
     @GetMapping("/portfolio-calendar") MarketRadar.Calendar calendar(@RequestParam(required=false) UUID portfolioId) {

@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
@@ -73,11 +74,32 @@ class ThesisConditions {
         UUID owner=users.requireId();
         var root=theses.root(owner,thesis);
         if(theses.version(owner,thesis,root.revision()).decision().equals("CLOSE"))throw ApiFailure.conflict();
-        var definitions=jdbc.query("""
+        return new ListView(active(owner,thesis).stream().map(definition->evaluate(owner,root,definition,LocalDate.now(FactPolicy.INDIA))).toList());
+    }
+
+    @EventListener void onReviewedFact(FinancialFacts.Reviewed reviewed){
+        var fact=reviewed.fact();
+        UUID owner=reviewed.owner();
+        var ids=jdbc.query("""
+                SELECT t.thesis_id FROM finn.investment_thesis t JOIN finn.investment_thesis_version v USING(owner_id,thesis_id)
+                WHERE t.owner_id=? AND t.company_id=? AND v.revision=t.revision AND v.decision IN ('MONITOR','REVISE','REAFFIRM')
+                ORDER BY t.thesis_id LIMIT 20
+                """,(row,i)->row.getObject(1,UUID.class),owner,fact.companyId());
+        var today=LocalDate.now(FactPolicy.INDIA);
+        for(var id:ids){
+            var root=theses.root(owner,id);
+            for(var definition:active(owner,id)){
+                if(definition.dimensions().metric().equals(fact.dimensions().metric())
+                        &&definition.dimensions().periodEnd().equals(fact.dimensions().periodEnd()))
+                    evaluate(owner,root,definition,today);
+            }
+        }
+    }
+
+    private List<Definition> active(UUID owner,UUID thesis){
+        return jdbc.query("""
                 SELECT * FROM finn.thesis_condition WHERE owner_id=? AND thesis_id=? AND NOT retired ORDER BY created_at,condition_id
                 """,this::definition,owner,thesis);
-        var today=LocalDate.now(FactPolicy.INDIA);
-        return new ListView(definitions.stream().map(definition->evaluate(owner,root,definition,today)).toList());
     }
 
     private Condition evaluate(UUID owner,InvestmentTheses.Root thesis,Definition definition,LocalDate today){

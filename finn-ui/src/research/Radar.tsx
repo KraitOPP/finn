@@ -13,6 +13,7 @@ import { useId, useState } from "react";
 import type {
   CompanyEventType,
   DiscoverySector,
+  PortfolioHealth,
   RadarCalendarEntry,
   RadarEntry,
   RadarLeads,
@@ -24,6 +25,8 @@ import { useResource } from "../api/useResource.ts";
 import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { sectors } from "./DiscoveryFields.tsx";
 import { eventTypes, eventLabel } from "./Events.tsx";
+import { AnchorEvidence } from "./Evidence.tsx";
+import { factAmount } from "./FinancialFacts.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 import { OrderEvidence } from "./OrderEvidence.tsx";
 
@@ -43,6 +46,12 @@ const liquidityOptions = {
   TURNOVER_1_CRORE: "₹1 crore median turnover",
   TURNOVER_10_CRORE: "₹10 crore median turnover",
 } as const;
+const sizes = {
+  ALL: "Any company size",
+  BELOW_5000_CRORE: "Below ₹5,000 crore",
+  FROM_5000_TO_20000_CRORE: "₹5,000 to under ₹20,000 crore",
+  ABOVE_20000_CRORE: "₹20,000 crore and above",
+} as const;
 const dayFormat = new Intl.DateTimeFormat("en-IN", {
   day: "numeric",
   month: "short",
@@ -59,7 +68,13 @@ export function companyResearch(stock: RadarStock, event?: string) {
   return `#/research?${params}`;
 }
 
-export function Radar({ portfolioId }: { portfolioId?: string }) {
+export function Radar({
+  portfolioId,
+  impact,
+}: {
+  portfolioId?: string;
+  impact?: PortfolioHealth["eventImpact"];
+}) {
   const [days, setDays] = useState(7);
   const [scope, setScope] = useState<keyof typeof scopes>(
     portfolioId ? "HELD" : "ALL",
@@ -69,11 +84,13 @@ export function Radar({ portfolioId }: { portfolioId?: string }) {
   const [eventType, setEventType] = useState<CompanyEventType | "">("");
   const [liquidity, setLiquidity] =
     useState<keyof typeof liquidityOptions>("ALL");
+  const [size, setSize] = useState<keyof typeof sizes>("ALL");
   const query = new URLSearchParams({
     days: String(days),
     scope,
     kind,
     liquidity,
+    size,
   });
   if (sector) query.set("sector", sector);
   if (eventType && kind !== "MOVES") query.set("eventType", eventType);
@@ -183,7 +200,27 @@ export function Radar({ portfolioId }: { portfolioId?: string }) {
                 </MenuItem>
               ))}
             </TextField>
+            {!portfolioId && (
+              <TextField
+                select
+                label="Company size"
+                value={size}
+                onChange={(event) => setSize(event.target.value as typeof size)}
+              >
+                {Object.entries(sizes).map(([key, label]) => (
+                  <MenuItem key={key} value={key}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
           </Box>
+          {size !== "ALL" && (
+            <Typography variant="caption" color="text.secondary">
+              Size filters require a reviewed INR market cap dated within 90
+              days.
+            </Typography>
+          )}
           {resource.value && (
             <Stack
               direction="row"
@@ -244,6 +281,10 @@ export function Radar({ portfolioId }: { portfolioId?: string }) {
         <RadarCard
           key={item.announcement?.event.eventId ?? item.stock.companyId}
           item={item}
+          equityWeight={
+            impact?.find((row) => row.companyId === item.stock.companyId)
+              ?.equityWeight
+          }
         />
       ))}
       {resource.value?.truncated && (
@@ -361,7 +402,13 @@ function PublicLeads({
   );
 }
 
-export function RadarCard({ item }: { item: RadarEntry }) {
+export function RadarCard({
+  item,
+  equityWeight,
+}: {
+  item: RadarEntry;
+  equityWeight?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const { stock, announcement, movement, sectorMove } = item;
@@ -401,6 +448,13 @@ export function RadarCard({ item }: { item: RadarEntry }) {
           {stock.held && <Chip size="small" color="primary" label="Held" />}
           {stock.watched && (
             <Chip size="small" variant="outlined" label="Watchlist" />
+          )}
+          {equityWeight && (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={`${Number(equityWeight).toFixed(1)}% of equity`}
+            />
           )}
           {event?.novelty === "CORRECTION" && (
             <Chip size="small" color="warning" label="Correction" />
@@ -493,6 +547,14 @@ export function RadarCard({ item }: { item: RadarEntry }) {
           )}
           {evidence.error && <Alert severity="warning">{evidence.error}</Alert>}
           {evidence.value && <SourceEvidence detail={evidence.value} />}
+          {open && item.marketCapitalization && (
+            <details>
+              <summary>
+                Reviewed market cap · {factAmount(item.marketCapitalization)}
+              </summary>
+              <AnchorEvidence id={item.marketCapitalization.anchorId} />
+            </details>
+          )}
           {open && event?.subtype === "ORDER" && (
             <OrderEvidence event={event} />
           )}

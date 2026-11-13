@@ -18,9 +18,9 @@ import {
 } from "./MetricTargetFields.tsx";
 
 const statuses = {
-  MATCHED: "Matched",
-  VIOLATED: "Violated",
-  UNKNOWN: "Unknown",
+  MATCHED: "Supporting evidence",
+  VIOLATED: "Contradicting evidence",
+  UNKNOWN: "Missing evidence",
   REVIEW_NEEDED: "Needs review",
 } as const;
 export const factReasons: Record<string, string> = {
@@ -49,7 +49,10 @@ export function ThesisConditions({ thesis }: { thesis: InvestmentThesis }) {
   const active = thesis.decision !== "CLOSE";
   return (
     <details onToggle={(event) => setOpen(event.currentTarget.open)}>
-      <summary>Measurable conditions</summary>
+      <summary>Monitored assumptions</summary>
+      <p className="muted-copy">
+        Saved targets are checked when a matching figure is reviewed.
+      </p>
       {data.error && <p role="alert">{data.error}</p>}
       {data.value?.items.length === 0 && <p>No conditions defined.</p>}
       {data.value?.items.map((item) => (

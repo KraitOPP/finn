@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/research/companies/{company}")
 class CompanyResearchController {
-    record NoteInput(@NotBlank @Pattern(regexp="BUSINESS|GOVERNANCE|QUESTION") String kind,
+    record NoteInput(@NotBlank @Pattern(regexp="BUSINESS|GOVERNANCE|QUESTION|EXPOSURE") String kind,
                      @NotBlank @Size(max=240) String title,UUID anchorId) {}
     record Resolution(@NotNull Boolean resolved) {}
 

@@ -29,6 +29,7 @@ import { useResource } from "../api/useResource.ts";
 import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { AnchorEvidence } from "./Evidence.tsx";
 import { EvidencePicker, factAmount, metricLabels } from "./FinancialFacts.tsx";
+import { DeliveryComparison } from "./GuidanceDelivery.tsx";
 import { sessionDate } from "./Radar.tsx";
 
 const qualityMetrics = [
@@ -265,6 +266,44 @@ export function EarningsPanel({ company }: { company: string }) {
                 <Typography variant="body2" color="text.secondary">
                   Operating profit, cash flow, tax, other income and exceptional
                   items appear as reviewed figures become available.
+                </Typography>
+              )}
+            </Box>
+            <Box>
+              <Typography
+                component="h4"
+                variant="subtitle1"
+                sx={{ fontWeight: 700 }}
+              >
+                Management guidance
+              </Typography>
+              {report.guidance?.length ? (
+                report.guidance.map((item) => (
+                  <Paper
+                    variant="outlined"
+                    key={item.guidanceId}
+                    sx={{ p: 1.5, mt: 1 }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 650 }}>
+                      {item.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {item.statementDate && sessionDate(item.statementDate)} ·
+                      Version {item.revision} ·{" "}
+                      {item.stage === "WITHDRAWN" ? "Withdrawn" : "Confirmed"}
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={() => setAnchor(item.anchorId)}
+                    >
+                      Statement passage
+                    </Button>
+                    <DeliveryComparison item={item} />
+                  </Paper>
+                ))
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No reviewed guidance for this reporting period.
                 </Typography>
               )}
             </Box>

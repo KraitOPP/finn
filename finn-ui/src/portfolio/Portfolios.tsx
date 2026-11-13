@@ -1,5 +1,9 @@
 import Button from "@mui/material/Button";
-import { type FormEvent, useState } from "react";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
+import { type FormEvent, useId, useState } from "react";
 import type { InvestmentAccount } from "../../contracts/generated/models.ts";
 import { requestContract } from "../api/request.ts";
 import { usePrivateCommand } from "../api/usePrivateCommand.ts";
@@ -15,6 +19,7 @@ import { RouteHeading } from "../Navigation.tsx";
 import { CorporateActionsPanel } from "./CorporateActionsPanel.tsx";
 import { HoldingsImportPanel } from "./HoldingsImportPanel.tsx";
 import { LedgerPanel } from "./LedgerPanel.tsx";
+import { PortfolioDevelopments } from "./PortfolioDevelopments.tsx";
 import { receiptMessage } from "./ReviewOpening.tsx";
 
 export function Portfolios() {
@@ -152,6 +157,8 @@ function PortfolioDetail({
   const detail = useResource("PortfolioDetail", `/api/v1/portfolios/${id}`);
   const command = usePrivateCommand();
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [view, setView] = useState(candidate ? "risk" : "holdings");
+  const viewId = useId();
   const [accountNotice, setAccountNotice] = useState<string | null>(null);
   if (detail.error)
     return <LoadError message={detail.error} reload={detail.reload} />;
@@ -199,111 +206,158 @@ function PortfolioDetail({
           </button>
         </div>
       )}
-      <PortfolioValuationPanel id={id} />
-      <h3>Source accounts</h3>
-      {accounts.length === 0 ? (
-        <p>No accounts yet. Add the source of your portfolio records.</p>
-      ) : (
-        <ul className="security-list">
-          {accounts.map((account) => (
-            <li key={account.accountId}>
-              <div>
-                <strong>{account.name}</strong>
-                <p>
-                  {account.source} · INR · {coverage(account)}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => {
+      <Paper variant="outlined" sx={{ mb: 2 }}>
+        <Tabs
+          aria-label="Portfolio sections"
+          value={view}
+          variant="scrollable"
+          allowScrollButtonsMobile
+          onChange={(_, next: string) => setView(next)}
+        >
+          {[
+            ["holdings", "Holdings & accounts"],
+            ["events", "Events"],
+            ["risk", "Returns & risk"],
+          ].map(([key, label]) => (
+            <Tab
+              key={key}
+              value={key}
+              label={label}
+              id={`${viewId}-${key}-tab`}
+              aria-controls={`${viewId}-${key}`}
+            />
+          ))}
+        </Tabs>
+      </Paper>
+      <div
+        role="tabpanel"
+        hidden={view !== "holdings"}
+        id={`${viewId}-holdings`}
+        aria-labelledby={`${viewId}-holdings-tab`}
+      >
+        {view === "holdings" && (
+          <>
+            <PortfolioValuationPanel id={id} />
+            <h3>Source accounts</h3>
+            {accounts.length === 0 ? (
+              <p>No accounts yet. Add the source of your portfolio records.</p>
+            ) : (
+              <ul className="security-list">
+                {accounts.map((account) => (
+                  <li key={account.accountId}>
+                    <div>
+                      <strong>{account.name}</strong>
+                      <p>
+                        {account.source} · INR · {coverage(account)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => {
+                        setAccountId(account.accountId);
+                        setAccountNotice(null);
+                      }}
+                      aria-pressed={accountId === account.accountId}
+                    >
+                      Open account {account.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!portfolio.archived && (
+              <CreateAccount
+                portfolioId={id}
+                onCreated={(account) => {
                   setAccountId(account.accountId);
                   setAccountNotice(null);
+                  detail.reload();
                 }}
-                aria-pressed={accountId === account.accountId}
+              />
+            )}
+            {selected && (
+              <section
+                className="account-workspace"
+                aria-label={`Account ${selected.name}`}
               >
-                Open account {account.name}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {!portfolio.archived && (
-        <CreateAccount
-          portfolioId={id}
-          onCreated={(account) => {
-            setAccountId(account.accountId);
-            setAccountNotice(null);
-            detail.reload();
-          }}
-        />
-      )}
-      {selected && (
-        <section
-          className="account-workspace"
-          aria-label={`Account ${selected.name}`}
-        >
-          <h3>{selected.name}</h3>
-          <p>{coverage(selected)}</p>
-          {accountNotice && <p role="status">{accountNotice}</p>}
-          <AccountValuationPanel
-            key={`valuation-${selected.accountId}`}
-            base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-            archived={portfolio.archived}
-          />
-          {selected.source === "GROWW" && (
-            <HoldingsImportPanel
-              key={`import-${selected.accountId}`}
-              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-              archived={portfolio.archived}
-              onAccepted={(receipt) => {
-                if (receipt.outcome === "APPLIED") {
-                  setAccountNotice(receiptMessage(receipt));
-                  detail.reload();
-                }
-              }}
-            />
-          )}
-          <details className="workspace-tools">
-            <summary>Transactions and history</summary>
-            <LedgerPanel
-              key={selected.accountId}
-              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-              archived={portfolio.archived}
-              onSaved={(message) => {
-                setAccountNotice(message);
-                detail.reload();
-              }}
-            />
-            <ValuationHistory
-              key={`history-${selected.accountId}`}
-              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-              archived={portfolio.archived}
-            />
-            <CorporateActionsPanel
-              key={`actions-${selected.accountId}`}
-              base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
-              archived={portfolio.archived}
-              onRecorded={(record) => {
-                if (record.ledgerEventId && !record.replayed) {
-                  setAccountNotice(
-                    "Reviewed corporate action saved. The ledger was recalculated.",
-                  );
-                  detail.reload();
-                }
-              }}
-            />
-          </details>
-        </section>
-      )}
-      <details
-        className="workspace-tools"
-        open={Boolean(candidate) || undefined}
+                <h3>{selected.name}</h3>
+                <p>{coverage(selected)}</p>
+                {accountNotice && <p role="status">{accountNotice}</p>}
+                <AccountValuationPanel
+                  key={`valuation-${selected.accountId}`}
+                  base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+                  archived={portfolio.archived}
+                />
+                {selected.source === "GROWW" && (
+                  <HoldingsImportPanel
+                    key={`import-${selected.accountId}`}
+                    base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+                    archived={portfolio.archived}
+                    onAccepted={(receipt) => {
+                      if (receipt.outcome === "APPLIED") {
+                        setAccountNotice(receiptMessage(receipt));
+                        detail.reload();
+                      }
+                    }}
+                  />
+                )}
+                <details className="workspace-tools">
+                  <summary>Transactions and history</summary>
+                  <LedgerPanel
+                    key={selected.accountId}
+                    base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+                    archived={portfolio.archived}
+                    onSaved={(message) => {
+                      setAccountNotice(message);
+                      detail.reload();
+                    }}
+                  />
+                  <ValuationHistory
+                    key={`history-${selected.accountId}`}
+                    base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+                    archived={portfolio.archived}
+                  />
+                  <CorporateActionsPanel
+                    key={`actions-${selected.accountId}`}
+                    base={`/api/v1/portfolios/${id}/accounts/${selected.accountId}`}
+                    archived={portfolio.archived}
+                    onRecorded={(record) => {
+                      if (record.ledgerEventId && !record.replayed) {
+                        setAccountNotice(
+                          "Reviewed corporate action saved. The ledger was recalculated.",
+                        );
+                        detail.reload();
+                      }
+                    }}
+                  />
+                </details>
+              </section>
+            )}
+          </>
+        )}
+      </div>
+      <div
+        role="tabpanel"
+        hidden={view !== "events"}
+        id={`${viewId}-events`}
+        aria-labelledby={`${viewId}-events-tab`}
       >
-        <summary>Returns, risk and scenarios</summary>
-        <PerformancePanel portfolio={id} />
-        <PortfolioHealthPanel portfolio={id} candidate={candidate} />
-      </details>
+        {view === "events" && <PortfolioDevelopments portfolio={id} />}
+      </div>
+      <div
+        role="tabpanel"
+        hidden={view !== "risk"}
+        id={`${viewId}-risk`}
+        aria-labelledby={`${viewId}-risk-tab`}
+      >
+        {view === "risk" && (
+          <Stack spacing={2}>
+            <PerformancePanel portfolio={id} />
+            <PortfolioHealthPanel portfolio={id} candidate={candidate} />
+          </Stack>
+        )}
+      </div>
     </section>
   );
 }

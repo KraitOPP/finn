@@ -25,6 +25,7 @@ const labels = {
   BUSINESS: "Business highlights",
   GOVERNANCE: "Governance highlights",
   QUESTION: "Research questions",
+  EXPOSURE: "Disclosed business exposures",
 } as const;
 
 type ResearchTarget = {
@@ -375,13 +376,14 @@ function AddNote({
             <option value="QUESTION">Open question</option>
             <option value="BUSINESS">Business highlight</option>
             <option value="GOVERNANCE">Governance highlight</option>
+            <option value="EXPOSURE">Disclosed business exposure</option>
           </select>
         </label>
         <label>
-          Note{" "}
+          {kind === "EXPOSURE" ? "Shared exposure label" : "Note"}{" "}
           <input
             required
-            maxLength={240}
+            maxLength={kind === "EXPOSURE" ? 100 : 240}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />

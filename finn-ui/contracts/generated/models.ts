@@ -334,7 +334,7 @@ export type CompanyNewsPage = ({
 });
 
 export type CompanyResearchNote = ({
-  "kind": ("BUSINESS" | "GOVERNANCE" | "QUESTION") & (string);
+  "kind": ("BUSINESS" | "GOVERNANCE" | "QUESTION" | "EXPOSURE") & (string);
   "title": (string);
   "anchorId": (((OpaqueId)) | ((null)));
   "noteId": (OpaqueId);
@@ -342,7 +342,7 @@ export type CompanyResearchNote = ({
 });
 
 export type CompanyResearchNoteInput = ({
-  "kind": ("BUSINESS" | "GOVERNANCE" | "QUESTION") & (string);
+  "kind": ("BUSINESS" | "GOVERNANCE" | "QUESTION" | "EXPOSURE") & (string);
   "title": (string);
   "anchorId": (((OpaqueId)) | ((null)));
 });
@@ -408,7 +408,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.53.0") & (string);
+export type ContractVersion = ("0.54.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -611,6 +611,7 @@ export type EarningsReview = ({
   "percent": (((DecimalString)) | ((null)));
   "result": ("ABOVE" | "BELOW" | "MET") & (string);
 })>);
+  "guidance"?: (Array<(ManagementGuidance)>);
   "truncated": (boolean);
 });
 
@@ -1229,6 +1230,10 @@ export type ManagementGuidanceList = ({
   "items": (Array<(ManagementGuidance)>);
 });
 
+export type MarkTodayBriefing = ({
+  "through": (UtcInstant);
+});
+
 export type MarketChart = ({
   "range": (ChartRange);
   "source": ("YAHOO_YFINANCE" | "MANUAL_REVIEWED") & (string);
@@ -1479,6 +1484,22 @@ export type PortfolioHealth = ({
   "topFiveWeight": (((NonNegativeDecimalString)) | ((null)));
   "holdings": (Array<(PortfolioHealthHolding)>);
   "sectors": (Array<(PortfolioHealthSector)>);
+  "sharedExposures"?: (Array<({
+  "name": (string);
+  "companies": (number);
+  "equityWeight": (((NonNegativeDecimalString)) | ((null)));
+  "evidence": (Array<({
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "anchorId": (OpaqueId);
+})>);
+})>);
+  "eventImpact"?: (Array<({
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "equityWeight": (((NonNegativeDecimalString)) | ((null)));
+  "securities": (Array<(OpaqueId)>);
+})>);
 });
 
 export type PortfolioHealthHolding = ({
@@ -1839,6 +1860,7 @@ export type RadarEntry = ({
   "peers": (number);
   "medianChangePercent": (DecimalString);
 })) | ((null)));
+  "marketCapitalization"?: (((FinancialFact)) | ((null)));
   "score": (number);
   "reasons": (Array<({
   "label": (string);
@@ -2159,6 +2181,23 @@ export type Rights = ((({
   "publicDisplayAllowed": (false) & (boolean);
   "externalAiAllowed": (false) & (boolean);
 })));
+
+export type SectorScenario = ({
+  "portfolioId": (OpaqueId);
+  "sector": (DiscoverySector);
+  "shockPercent": (DecimalString);
+  "state": ("SIMULATED" | "TARGET_NOT_HELD" | "NO_ACCOUNTS" | "PORTFOLIO_BUDGET" | "PRICES_MISSING" | "STALE_PRICES" | "MIXED_PRICE_SESSIONS") & (string);
+  "priceSession": (((SessionDate)) | ((null)));
+  "beforeEquity": (((NonNegativeDecimalString)) | ((null)));
+  "afterEquity": (((NonNegativeDecimalString)) | ((null)));
+  "valueChange": (((DecimalString)) | ((null)));
+  "affectedEquityWeight": (((NonNegativeDecimalString)) | ((null)));
+});
+
+export type SectorScenarioInput = ({
+  "sector": (DiscoverySector);
+  "shockPercent": (DecimalString);
+});
 
 export type SecurityInput = ({
   "companyId": (OpaqueId);
@@ -2507,6 +2546,29 @@ export type ThesisReviewSummary = ({
   "decided": (boolean);
 });
 
+export type TodayBriefing = ({
+  "from": (UtcInstant);
+  "through": (UtcInstant);
+  "lastReviewedThrough": (((UtcInstant)) | ((null)));
+  "holdings": (Array<(RadarEntry)>);
+  "watchlist": (Array<(RadarEntry)>);
+  "candidates": (Array<(RadarEntry)>);
+  "upcoming": (Array<(RadarCalendarEntry)>);
+  "questions": (Array<({
+  "noteId": (OpaqueId);
+  "companyId": (OpaqueId);
+  "companyName": (string);
+  "title": (string);
+})>);
+  "recentPrices": (number);
+  "checkedListings": (number);
+  "holdingsCoverage": ("NO_RECORDS" | "PARTIAL" | "RECORDED_ACCOUNTS") & (string);
+});
+
+export type TodayBriefingReceipt = ({
+  "reviewedThrough": (UtcInstant);
+});
+
 export type UserProfile = ({
   "userId": (OpaqueId);
   "displayName": (string);
@@ -2755,6 +2817,7 @@ export interface ContractTypes {
   ManagementGuidanceEdit: ManagementGuidanceEdit;
   ManagementGuidanceInput: ManagementGuidanceInput;
   ManagementGuidanceList: ManagementGuidanceList;
+  MarkTodayBriefing: MarkTodayBriefing;
   MarketChart: MarketChart;
   MarketDiagnostics: MarketDiagnostics;
   MarketFeed: MarketFeed;
@@ -2866,6 +2929,8 @@ export interface ContractTypes {
   ReviewedEarningsInput: ReviewedEarningsInput;
   ReviewedOrderInput: ReviewedOrderInput;
   Rights: Rights;
+  SectorScenario: SectorScenario;
+  SectorScenarioInput: SectorScenarioInput;
   SecurityInput: SecurityInput;
   SessionDate: SessionDate;
   SessionResponse: SessionResponse;
@@ -2918,6 +2983,8 @@ export interface ContractTypes {
   ThesisReviewLink: ThesisReviewLink;
   ThesisReviewSchedule: ThesisReviewSchedule;
   ThesisReviewSummary: ThesisReviewSummary;
+  TodayBriefing: TodayBriefing;
+  TodayBriefingReceipt: TodayBriefingReceipt;
   UserProfile: UserProfile;
   UtcInstant: UtcInstant;
   ValuationListing: ValuationListing;

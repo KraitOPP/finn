@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.53.0",
+  "$id": "urn:finn:contracts:market-data:0.54.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.53.0"
+      "const": "0.54.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -2018,6 +2018,109 @@
             "$ref": "#/$defs/PortfolioHealthSector"
           },
           "maxItems": 8
+        },
+        "sharedExposures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "companies": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 500
+              },
+              "equityWeight": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/NonNegativeDecimalString"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "companyId": {
+                      "$ref": "#/$defs/OpaqueId"
+                    },
+                    "companyName": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "anchorId": {
+                      "$ref": "#/$defs/OpaqueId"
+                    }
+                  },
+                  "required": [
+                    "companyId",
+                    "companyName",
+                    "anchorId"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "name",
+              "companies",
+              "equityWeight",
+              "evidence"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 25
+        },
+        "eventImpact": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "companyId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "companyName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "equityWeight": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/NonNegativeDecimalString"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "securities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "companyId",
+              "companyName",
+              "equityWeight",
+              "securities"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 500
         }
       },
       "required": [
@@ -2035,6 +2138,110 @@
         "topFiveWeight",
         "holdings",
         "sectors"
+      ],
+      "additionalProperties": false
+    },
+    "SectorScenarioInput": {
+      "type": "object",
+      "properties": {
+        "sector": {
+          "$ref": "#/$defs/DiscoverySector"
+        },
+        "shockPercent": {
+          "$ref": "#/$defs/DecimalString"
+        }
+      },
+      "required": [
+        "sector",
+        "shockPercent"
+      ],
+      "additionalProperties": false
+    },
+    "SectorScenario": {
+      "type": "object",
+      "properties": {
+        "portfolioId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sector": {
+          "$ref": "#/$defs/DiscoverySector"
+        },
+        "shockPercent": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "SIMULATED",
+            "TARGET_NOT_HELD",
+            "NO_ACCOUNTS",
+            "PORTFOLIO_BUDGET",
+            "PRICES_MISSING",
+            "STALE_PRICES",
+            "MIXED_PRICE_SESSIONS"
+          ]
+        },
+        "priceSession": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SessionDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "beforeEquity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "afterEquity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valueChange": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affectedEquityWeight": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeDecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "portfolioId",
+        "sector",
+        "shockPercent",
+        "state",
+        "priceSession",
+        "beforeEquity",
+        "afterEquity",
+        "valueChange",
+        "affectedEquityWeight"
       ],
       "additionalProperties": false
     },
@@ -5343,6 +5550,13 @@
           },
           "maxItems": 4
         },
+        "guidance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ManagementGuidance"
+          },
+          "maxItems": 6
+        },
         "truncated": {
           "type": "boolean"
         }
@@ -5369,7 +5583,8 @@
           "enum": [
             "BUSINESS",
             "GOVERNANCE",
-            "QUESTION"
+            "QUESTION",
+            "EXPOSURE"
           ]
         },
         "title": {
@@ -5403,7 +5618,8 @@
           "enum": [
             "BUSINESS",
             "GOVERNANCE",
-            "QUESTION"
+            "QUESTION",
+            "EXPOSURE"
           ]
         },
         "title": {
@@ -8975,6 +9191,16 @@
             }
           ]
         },
+        "marketCapitalization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinancialFact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "score": {
           "type": "integer",
           "minimum": 0,
@@ -9110,6 +9336,143 @@
         "asOf",
         "holdingsCoverage",
         "items"
+      ],
+      "additionalProperties": false
+    },
+    "TodayBriefing": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "through": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "lastReviewedThrough": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "holdings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RadarEntry"
+          },
+          "maxItems": 5
+        },
+        "watchlist": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RadarEntry"
+          },
+          "maxItems": 5
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RadarEntry"
+          },
+          "maxItems": 4
+        },
+        "upcoming": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RadarCalendarEntry"
+          },
+          "maxItems": 6
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "noteId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "companyId": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "companyName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "noteId",
+              "companyId",
+              "companyName",
+              "title"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 6
+        },
+        "recentPrices": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60
+        },
+        "checkedListings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60
+        },
+        "holdingsCoverage": {
+          "type": "string",
+          "enum": [
+            "NO_RECORDS",
+            "PARTIAL",
+            "RECORDED_ACCOUNTS"
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "through",
+        "lastReviewedThrough",
+        "holdings",
+        "watchlist",
+        "candidates",
+        "upcoming",
+        "questions",
+        "recentPrices",
+        "checkedListings",
+        "holdingsCoverage"
+      ],
+      "additionalProperties": false
+    },
+    "MarkTodayBriefing": {
+      "type": "object",
+      "properties": {
+        "through": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "through"
+      ],
+      "additionalProperties": false
+    },
+    "TodayBriefingReceipt": {
+      "type": "object",
+      "properties": {
+        "reviewedThrough": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "reviewedThrough"
       ],
       "additionalProperties": false
     },

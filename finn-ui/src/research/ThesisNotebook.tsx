@@ -33,7 +33,7 @@ export function ThesisNotebook({
   event?: string;
   review?: string;
 }) {
-  const [open, setOpen] = useState(Boolean(initialThesis || event));
+  const [open, setOpen] = useState(true);
   const [selected, setSelected] = useState(initialThesis ?? "");
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState("");

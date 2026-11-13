@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "FINN initial market data API",
-    "version": "0.53.0",
+    "version": "0.54.0",
     "description": "Private portfolio, ledger, import and valuation operations use reviewed listings and traceable daily closes. Unimplemented market operations are marked planned. Explicit missing/stale states and source provenance; no trading or broker execution."
   },
   "servers": [
@@ -5898,6 +5898,20 @@
             }
           },
           {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "BELOW_5000_CRORE",
+                "FROM_5000_TO_20000_CRORE",
+                "ABOVE_20000_CRORE"
+              ]
+            }
+          },
+          {
             "name": "portfolioId",
             "in": "query",
             "required": false,
@@ -5977,6 +5991,209 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/briefing": {
+      "get": {
+        "operationId": "getTodayBriefing",
+        "summary": "Read new relevant evidence and upcoming company dates",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayBriefing"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/briefing/reviewed": {
+      "post": {
+        "operationId": "markTodayBriefingReviewed",
+        "summary": "Mark the displayed briefing window as reviewed",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayBriefingReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkTodayBriefing"
               }
             }
           }
@@ -14092,6 +14309,139 @@
         }
       }
     },
+    "/api/v1/portfolios/{portfolio}/health/sector-scenario": {
+      "post": {
+        "operationId": "simulateSectorScenario",
+        "summary": "Calculate a hypothetical price shock for a reviewed portfolio sector",
+        "description": "Owner-scoped application resource. Identity derives from the session; all mutations require CSRF. Missing/inaccessible IDs both return 404. Inspect the resource's supported scope and provenance; no broker execution or unverified provider coverage is implied.",
+        "x-finn-implementation-status": "IMPLEMENTED",
+        "parameters": [
+          {
+            "name": "portfolio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored result; inspect availability, coverage and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectorScenario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource unavailable to this user.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid date range, listing, or query.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded query budget exceeded; Retry-After when known.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unable to serve stored results.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF token missing or rejected.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict; inspect the current resource and review before retrying.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectorScenarioInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/portfolios/{portfolio}/health/risk": {
       "post": {
         "operationId": "calculatePortfolioRisk",
@@ -20011,7 +20361,7 @@
     "schemas": {
       "ContractVersion": {
         "type": "string",
-        "const": "0.53.0"
+        "const": "0.54.0"
       },
       "OpaqueId": {
         "type": "string",
@@ -22022,6 +22372,109 @@
               "$ref": "#/components/schemas/PortfolioHealthSector"
             },
             "maxItems": 8
+          },
+          "sharedExposures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "companies": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 500
+                },
+                "equityWeight": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NonNegativeDecimalString"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "companyId": {
+                        "$ref": "#/components/schemas/OpaqueId"
+                      },
+                      "companyName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "anchorId": {
+                        "$ref": "#/components/schemas/OpaqueId"
+                      }
+                    },
+                    "required": [
+                      "companyId",
+                      "companyName",
+                      "anchorId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 50
+                }
+              },
+              "required": [
+                "name",
+                "companies",
+                "equityWeight",
+                "evidence"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 25
+          },
+          "eventImpact": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "companyId": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                },
+                "companyName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "equityWeight": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NonNegativeDecimalString"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "securities": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpaqueId"
+                  },
+                  "maxItems": 500
+                }
+              },
+              "required": [
+                "companyId",
+                "companyName",
+                "equityWeight",
+                "securities"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 500
           }
         },
         "required": [
@@ -22039,6 +22492,110 @@
           "topFiveWeight",
           "holdings",
           "sectors"
+        ],
+        "additionalProperties": false
+      },
+      "SectorScenarioInput": {
+        "type": "object",
+        "properties": {
+          "sector": {
+            "$ref": "#/components/schemas/DiscoverySector"
+          },
+          "shockPercent": {
+            "$ref": "#/components/schemas/DecimalString"
+          }
+        },
+        "required": [
+          "sector",
+          "shockPercent"
+        ],
+        "additionalProperties": false
+      },
+      "SectorScenario": {
+        "type": "object",
+        "properties": {
+          "portfolioId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/DiscoverySector"
+          },
+          "shockPercent": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "SIMULATED",
+              "TARGET_NOT_HELD",
+              "NO_ACCOUNTS",
+              "PORTFOLIO_BUDGET",
+              "PRICES_MISSING",
+              "STALE_PRICES",
+              "MIXED_PRICE_SESSIONS"
+            ]
+          },
+          "priceSession": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "beforeEquity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "afterEquity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "valueChange": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affectedEquityWeight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonNegativeDecimalString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "portfolioId",
+          "sector",
+          "shockPercent",
+          "state",
+          "priceSession",
+          "beforeEquity",
+          "afterEquity",
+          "valueChange",
+          "affectedEquityWeight"
         ],
         "additionalProperties": false
       },
@@ -25347,6 +25904,13 @@
             },
             "maxItems": 4
           },
+          "guidance": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagementGuidance"
+            },
+            "maxItems": 6
+          },
           "truncated": {
             "type": "boolean"
           }
@@ -25373,7 +25937,8 @@
             "enum": [
               "BUSINESS",
               "GOVERNANCE",
-              "QUESTION"
+              "QUESTION",
+              "EXPOSURE"
             ]
           },
           "title": {
@@ -25407,7 +25972,8 @@
             "enum": [
               "BUSINESS",
               "GOVERNANCE",
-              "QUESTION"
+              "QUESTION",
+              "EXPOSURE"
             ]
           },
           "title": {
@@ -28979,6 +29545,16 @@
               }
             ]
           },
+          "marketCapitalization": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "score": {
             "type": "integer",
             "minimum": 0,
@@ -29114,6 +29690,143 @@
           "asOf",
           "holdingsCoverage",
           "items"
+        ],
+        "additionalProperties": false
+      },
+      "TodayBriefing": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "through": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "lastReviewedThrough": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtcInstant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "holdings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RadarEntry"
+            },
+            "maxItems": 5
+          },
+          "watchlist": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RadarEntry"
+            },
+            "maxItems": 5
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RadarEntry"
+            },
+            "maxItems": 4
+          },
+          "upcoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RadarCalendarEntry"
+            },
+            "maxItems": 6
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "noteId": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                },
+                "companyId": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                },
+                "companyName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240
+                }
+              },
+              "required": [
+                "noteId",
+                "companyId",
+                "companyName",
+                "title"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 6
+          },
+          "recentPrices": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
+          "checkedListings": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
+          "holdingsCoverage": {
+            "type": "string",
+            "enum": [
+              "NO_RECORDS",
+              "PARTIAL",
+              "RECORDED_ACCOUNTS"
+            ]
+          }
+        },
+        "required": [
+          "from",
+          "through",
+          "lastReviewedThrough",
+          "holdings",
+          "watchlist",
+          "candidates",
+          "upcoming",
+          "questions",
+          "recentPrices",
+          "checkedListings",
+          "holdingsCoverage"
+        ],
+        "additionalProperties": false
+      },
+      "MarkTodayBriefing": {
+        "type": "object",
+        "properties": {
+          "through": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "through"
+        ],
+        "additionalProperties": false
+      },
+      "TodayBriefingReceipt": {
+        "type": "object",
+        "properties": {
+          "reviewedThrough": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        },
+        "required": [
+          "reviewedThrough"
         ],
         "additionalProperties": false
       },

@@ -48,6 +48,7 @@ class CompanyResearch {
         name(owner,company);
         if(anchor==null&&!kind.equals("QUESTION"))throw ApiFailure.invalid();
         if(anchor!=null&&!evidence.require(owner,anchor).companyId().equals(company))throw ApiFailure.notFound();
+        if(kind.equals("EXPOSURE")&&(title.strip().isEmpty()||title.strip().length()>100))throw ApiFailure.invalid();
         int count=jdbc.queryForObject("SELECT count(*) FROM finn.company_research_note WHERE owner_id=? AND company_id=?",Integer.class,owner,company);
         if(count>=50)throw ApiFailure.conflict();
         var id=UUID.randomUUID();

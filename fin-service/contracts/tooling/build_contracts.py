@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.53.0"
+VERSION = "0.54.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -263,7 +263,19 @@ def definitions() -> dict:
         "stalePositions":health_count,"providerEstimates":health_count,"equity":nullable(ref("NonNegativeDecimalString")),
         "cash":nullable(ref("NonNegativeDecimalString")),"largestWeight":nullable(ref("NonNegativeDecimalString")),
         "topFiveWeight":nullable(ref("NonNegativeDecimalString")),"holdings":array(ref("PortfolioHealthHolding"),maxItems=500),
-        "sectors":array(ref("PortfolioHealthSector"),maxItems=8)})
+        "sectors":array(ref("PortfolioHealthSector"),maxItems=8),
+        "sharedExposures":array(obj({"name":text(maxLength=100),"companies":{"type":"integer","minimum":2,"maximum":500},
+            "equityWeight":nullable(ref("NonNegativeDecimalString")),
+            "evidence":array(obj({"companyId":ref("OpaqueId"),"companyName":text(maxLength=120),"anchorId":ref("OpaqueId")}),maxItems=50)}),maxItems=25),
+        "eventImpact":array(obj({"companyId":ref("OpaqueId"),"companyName":text(maxLength=120),
+            "equityWeight":nullable(ref("NonNegativeDecimalString")),"securities":array(ref("OpaqueId"),maxItems=500)}),maxItems=500)},
+        optional=("sharedExposures","eventImpact"))
+    d["SectorScenarioInput"] = obj({"sector":ref("DiscoverySector"),"shockPercent":ref("DecimalString")})
+    d["SectorScenario"] = obj({"portfolioId":ref("OpaqueId"),"sector":ref("DiscoverySector"),"shockPercent":ref("DecimalString"),
+        "state":enum(["SIMULATED","TARGET_NOT_HELD",*health_gaps]),
+        "priceSession":nullable(ref("SessionDate")),"beforeEquity":nullable(ref("NonNegativeDecimalString")),
+        "afterEquity":nullable(ref("NonNegativeDecimalString")),"valueChange":nullable(ref("DecimalString")),
+        "affectedEquityWeight":nullable(ref("NonNegativeDecimalString"))})
     scenario_input = {"listingId":ref("OpaqueId"),"cashAllocation":ref("NonNegativeDecimalString"),"shockPercent":ref("DecimalString")}
     d["PortfolioScenarioInput"] = obj(scenario_input)
     d["PortfolioScenario"] = obj({**scenario_input,"portfolioId":ref("OpaqueId"),
@@ -508,9 +520,10 @@ def definitions() -> dict:
                                 "difference":nullable(ref("DecimalString")),"percent":nullable(ref("DecimalString"))}),maxItems=40),
         "expectations":array(obj({"estimate":ref("EarningsInput"),"actual":ref("FinancialFact"),"difference":ref("DecimalString"),
                               "percent":nullable(ref("DecimalString")),"result":enum(["ABOVE","BELOW","MET"])}),maxItems=4),
+        "guidance":array(ref("ManagementGuidance"),maxItems=6),
         "truncated":{"type":"boolean"},
-    })
-    research_note = {"kind":enum(["BUSINESS","GOVERNANCE","QUESTION"]),"title":text(minLength=1,maxLength=240),
+    },optional=("guidance",))
+    research_note = {"kind":enum(["BUSINESS","GOVERNANCE","QUESTION","EXPOSURE"]),"title":text(minLength=1,maxLength=240),
                      "anchorId":nullable(ref("OpaqueId"))}
     d["CompanyResearchNoteInput"] = obj(research_note)
     d["CompanyResearchNote"] = obj({**research_note,"noteId":ref("OpaqueId"),"resolved":{"type":"boolean"}})
@@ -752,9 +765,10 @@ def definitions() -> dict:
         "stock":ref("RadarStock"), "announcement":nullable(ref("RadarAnnouncement")),
         "movement":nullable(ref("RadarMovement")),
         "sectorMove":nullable(obj({"peers":{"type":"integer","minimum":3,"maximum":59},"medianChangePercent":ref("DecimalString")})),
+        "marketCapitalization":nullable(ref("FinancialFact")),
         "score":{"type":"integer","minimum":0,"maximum":150},
         "reasons":array(obj({"label":text(maxLength=100),"points":{"type":"integer","minimum":0,"maximum":40}}),maxItems=9),
-    })
+    },optional=("marketCapitalization",))
     d["MarketRadar"] = obj({
         "asOf":ref("SessionDate"), "listingsChecked":{"type":"integer","minimum":0,"maximum":60},
         "listingsWithRecentPrices":{"type":"integer","minimum":0,"maximum":60},
@@ -764,6 +778,14 @@ def definitions() -> dict:
     d["RadarCalendarEntry"] = obj({"stock":ref("RadarStock"),"event":ref("CompanyEvent"),"date":ref("AnnouncedEventDate")})
     d["RadarCalendar"] = obj({"asOf":ref("SessionDate"),"holdingsCoverage":enum(["NO_RECORDS","PARTIAL","RECORDED_ACCOUNTS"]),
                                "items":array(ref("RadarCalendarEntry"),maxItems=20)})
+    d["TodayBriefing"] = obj({"from":ref("UtcInstant"),"through":ref("UtcInstant"),"lastReviewedThrough":nullable(ref("UtcInstant")),
+        "holdings":array(ref("RadarEntry"),maxItems=5),"watchlist":array(ref("RadarEntry"),maxItems=5),
+        "candidates":array(ref("RadarEntry"),maxItems=4),"upcoming":array(ref("RadarCalendarEntry"),maxItems=6),
+        "questions":array(obj({"noteId":ref("OpaqueId"),"companyId":ref("OpaqueId"),"companyName":text(maxLength=120),
+            "title":text(maxLength=240)}),maxItems=6),"recentPrices":{"type":"integer","minimum":0,"maximum":60},
+        "checkedListings":{"type":"integer","minimum":0,"maximum":60},"holdingsCoverage":enum(["NO_RECORDS","PARTIAL","RECORDED_ACCOUNTS"])})
+    d["MarkTodayBriefing"] = obj({"through":ref("UtcInstant")})
+    d["TodayBriefingReceipt"] = obj({"reviewedThrough":ref("UtcInstant")})
     d["RadarLeadSearch"] = obj({"days":{"type":"integer","minimum":1,"maximum":30},"eventType":nullable(ref("CompanyEventType"))})
     d["RadarLeads"] = obj({"items":array(obj({
         "symbol":text(maxLength=36), "companyName":text(maxLength=120), "eventType":ref("CompanyEventType"),
@@ -1256,7 +1278,11 @@ def public_api_document() -> dict:
             parameter("kind","query",enum(["ALL","ANNOUNCEMENTS","MOVES"])),
             parameter("sector","query",ref("DiscoverySector")), parameter("eventType","query",ref("CompanyEventType")),
             parameter("liquidity","query",enum(["ALL","TURNOVER_1_CRORE","TURNOVER_10_CRORE"])),
+            parameter("size","query",enum(["ALL","BELOW_5000_CRORE","FROM_5000_TO_20000_CRORE","ABOVE_20000_CRORE"])),
             parameter("portfolioId","query",text(format="uuid"))])},
+        "/api/v1/briefing":{"get":maintained("getTodayBriefing","Read new relevant evidence and upcoming company dates","TodayBriefing")},
+        "/api/v1/briefing/reviewed":{"post":maintained("markTodayBriefingReviewed","Mark the displayed briefing window as reviewed",
+            "TodayBriefingReceipt",input_name="MarkTodayBriefing")},
         "/api/v1/discovery/radar/leads":{"post":maintained("findRadarLeads","Find recent public NSE event leads for user review","RadarLeads",input_name="RadarLeadSearch")},
         "/api/v1/discovery/portfolio-calendar":{"get":maintained("getPortfolioCalendar","Read upcoming announced dates for recorded holdings","RadarCalendar",[
             parameter("portfolioId","query",text(format="uuid"))])},
@@ -1409,6 +1435,8 @@ def public_api_document() -> dict:
             "PortfolioHealth",ledger_account[:1])},
         "/api/v1/portfolios/{portfolio}/health/scenario":{"post":maintained("simulatePortfolioScenario",
             "Calculate a hypothetical cash allocation and security price shock","PortfolioScenario",ledger_account[:1],"PortfolioScenarioInput")},
+        "/api/v1/portfolios/{portfolio}/health/sector-scenario":{"post":maintained("simulateSectorScenario",
+            "Calculate a hypothetical price shock for a reviewed portfolio sector","SectorScenario",ledger_account[:1],"SectorScenarioInput")},
         "/api/v1/portfolios/{portfolio}/health/risk":{"post":maintained("calculatePortfolioRisk",
             "Calculate weekly drawdown and volatility only with all required saved valuations","PortfolioRisk",
             ledger_account[:1],"PortfolioPerformanceInput")},

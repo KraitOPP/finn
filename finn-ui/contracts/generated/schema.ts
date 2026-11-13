@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.53.0",
+  "contractVersion": "0.54.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "a76eeb475ebb36fb907f326e752b8f5fd599fbd05ea0a9bc90db1f0a7cbb84b5",
+  "sourceSha256": "9d37031f708917450c0df0ff98bb1ea77948eab208e937b9c9b32cdee2c3ae5e",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -147,6 +147,7 @@ export const contractMetadata = {
     "ManagementGuidanceEdit",
     "ManagementGuidanceInput",
     "ManagementGuidanceList",
+    "MarkTodayBriefing",
     "MarketChart",
     "MarketDiagnostics",
     "MarketFeed",
@@ -258,6 +259,8 @@ export const contractMetadata = {
     "ReviewedEarningsInput",
     "ReviewedOrderInput",
     "Rights",
+    "SectorScenario",
+    "SectorScenarioInput",
     "SecurityInput",
     "SessionDate",
     "SessionResponse",
@@ -310,6 +313,8 @@ export const contractMetadata = {
     "ThesisReviewLink",
     "ThesisReviewSchedule",
     "ThesisReviewSummary",
+    "TodayBriefing",
+    "TodayBriefingReceipt",
     "UserProfile",
     "UtcInstant",
     "ValuationListing",
@@ -2073,7 +2078,8 @@ export const contractSchemas = {
         "enum": [
           "BUSINESS",
           "GOVERNANCE",
-          "QUESTION"
+          "QUESTION",
+          "EXPOSURE"
         ]
       },
       "title": {
@@ -2115,7 +2121,8 @@ export const contractSchemas = {
         "enum": [
           "BUSINESS",
           "GOVERNANCE",
-          "QUESTION"
+          "QUESTION",
+          "EXPOSURE"
         ]
       },
       "title": {
@@ -2455,7 +2462,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.53.0"
+    "const": "0.54.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3613,6 +3620,13 @@ export const contractSchemas = {
           "additionalProperties": false
         },
         "maxItems": 4
+      },
+      "guidance": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ManagementGuidance"
+        },
+        "maxItems": 6
       },
       "truncated": {
         "type": "boolean"
@@ -7301,6 +7315,18 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "MarkTodayBriefing": {
+    "type": "object",
+    "properties": {
+      "through": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "through"
+    ],
+    "additionalProperties": false
+  },
   "MarketChart": {
     "type": "object",
     "properties": {
@@ -8703,6 +8729,109 @@ export const contractSchemas = {
           "$ref": "#/components/schemas/PortfolioHealthSector"
         },
         "maxItems": 8
+      },
+      "sharedExposures": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "companies": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 500
+            },
+            "equityWeight": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/NonNegativeDecimalString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "companyId": {
+                    "$ref": "#/components/schemas/OpaqueId"
+                  },
+                  "companyName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "anchorId": {
+                    "$ref": "#/components/schemas/OpaqueId"
+                  }
+                },
+                "required": [
+                  "companyId",
+                  "companyName",
+                  "anchorId"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 50
+            }
+          },
+          "required": [
+            "name",
+            "companies",
+            "equityWeight",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 25
+      },
+      "eventImpact": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "companyId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "companyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "equityWeight": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/NonNegativeDecimalString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "securities": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "maxItems": 500
+            }
+          },
+          "required": [
+            "companyId",
+            "companyName",
+            "equityWeight",
+            "securities"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 500
       }
     },
     "required": [
@@ -10633,6 +10762,16 @@ export const contractSchemas = {
           }
         ]
       },
+      "marketCapitalization": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FinancialFact"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "score": {
         "type": "integer",
         "minimum": 0,
@@ -12339,6 +12478,110 @@ export const contractSchemas = {
         "additionalProperties": false
       }
     ]
+  },
+  "SectorScenario": {
+    "type": "object",
+    "properties": {
+      "portfolioId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "sector": {
+        "$ref": "#/components/schemas/DiscoverySector"
+      },
+      "shockPercent": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "SIMULATED",
+          "TARGET_NOT_HELD",
+          "NO_ACCOUNTS",
+          "PORTFOLIO_BUDGET",
+          "PRICES_MISSING",
+          "STALE_PRICES",
+          "MIXED_PRICE_SESSIONS"
+        ]
+      },
+      "priceSession": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SessionDate"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "beforeEquity": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "afterEquity": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "valueChange": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "affectedEquityWeight": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NonNegativeDecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "portfolioId",
+      "sector",
+      "shockPercent",
+      "state",
+      "priceSession",
+      "beforeEquity",
+      "afterEquity",
+      "valueChange",
+      "affectedEquityWeight"
+    ],
+    "additionalProperties": false
+  },
+  "SectorScenarioInput": {
+    "type": "object",
+    "properties": {
+      "sector": {
+        "$ref": "#/components/schemas/DiscoverySector"
+      },
+      "shockPercent": {
+        "$ref": "#/components/schemas/DecimalString"
+      }
+    },
+    "required": [
+      "sector",
+      "shockPercent"
+    ],
+    "additionalProperties": false
   },
   "SecurityInput": {
     "type": "object",
@@ -14086,6 +14329,131 @@ export const contractSchemas = {
       "eventTitle",
       "createdAt",
       "decided"
+    ],
+    "additionalProperties": false
+  },
+  "TodayBriefing": {
+    "type": "object",
+    "properties": {
+      "from": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "through": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "lastReviewedThrough": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "holdings": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RadarEntry"
+        },
+        "maxItems": 5
+      },
+      "watchlist": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RadarEntry"
+        },
+        "maxItems": 5
+      },
+      "candidates": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RadarEntry"
+        },
+        "maxItems": 4
+      },
+      "upcoming": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RadarCalendarEntry"
+        },
+        "maxItems": 6
+      },
+      "questions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "noteId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "companyId": {
+              "$ref": "#/components/schemas/OpaqueId"
+            },
+            "companyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "required": [
+            "noteId",
+            "companyId",
+            "companyName",
+            "title"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 6
+      },
+      "recentPrices": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 60
+      },
+      "checkedListings": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 60
+      },
+      "holdingsCoverage": {
+        "type": "string",
+        "enum": [
+          "NO_RECORDS",
+          "PARTIAL",
+          "RECORDED_ACCOUNTS"
+        ]
+      }
+    },
+    "required": [
+      "from",
+      "through",
+      "lastReviewedThrough",
+      "holdings",
+      "watchlist",
+      "candidates",
+      "upcoming",
+      "questions",
+      "recentPrices",
+      "checkedListings",
+      "holdingsCoverage"
+    ],
+    "additionalProperties": false
+  },
+  "TodayBriefingReceipt": {
+    "type": "object",
+    "properties": {
+      "reviewedThrough": {
+        "$ref": "#/components/schemas/UtcInstant"
+      }
+    },
+    "required": [
+      "reviewedThrough"
     ],
     "additionalProperties": false
   },
