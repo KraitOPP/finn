@@ -29,8 +29,7 @@ final class StockDecision {
                  @JsonInclude(JsonInclude.Include.NON_NULL) Issue issue) {}
     record Excerpt(int sourceId, String text) {}
     record Evidence(String listing, LocalDate asOf, List<StockResearch.Item> items,
-                    List<StockResearch.Source> sources, List<Excerpt> excerpts,
-                    List<Article> news, ResearchSnapshot market) {}
+                    List<StockResearch.Source> sources, List<Excerpt> excerpts, List<Article> news) {}
 
     static final String ANALYST = """
             You are reviewing a listed company's public evidence for an investor's due diligence.
@@ -39,8 +38,7 @@ final class StockDecision {
             rationale linking facts to the signal, and one concrete observation that would change your view.
             Use the excerpts to check the collected summaries where available.
             Explain both the opportunity and material downside where supported. Use consistent periods and units.
-            Distinguish company quality from whether the share price is attractive. Treat news interpretations as
-            tentative. Yahoo close history is descriptive context, not evidence of intrinsic value.
+            Distinguish company quality from whether the share price is attractive. Treat news interpretations as tentative.
             Omit a factor if the evidence does not allow a judgment. Do not recommend trades or target prices.
             """;
     static final String CRITIC = """
@@ -149,14 +147,14 @@ final class StockDecision {
     }
 
     static Brief finish(Evidence evidence, List<Assessment> assessments, List<Check> checks) {
-        return finish(evidence,assessments,checks,null);
+        return finish(evidence,assessments,checks,null,null);
     }
 
-    static Brief finish(Evidence evidence, List<Assessment> assessments, List<Check> checks, Issue issue) {
+    static Brief finish(Evidence evidence, List<Assessment> assessments, List<Check> checks, Issue issue, ResearchSnapshot market) {
         var status = assessments.isEmpty() ? Status.ANALYSIS_UNAVAILABLE :
                 assessments.size() == checks.size() ? Status.REVIEWED : Status.REVIEW_INCOMPLETE;
         var stance = status == Status.REVIEWED ? stance(evidence,assessments,checks) : Stance.INSUFFICIENT_EVIDENCE;
-        return new Brief(stance,status,evidence.news(),assessments,checks,evidence.market(),issue);
+        return new Brief(stance,status,evidence.news(),assessments,checks,market,issue);
     }
 
     private static Stance stance(Evidence evidence, List<Assessment> assessments, List<Check> checks) {

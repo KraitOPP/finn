@@ -115,9 +115,10 @@ class GroqResearch {
                 return new Report(preset,MODEL,today,List.of(),List.of(),null,brief);
             }
             var report = collected.report();
+            var marketContext = marketSnapshot(market);
             var evidence = new StockDecision.Evidence(listing.symbol()+" on "+listing.exchange(),today,report.items(),
-                    report.sources(),collected.excerpts(),report.decision().news(),marketSnapshot(market));
-            var brief = review(owner,evidence);
+                    report.sources(),collected.excerpts(),report.decision().news());
+            var brief = review(owner,evidence,marketContext);
             return new Report(preset,MODEL,today,report.items(),report.sources(),null,brief);
         } finally {
             market.cancel(true);
@@ -155,7 +156,7 @@ class GroqResearch {
         }
     }
 
-    private StockDecision.Brief review(UUID owner, StockDecision.Evidence evidence) {
+    private StockDecision.Brief review(UUID owner, StockDecision.Evidence evidence, MarketCharts.ResearchSnapshot market) {
         List<StockDecision.Assessment> assessments = List.of();
         List<StockDecision.Check> checks = List.of();
         var stage = StockDecision.Stage.ANALYST;
@@ -175,7 +176,7 @@ class GroqResearch {
         } catch (ApiFailure unavailable) {
             issue = StockDecision.issue(stage,unavailable);
         }
-        return StockDecision.finish(evidence,assessments,checks,issue);
+        return StockDecision.finish(evidence,assessments,checks,issue,market);
     }
 
     private JsonNode structured(UUID owner, String name, String instruction, Object data, Map<String,Object> schema) {

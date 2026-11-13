@@ -50,11 +50,11 @@ class StockDecisionTest {
                     if (data.has("draft")) {
                         stages.add("critic");
                         assertEquals(5,data.path("draft").size());
-                        assertEquals("203.10",data.at("/evidence/market/close").asText());
+                        assertFalse(data.path("evidence").has("market"));
                         return completion(checks("CHALLENGED"));
                     }
                     stages.add("analyst");
-                    assertEquals("203.10",data.at("/market/close").asText());
+                    assertFalse(data.has("market"));
                     assertEquals("Underlying results excerpt.",data.at("/excerpts/0/text").asText());
                     assertEquals(1,data.path("news").size());
                     assertEquals(5,data.path("items").size());
@@ -140,13 +140,13 @@ class StockDecisionTest {
         var collected = research.decode(collection(),StockResearch.Preset.DEEP_DIVE,TODAY);
         var report = collected.report();
         var evidence = new StockDecision.Evidence("FICT",TODAY,report.items(),report.sources(),
-                collected.excerpts(),report.decision().news(),null);
+                collected.excerpts(),report.decision().news());
         var assessed = StockDecision.assessments(json.valueToTree(assessments()),evidence.items());
         assertEquals(5,assessed.size(), "the extra fabricated item index must be rejected");
         assertEquals(StockDecision.Stance.RESEARCH_FURTHER,StockDecision.finish(evidence,assessed,
                 StockDecision.checks(json.valueToTree(checks("SUPPORTED")),assessed)).stance());
         var missingExcerpt = new StockDecision.Evidence(evidence.listing(),TODAY,evidence.items(),evidence.sources(),
-                List.of(evidence.excerpts().getFirst()),evidence.news(),null);
+                List.of(evidence.excerpts().getFirst()),evidence.news());
         assertEquals(StockDecision.Stance.WATCH,StockDecision.finish(missingExcerpt,assessed,
                 StockDecision.checks(json.valueToTree(checks("SUPPORTED")),assessed)).stance());
         assertEquals(StockDecision.Stance.INSUFFICIENT_EVIDENCE,StockDecision.finish(evidence,assessed,
