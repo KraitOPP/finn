@@ -24,6 +24,11 @@ export const metricLabels: Record<FinancialDimensions["metric"], string> = {
   TOTAL_EQUITY: "Total equity",
   EPS_BASIC: "Basic earnings per share",
   OPERATING_MARGIN: "Operating margin",
+  OPERATING_PROFIT: "Operating profit",
+  EXCEPTIONAL_ITEMS: "Exceptional items",
+  OTHER_INCOME: "Other income",
+  TAX_EXPENSE: "Tax expense",
+  MARKET_CAP: "Market capitalization",
 };
 const scales = [
   "ONES",
@@ -336,8 +341,9 @@ function FactForm({
   ) {
     setDimensions((old) => ({ ...old, [key]: value }));
   }
-  const stock =
-    dimensions.metric === "TOTAL_DEBT" || dimensions.metric === "TOTAL_EQUITY";
+  const stock = ["TOTAL_DEBT", "TOTAL_EQUITY", "MARKET_CAP"].includes(
+    dimensions.metric,
+  );
   return (
     <section className="settings-card">
       <h3>{editing ? "Review a fact revision" : "Record a reported value"}</h3>
@@ -403,8 +409,11 @@ function FactForm({
                   : metric === "OPERATING_MARGIN"
                     ? "PERCENT"
                     : "MONEY";
-              const stockMetric =
-                metric === "TOTAL_DEBT" || metric === "TOTAL_EQUITY";
+              const stockMetric = [
+                "TOTAL_DEBT",
+                "TOTAL_EQUITY",
+                "MARKET_CAP",
+              ].includes(metric);
               setDimensions({
                 ...dimensions,
                 metric,

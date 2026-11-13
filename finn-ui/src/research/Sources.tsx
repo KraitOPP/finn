@@ -35,7 +35,10 @@ export function Research() {
   const tab =
     selection?.query === query
       ? selection.tab
-      : params.has("thesis") || params.has("event") || params.has("review")
+      : params.has("thesis") ||
+          params.has("event") ||
+          params.has("review") ||
+          params.has("view")
         ? "saved"
         : "gemini";
   return (

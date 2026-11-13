@@ -95,8 +95,10 @@ class FinancialFacts {
 
     @Transactional public Comparison compare(UUID id,UUID previous){
         UUID owner=users.requireId();
-        var current=require(owner,id,null);
-        var prior=require(owner,previous,null);
+        return compare(require(owner,id,null),require(owner,previous,null));
+    }
+
+    static Comparison compare(Fact current,Fact prior){
         var a=current.dimensions();var b=prior.dimensions();
         if(!current.companyId().equals(prior.companyId())||!FactPolicy.sameSeries(a,b))
             return new Comparison("INCOMPARABLE","DIFFERENT_REPORTING_BASIS",current,prior,null,null);
@@ -108,6 +110,14 @@ class FinancialFacts {
                 ? FactPolicy.decimal(change.movePointRight(2).divide(baseline,6,RoundingMode.HALF_EVEN)) : null;
         String reason=a.unit().equals("PERCENT")?"PERCENTAGE_POINTS":baseline.signum()<=0?"NON_POSITIVE_BASE":null;
         return new Comparison("COMPARABLE",reason,current,prior,FactPolicy.decimal(change),percent);
+    }
+
+    List<Fact> forResults(UUID owner,UUID company,String basis,String periodKind,LocalDate start,LocalDate end){
+        return jdbc.query(SELECT+"""
+                WHERE f.owner_id=? AND f.company_id=? AND f.basis=? AND (f.period_kind=? OR f.period_kind='AS_OF')
+                    AND f.period_end BETWEEN ? AND ? AND v.revision=f.revision
+                ORDER BY f.period_end DESC,f.period_start DESC,f.metric,f.currency,f.fact_id LIMIT 301
+                """,FinancialFacts::row,owner,company,basis,periodKind,start,end);
     }
 
     @Transactional public History comparables(UUID id){

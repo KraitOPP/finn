@@ -15,7 +15,8 @@ final class FactPolicy {
     static final ZoneId INDIA=ZoneId.of("Asia/Kolkata");
     enum Metric {
         REVENUE, EBITDA, PROFIT_AFTER_TAX, CASH_FROM_OPERATIONS, CAPITAL_EXPENDITURE, FREE_CASH_FLOW,
-        TOTAL_DEBT, TOTAL_EQUITY, EPS_BASIC, OPERATING_MARGIN;
+        TOTAL_DEBT, TOTAL_EQUITY, EPS_BASIC, OPERATING_MARGIN, OPERATING_PROFIT, EXCEPTIONAL_ITEMS,
+        OTHER_INCOME, TAX_EXPENSE, MARKET_CAP;
 
         String unit() {
             return switch(this){
@@ -25,7 +26,7 @@ final class FactPolicy {
             };
         }
 
-        boolean stock() { return this==TOTAL_DEBT||this==TOTAL_EQUITY; }
+        boolean stock() { return this==TOTAL_DEBT||this==TOTAL_EQUITY||this==MARKET_CAP; }
     }
 
     enum Scale {

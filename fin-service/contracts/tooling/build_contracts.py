@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.51.0"
+VERSION = "0.52.0"
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 PROVIDERS = ["SYNTHETIC", "YAHOO_YFINANCE", "NSE_EOD_FILE", "BSE_EOD_FILE"]
 UNAVAILABLE = [
@@ -443,7 +443,8 @@ def definitions() -> dict:
     d["ResearchTextPage"] = obj({"page":evidence_page,"state":evidence_page_state,"content":text(minLength=0,maxLength=60000)})
     d["FinancialDimensions"] = obj({
         "metric":enum(["REVENUE","EBITDA","PROFIT_AFTER_TAX","CASH_FROM_OPERATIONS","CAPITAL_EXPENDITURE","FREE_CASH_FLOW",
-                        "TOTAL_DEBT","TOTAL_EQUITY","EPS_BASIC","OPERATING_MARGIN"]),
+                        "TOTAL_DEBT","TOTAL_EQUITY","EPS_BASIC","OPERATING_MARGIN","OPERATING_PROFIT","EXCEPTIONAL_ITEMS",
+                        "OTHER_INCOME","TAX_EXPENSE","MARKET_CAP"]),
         "basis":enum(["STANDALONE","CONSOLIDATED"]),"periodKind":enum(["QUARTER","YTD","FULL_YEAR","AS_OF"]),
         "periodStart":ref("SessionDate"),"periodEnd":ref("SessionDate"),
         "unit":enum(["MONEY","PER_SHARE","PERCENT"]),"currency":nullable(enum(["INR","USD","EUR","GBP","JPY"])),
@@ -467,6 +468,31 @@ def definitions() -> dict:
     })
     d["FinancialFactPage"] = obj({"items":array(ref("FinancialFact"),maxItems=50),"hasMore":{"type":"boolean"}})
     d["FinancialFactHistory"] = obj({"items":array(ref("FinancialFact"),maxItems=50)})
+    d["EarningsBasis"] = enum(["CONSOLIDATED","STANDALONE"])
+    d["EarningsPeriod"] = enum(["QUARTER","FULL_YEAR"])
+    d["EarningsCurrency"] = enum(["INR","USD","EUR","GBP","JPY"])
+    earnings_input = {"kind":enum(["SEGMENT","CONSENSUS"]), "label":text(maxLength=100),
+        "metric":enum(["REVENUE","OPERATING_PROFIT","PROFIT_AFTER_TAX","EPS_BASIC"]), "currency":ref("EarningsCurrency"),
+        "amount":ref("DecimalString"),"scale":fact_scale,"anchorId":nullable(ref("OpaqueId")),
+        "sourceUrl":nullable(text(maxLength=1000)),"publishedAt":nullable(ref("UtcInstant"))}
+    d["ReviewedEarningsInput"] = obj({**earnings_input,"basis":ref("EarningsBasis"),"periodKind":ref("EarningsPeriod"),
+        "periodStart":ref("SessionDate"),"periodEnd":ref("SessionDate"),"reviewed":{"const":True}})
+    d["EarningsInput"] = obj({**earnings_input,"inputId":ref("OpaqueId"),"normalized":ref("DecimalString"),
+                               "publishedAt":ref("UtcInstant")})
+    d["EarningsChange"] = obj({"previous":ref("FinancialFact"),"difference":ref("DecimalString"),
+        "percent":nullable(ref("DecimalString")),"unit":enum(["MONEY","PER_SHARE","PERCENT"])})
+    earnings_dates = nullable(obj({"start":ref("SessionDate"),"end":ref("SessionDate")}))
+    d["EarningsReview"] = obj({
+        "basis":ref("EarningsBasis"),"kind":ref("EarningsPeriod"),"currency":ref("EarningsCurrency"),
+        "current":earnings_dates,"previousYear":earnings_dates,"previousQuarter":earnings_dates,
+        "metrics":array(obj({"actual":ref("FinancialFact"),"yearOverYear":nullable(ref("EarningsChange")),
+                              "quarterOverQuarter":nullable(ref("EarningsChange"))}),maxItems=15),
+        "segments":array(obj({"actual":ref("EarningsInput"),"previous":nullable(ref("EarningsInput")),
+                                "difference":nullable(ref("DecimalString")),"percent":nullable(ref("DecimalString"))}),maxItems=40),
+        "expectations":array(obj({"estimate":ref("EarningsInput"),"actual":ref("FinancialFact"),"difference":ref("DecimalString"),
+                              "percent":nullable(ref("DecimalString")),"result":enum(["ABOVE","BELOW","MET"])}),maxItems=4),
+        "truncated":{"type":"boolean"},
+    })
     research_note = {"kind":enum(["BUSINESS","GOVERNANCE","QUESTION"]),"title":text(minLength=1,maxLength=240),
                      "anchorId":nullable(ref("OpaqueId"))}
     d["CompanyResearchNoteInput"] = obj(research_note)
@@ -722,6 +748,11 @@ def definitions() -> dict:
         "publishedOn":ref("SessionDate"), "headline":text(maxLength=160), "detail":text(maxLength=500),
         "url":text(pattern=r"^https://",maxLength=4000),
     }),maxItems=5)})
+    d["ReviewedOrderInput"] = obj({"versionId":ref("OpaqueId"),"anchorId":ref("OpaqueId"),"revenueFactId":ref("OpaqueId"),
+        "revenueRevision":source_revision,"amount":ref("PositiveDecimalString"),"scale":fact_scale,
+        "execution":text(maxLength=160),"reviewed":{"const":True}})
+    d["OrderContext"] = obj({"order":nullable(obj({"amount":ref("PositiveDecimalString"),"execution":text(maxLength=160),
+        "anchorId":ref("OpaqueId"),"revenue":ref("FinancialFact"),"percent":ref("DecimalString")}))})
     d["EventReplay"] = obj({
         "mode": {"const":"SYNTHETIC_REPLAY"}, "runId": nullable(ref("OpaqueId")), "savedAt": nullable(ref("UtcInstant")),
         "events": array(obj({"attention": ref("AttentionItem"), "evidence": ref("CompanySourceDetail")}),maxItems=25),
@@ -1291,6 +1322,14 @@ def public_api_document() -> dict:
         "/api/v1/research/companies/{company}/notes/{id}":{"post":maintained(
             "resolveCompanyResearchQuestion","Resolve or reopen a research question","CompanyResearchNote",
             [*company_parameter,*identifier],"CompanyResearchResolution")},
+        "/api/v1/research/companies/{company}/earnings":{"get":maintained("getEarningsReview","Compare reviewed earnings on compatible reporting bases","EarningsReview",[
+            *company_parameter,parameter("basis","query",ref("EarningsBasis")),parameter("kind","query",ref("EarningsPeriod")),
+            parameter("currency","query",ref("EarningsCurrency")),parameter("periodEnd","query",ref("SessionDate"))])},
+        "/api/v1/research/companies/{company}/earnings/inputs":{"post":maintained("recordEarningsInput","Save a reviewed segment disclosure or pre-results estimate","EarningsInput",
+            company_parameter,"ReviewedEarningsInput")},
+        "/api/v1/research/events/{id}/order":{
+            "get":maintained("getOrderContext","Read the reviewed order size and annual revenue comparison","OrderContext",identifier),
+            "post":maintained("reviewOrderContext","Attach a cited order value and execution period to the current event version","OrderContext",identifier,"ReviewedOrderInput")},
         "/api/v1/research/companies/{company}/facts":{
             "get":maintained("listCompanyFinancialFacts","Read reviewed facts with explicit dimensions","FinancialFactPage",[
                 *company_parameter,parameter("offset","query",{"type":"integer","minimum":0,"maximum":1500})]),

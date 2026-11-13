@@ -406,7 +406,7 @@ export type CompanySourceVersions = ({
   "items": (Array<(CompanySource)>);
 });
 
-export type ContractVersion = ("0.51.0") & (string);
+export type ContractVersion = ("0.52.0") & (string);
 
 export type CorporateActionApproval = ({
   "action": (CorporateActionInput);
@@ -548,6 +548,70 @@ export type DiscoverySnapshot = ({
   "companies": (Array<(DiscoveryCompany)>);
 });
 
+export type EarningsBasis = ("CONSOLIDATED" | "STANDALONE") & (string);
+
+export type EarningsChange = ({
+  "previous": (FinancialFact);
+  "difference": (DecimalString);
+  "percent": (((DecimalString)) | ((null)));
+  "unit": ("MONEY" | "PER_SHARE" | "PERCENT") & (string);
+});
+
+export type EarningsCurrency = ("INR" | "USD" | "EUR" | "GBP" | "JPY") & (string);
+
+export type EarningsInput = ({
+  "kind": ("SEGMENT" | "CONSENSUS") & (string);
+  "label": (string);
+  "metric": ("REVENUE" | "OPERATING_PROFIT" | "PROFIT_AFTER_TAX" | "EPS_BASIC") & (string);
+  "currency": (EarningsCurrency);
+  "amount": (DecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+  "sourceUrl": (((string)) | ((null)));
+  "publishedAt": (UtcInstant);
+  "inputId": (OpaqueId);
+  "normalized": (DecimalString);
+});
+
+export type EarningsPeriod = ("QUARTER" | "FULL_YEAR") & (string);
+
+export type EarningsReview = ({
+  "basis": (EarningsBasis);
+  "kind": (EarningsPeriod);
+  "currency": (EarningsCurrency);
+  "current": ((({
+  "start": (SessionDate);
+  "end": (SessionDate);
+})) | ((null)));
+  "previousYear": ((({
+  "start": (SessionDate);
+  "end": (SessionDate);
+})) | ((null)));
+  "previousQuarter": ((({
+  "start": (SessionDate);
+  "end": (SessionDate);
+})) | ((null)));
+  "metrics": (Array<({
+  "actual": (FinancialFact);
+  "yearOverYear": (((EarningsChange)) | ((null)));
+  "quarterOverQuarter": (((EarningsChange)) | ((null)));
+})>);
+  "segments": (Array<({
+  "actual": (EarningsInput);
+  "previous": (((EarningsInput)) | ((null)));
+  "difference": (((DecimalString)) | ((null)));
+  "percent": (((DecimalString)) | ((null)));
+})>);
+  "expectations": (Array<({
+  "estimate": (EarningsInput);
+  "actual": (FinancialFact);
+  "difference": (DecimalString);
+  "percent": (((DecimalString)) | ((null)));
+  "result": ("ABOVE" | "BELOW" | "MET") & (string);
+})>);
+  "truncated": (boolean);
+});
+
 export type EventReplay = ({
   "mode": ("SYNTHETIC_REPLAY");
   "runId": (((OpaqueId)) | ((null)));
@@ -615,7 +679,7 @@ export type FinancialComparison = ({
 });
 
 export type FinancialDimensions = ({
-  "metric": ("REVENUE" | "EBITDA" | "PROFIT_AFTER_TAX" | "CASH_FROM_OPERATIONS" | "CAPITAL_EXPENDITURE" | "FREE_CASH_FLOW" | "TOTAL_DEBT" | "TOTAL_EQUITY" | "EPS_BASIC" | "OPERATING_MARGIN") & (string);
+  "metric": ("REVENUE" | "EBITDA" | "PROFIT_AFTER_TAX" | "CASH_FROM_OPERATIONS" | "CAPITAL_EXPENDITURE" | "FREE_CASH_FLOW" | "TOTAL_DEBT" | "TOTAL_EQUITY" | "EPS_BASIC" | "OPERATING_MARGIN" | "OPERATING_PROFIT" | "EXCEPTIONAL_ITEMS" | "OTHER_INCOME" | "TAX_EXPENSE" | "MARKET_CAP") & (string);
   "basis": ("STANDALONE" | "CONSOLIDATED") & (string);
   "periodKind": ("QUARTER" | "YTD" | "FULL_YEAR" | "AS_OF") & (string);
   "periodStart": (SessionDate);
@@ -1273,6 +1337,16 @@ export type NotificationRead = ({
 });
 
 export type OpaqueId = (string);
+
+export type OrderContext = ({
+  "order": ((({
+  "amount": (PositiveDecimalString);
+  "execution": (string);
+  "anchorId": (OpaqueId);
+  "revenue": (FinancialFact);
+  "percent": (DecimalString);
+})) | ((null)));
+});
 
 export type PeerRanking = ({
   "rankingId": (OpaqueId);
@@ -1965,6 +2039,34 @@ export type ReviewReminder = ({
   "nextAt": (((UtcInstant)) | ((null)));
 });
 
+export type ReviewedEarningsInput = ({
+  "kind": ("SEGMENT" | "CONSENSUS") & (string);
+  "label": (string);
+  "metric": ("REVENUE" | "OPERATING_PROFIT" | "PROFIT_AFTER_TAX" | "EPS_BASIC") & (string);
+  "currency": (EarningsCurrency);
+  "amount": (DecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "anchorId": (((OpaqueId)) | ((null)));
+  "sourceUrl": (((string)) | ((null)));
+  "publishedAt": (((UtcInstant)) | ((null)));
+  "basis": (EarningsBasis);
+  "periodKind": (EarningsPeriod);
+  "periodStart": (SessionDate);
+  "periodEnd": (SessionDate);
+  "reviewed": (true);
+});
+
+export type ReviewedOrderInput = ({
+  "versionId": (OpaqueId);
+  "anchorId": (OpaqueId);
+  "revenueFactId": (OpaqueId);
+  "revenueRevision": (number);
+  "amount": (PositiveDecimalString);
+  "scale": ("ONES" | "THOUSAND" | "LAKH" | "MILLION" | "CRORE" | "BILLION") & (string);
+  "execution": (string);
+  "reviewed": (true);
+});
+
 export type Rights = ((({
   "policyId": (OpaqueId);
   "reviewedAt": (((UtcInstant)) | ((null)));
@@ -2511,6 +2613,12 @@ export interface ContractTypes {
   DiscoveryReading: DiscoveryReading;
   DiscoverySector: DiscoverySector;
   DiscoverySnapshot: DiscoverySnapshot;
+  EarningsBasis: EarningsBasis;
+  EarningsChange: EarningsChange;
+  EarningsCurrency: EarningsCurrency;
+  EarningsInput: EarningsInput;
+  EarningsPeriod: EarningsPeriod;
+  EarningsReview: EarningsReview;
   EventReplay: EventReplay;
   EventSuggestion: EventSuggestion;
   ExchangeSession: ExchangeSession;
@@ -2595,6 +2703,7 @@ export interface ContractTypes {
   NotificationPage: NotificationPage;
   NotificationRead: NotificationRead;
   OpaqueId: OpaqueId;
+  OrderContext: OrderContext;
   PeerRanking: PeerRanking;
   PeerRankingContribution: PeerRankingContribution;
   PeerRankingFactor: PeerRankingFactor;
@@ -2679,6 +2788,8 @@ export interface ContractTypes {
   ReturnMeasure: ReturnMeasure;
   ReviewCloseInput: ReviewCloseInput;
   ReviewReminder: ReviewReminder;
+  ReviewedEarningsInput: ReviewedEarningsInput;
+  ReviewedOrderInput: ReviewedOrderInput;
   Rights: Rights;
   SecurityInput: SecurityInput;
   SessionDate: SessionDate;

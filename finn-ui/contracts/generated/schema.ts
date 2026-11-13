@@ -1,9 +1,9 @@
 // Generated from the backend OpenAPI authority. Run contracts/generate.mjs; do not edit.
 export const contractMetadata = {
-  "contractVersion": "0.51.0",
+  "contractVersion": "0.52.0",
   "openapiVersion": "3.1.1",
   "source": "fin-service/contracts/public-api/openapi.json",
-  "sourceSha256": "b5f5be7a153f1b98dd3cb4156863b2b4660f6b45f610cf7a80393a4829fc3e78",
+  "sourceSha256": "a87f818ae9478b62b11bc0ac2b622ad1c0792d0831e4d700c4bd5de69913f2dd",
   "schemaNames": [
     "AccountInput",
     "AccountValuation",
@@ -69,6 +69,12 @@ export const contractMetadata = {
     "DiscoveryReading",
     "DiscoverySector",
     "DiscoverySnapshot",
+    "EarningsBasis",
+    "EarningsChange",
+    "EarningsCurrency",
+    "EarningsInput",
+    "EarningsPeriod",
+    "EarningsReview",
     "EventReplay",
     "EventSuggestion",
     "ExchangeSession",
@@ -153,6 +159,7 @@ export const contractMetadata = {
     "NotificationPage",
     "NotificationRead",
     "OpaqueId",
+    "OrderContext",
     "PeerRanking",
     "PeerRankingContribution",
     "PeerRankingFactor",
@@ -237,6 +244,8 @@ export const contractMetadata = {
     "ReturnMeasure",
     "ReviewCloseInput",
     "ReviewReminder",
+    "ReviewedEarningsInput",
+    "ReviewedOrderInput",
     "Rights",
     "SecurityInput",
     "SessionDate",
@@ -2420,7 +2429,7 @@ export const contractSchemas = {
   },
   "ContractVersion": {
     "type": "string",
-    "const": "0.51.0"
+    "const": "0.52.0"
   },
   "CorporateActionApproval": {
     "type": "object",
@@ -3219,6 +3228,384 @@ export const contractSchemas = {
     ],
     "additionalProperties": false
   },
+  "EarningsBasis": {
+    "type": "string",
+    "enum": [
+      "CONSOLIDATED",
+      "STANDALONE"
+    ]
+  },
+  "EarningsChange": {
+    "type": "object",
+    "properties": {
+      "previous": {
+        "$ref": "#/components/schemas/FinancialFact"
+      },
+      "difference": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "percent": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "unit": {
+        "type": "string",
+        "enum": [
+          "MONEY",
+          "PER_SHARE",
+          "PERCENT"
+        ]
+      }
+    },
+    "required": [
+      "previous",
+      "difference",
+      "percent",
+      "unit"
+    ],
+    "additionalProperties": false
+  },
+  "EarningsCurrency": {
+    "type": "string",
+    "enum": [
+      "INR",
+      "USD",
+      "EUR",
+      "GBP",
+      "JPY"
+    ]
+  },
+  "EarningsInput": {
+    "type": "object",
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "SEGMENT",
+          "CONSENSUS"
+        ]
+      },
+      "label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "metric": {
+        "type": "string",
+        "enum": [
+          "REVENUE",
+          "OPERATING_PROFIT",
+          "PROFIT_AFTER_TAX",
+          "EPS_BASIC"
+        ]
+      },
+      "currency": {
+        "$ref": "#/components/schemas/EarningsCurrency"
+      },
+      "amount": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "anchorId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sourceUrl": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "publishedAt": {
+        "$ref": "#/components/schemas/UtcInstant"
+      },
+      "inputId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "normalized": {
+        "$ref": "#/components/schemas/DecimalString"
+      }
+    },
+    "required": [
+      "kind",
+      "label",
+      "metric",
+      "currency",
+      "amount",
+      "scale",
+      "anchorId",
+      "sourceUrl",
+      "publishedAt",
+      "inputId",
+      "normalized"
+    ],
+    "additionalProperties": false
+  },
+  "EarningsPeriod": {
+    "type": "string",
+    "enum": [
+      "QUARTER",
+      "FULL_YEAR"
+    ]
+  },
+  "EarningsReview": {
+    "type": "object",
+    "properties": {
+      "basis": {
+        "$ref": "#/components/schemas/EarningsBasis"
+      },
+      "kind": {
+        "$ref": "#/components/schemas/EarningsPeriod"
+      },
+      "currency": {
+        "$ref": "#/components/schemas/EarningsCurrency"
+      },
+      "current": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "start": {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              "end": {
+                "$ref": "#/components/schemas/SessionDate"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "previousYear": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "start": {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              "end": {
+                "$ref": "#/components/schemas/SessionDate"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "previousQuarter": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "start": {
+                "$ref": "#/components/schemas/SessionDate"
+              },
+              "end": {
+                "$ref": "#/components/schemas/SessionDate"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "metrics": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "actual": {
+              "$ref": "#/components/schemas/FinancialFact"
+            },
+            "yearOverYear": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EarningsChange"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "quarterOverQuarter": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EarningsChange"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "actual",
+            "yearOverYear",
+            "quarterOverQuarter"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 15
+      },
+      "segments": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "actual": {
+              "$ref": "#/components/schemas/EarningsInput"
+            },
+            "previous": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EarningsInput"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "difference": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DecimalString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "percent": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DecimalString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "actual",
+            "previous",
+            "difference",
+            "percent"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 40
+      },
+      "expectations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "estimate": {
+              "$ref": "#/components/schemas/EarningsInput"
+            },
+            "actual": {
+              "$ref": "#/components/schemas/FinancialFact"
+            },
+            "difference": {
+              "$ref": "#/components/schemas/DecimalString"
+            },
+            "percent": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DecimalString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "ABOVE",
+                "BELOW",
+                "MET"
+              ]
+            }
+          },
+          "required": [
+            "estimate",
+            "actual",
+            "difference",
+            "percent",
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        "maxItems": 4
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "basis",
+      "kind",
+      "currency",
+      "current",
+      "previousYear",
+      "previousQuarter",
+      "metrics",
+      "segments",
+      "expectations",
+      "truncated"
+    ],
+    "additionalProperties": false
+  },
   "EventReplay": {
     "type": "object",
     "properties": {
@@ -3644,7 +4031,12 @@ export const contractSchemas = {
           "TOTAL_DEBT",
           "TOTAL_EQUITY",
           "EPS_BASIC",
-          "OPERATING_MARGIN"
+          "OPERATING_MARGIN",
+          "OPERATING_PROFIT",
+          "EXCEPTIONAL_ITEMS",
+          "OTHER_INCOME",
+          "TAX_EXPENSE",
+          "MARKET_CAP"
         ]
       },
       "basis": {
@@ -7578,6 +7970,52 @@ export const contractSchemas = {
     "maxLength": 128,
     "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
   },
+  "OrderContext": {
+    "type": "object",
+    "properties": {
+      "order": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "$ref": "#/components/schemas/PositiveDecimalString"
+              },
+              "execution": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "anchorId": {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              "revenue": {
+                "$ref": "#/components/schemas/FinancialFact"
+              },
+              "percent": {
+                "$ref": "#/components/schemas/DecimalString"
+              }
+            },
+            "required": [
+              "amount",
+              "execution",
+              "anchorId",
+              "revenue",
+              "percent"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "order"
+    ],
+    "additionalProperties": false
+  },
   "PeerRanking": {
     "type": "object",
     "properties": {
@@ -11229,6 +11667,165 @@ export const contractSchemas = {
       "state",
       "settings",
       "nextAt"
+    ],
+    "additionalProperties": false
+  },
+  "ReviewedEarningsInput": {
+    "type": "object",
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "SEGMENT",
+          "CONSENSUS"
+        ]
+      },
+      "label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "metric": {
+        "type": "string",
+        "enum": [
+          "REVENUE",
+          "OPERATING_PROFIT",
+          "PROFIT_AFTER_TAX",
+          "EPS_BASIC"
+        ]
+      },
+      "currency": {
+        "$ref": "#/components/schemas/EarningsCurrency"
+      },
+      "amount": {
+        "$ref": "#/components/schemas/DecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "anchorId": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sourceUrl": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "publishedAt": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "basis": {
+        "$ref": "#/components/schemas/EarningsBasis"
+      },
+      "periodKind": {
+        "$ref": "#/components/schemas/EarningsPeriod"
+      },
+      "periodStart": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "periodEnd": {
+        "$ref": "#/components/schemas/SessionDate"
+      },
+      "reviewed": {
+        "const": true
+      }
+    },
+    "required": [
+      "kind",
+      "label",
+      "metric",
+      "currency",
+      "amount",
+      "scale",
+      "anchorId",
+      "sourceUrl",
+      "publishedAt",
+      "basis",
+      "periodKind",
+      "periodStart",
+      "periodEnd",
+      "reviewed"
+    ],
+    "additionalProperties": false
+  },
+  "ReviewedOrderInput": {
+    "type": "object",
+    "properties": {
+      "versionId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "anchorId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revenueFactId": {
+        "$ref": "#/components/schemas/OpaqueId"
+      },
+      "revenueRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50
+      },
+      "amount": {
+        "$ref": "#/components/schemas/PositiveDecimalString"
+      },
+      "scale": {
+        "type": "string",
+        "enum": [
+          "ONES",
+          "THOUSAND",
+          "LAKH",
+          "MILLION",
+          "CRORE",
+          "BILLION"
+        ]
+      },
+      "execution": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      },
+      "reviewed": {
+        "const": true
+      }
+    },
+    "required": [
+      "versionId",
+      "anchorId",
+      "revenueFactId",
+      "revenueRevision",
+      "amount",
+      "scale",
+      "execution",
+      "reviewed"
     ],
     "additionalProperties": false
   },

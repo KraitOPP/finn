@@ -18,6 +18,11 @@ import {
 } from "./FinancialFacts.tsx";
 
 const root = "/api/v1/research";
+const followUps = [
+  "Did operating cash flow improve alongside profit?",
+  "What could weaken the growth story?",
+  "How does the company compare with its peers?",
+];
 const states: Record<ResearchReport["state"], string> = {
   PENDING: "Waiting for the local model to rank passages.",
   EVIDENCE: "Matching passages from primary documents at generation time.",
@@ -123,16 +128,24 @@ export function ResearchReports({ company }: { company: string }) {
           >
             {!localAvailable && command.busy ? "Searching…" : "Search sources"}
           </Button>
-          <Button
-            type="button"
-            onClick={() =>
-              setQuestion(
-                "Revenue profit cash debt governance business operations",
-              )
-            }
-          >
-            Use overview topics
-          </Button>
+        </Stack>
+        <Stack
+          direction="row"
+          useFlexGap
+          spacing={0.5}
+          sx={{ flexWrap: "wrap" }}
+        >
+          {followUps.map((prompt) => (
+            <Button
+              key={prompt}
+              size="small"
+              type="button"
+              onClick={() => setQuestion(prompt)}
+              disabled={command.busy}
+            >
+              {prompt}
+            </Button>
+          ))}
         </Stack>
         {command.error && <Alert severity="error">{command.error}</Alert>}
       </form>

@@ -1,4 +1,10 @@
-import { useState } from "react";
+import Box from "@mui/material/Box";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
+import Typography from "@mui/material/Typography";
+import { useId, useState } from "react";
 import type {
   CompanyResearchNote,
   CompanyResearchNoteInput,
@@ -8,6 +14,7 @@ import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { EventHistory } from "./Events.tsx";
 import { AnchorEvidence, EvidencePanel } from "./Evidence.tsx";
+import { EarningsPanel } from "./EarningsPanel.tsx";
 import { CompanyFacts, EvidencePicker } from "./FinancialFacts.tsx";
 import { GuidancePanel } from "./Guidance.tsx";
 import { ResearchReports } from "./ResearchReports.tsx";
@@ -20,7 +27,12 @@ const labels = {
   QUESTION: "Research questions",
 } as const;
 
-type ResearchTarget = { thesis?: string; review?: string; event?: string };
+type ResearchTarget = {
+  thesis?: string;
+  review?: string;
+  event?: string;
+  view?: string;
+};
 
 export function CompanyWorkspace({ generation }: { generation: number }) {
   const companies = useResource(
@@ -37,7 +49,12 @@ export function CompanyWorkspace({ generation }: { generation: number }) {
   const linkedCompany = id("company");
   const target: ResearchTarget =
     selected === null
-      ? { thesis: id("thesis"), review: id("review"), event: id("event") }
+      ? {
+          thesis: id("thesis"),
+          review: id("review"),
+          event: id("event"),
+          view: params.get("view") ?? undefined,
+        }
       : {};
   const holding = useResource(
     "CatalogueSecurityDetail",
@@ -98,6 +115,18 @@ function Overview({
     "CompanyResearchOverview",
     `${path}/overview?view=${generation}`,
   );
+  const id = useId();
+  const [view, setView] = useState(
+    target.thesis || target.review
+      ? "thesis"
+      : target.event
+        ? "events"
+        : target.view === "earnings"
+          ? "earnings"
+          : target.view === "questions"
+            ? "sources"
+            : "brief",
+  );
   if (data.error) return <p role="alert">{data.error}</p>;
   if (!data.value) return <p role="status">Loading company research…</p>;
   const {
@@ -108,28 +137,129 @@ function Overview({
     events,
     notes,
   } = data.value;
+  const tabs = [
+    ["brief", "Company brief"],
+    ["events", "Events"],
+    ["earnings", "Earnings"],
+    ["thesis", "Thesis"],
+    ["guidance", "Management"],
+    ["sources", "Sources & facts"],
+  ] as const;
   return (
-    <div>
-      <h3>{companyName}</h3>
-      {!target.thesis && !target.event && <ResearchReports company={company} />}
-      <ThesisNotebook
-        company={company}
-        initialThesis={target.thesis}
-        event={target.event}
-        review={target.review}
-      />
-      <GuidancePanel company={company} />
-      <p>
-        {indexedSources} of {primarySources} current primary sources have
-        extracted evidence.
-      </p>
-      <button type="button" onClick={data.reload}>
-        Refresh research coverage
-      </button>
-      <details>
-        <summary>Financial statements and cash flow</summary>
-        <CompanyFacts company={company} />
-      </details>
+    <Stack spacing={2} sx={{ mt: 2 }}>
+      <Typography component="h3" variant="h5">
+        {companyName}
+      </Typography>
+      <Paper variant="outlined">
+        <Tabs
+          value={view}
+          aria-label="Company research sections"
+          variant="scrollable"
+          allowScrollButtonsMobile
+          onChange={(_, next: string) => setView(next)}
+        >
+          {tabs.map(([key, label]) => (
+            <Tab
+              key={key}
+              value={key}
+              label={label}
+              id={`${id}-${key}-tab`}
+              aria-controls={`${id}-${key}`}
+            />
+          ))}
+        </Tabs>
+      </Paper>
+      {tabs.map(([key]) => (
+        <Box
+          key={key}
+          role="tabpanel"
+          id={`${id}-${key}`}
+          aria-labelledby={`${id}-${key}-tab`}
+          hidden={key !== view}
+        >
+          {key === view && (
+            <>
+              {key === "brief" && <ResearchReports company={company} />}
+              {key === "earnings" && <EarningsPanel company={company} />}
+              {key === "guidance" && <GuidancePanel company={company} />}
+              {key === "thesis" && (
+                <ThesisNotebook
+                  company={company}
+                  initialThesis={target.thesis}
+                  event={target.event}
+                  review={target.review}
+                />
+              )}
+              {key === "events" && (
+                <Stack spacing={1.25}>
+                  {target.event && <EventHistory id={target.event} />}
+                  {!target.event && events.length === 0 && (
+                    <p>No reviewed company events.</p>
+                  )}
+                  {events
+                    .filter((event) => event.eventId !== target.event)
+                    .map((event) => (
+                      <details className="workspace-tools" key={event.eventId}>
+                        <summary>{event.title}</summary>
+                        <EventHistory id={event.eventId} />
+                      </details>
+                    ))}
+                </Stack>
+              )}
+              {key === "sources" && (
+                <>
+                  <p className="muted-copy">
+                    {indexedSources} of {primarySources} current primary sources
+                    have extracted evidence.
+                  </p>
+                  <button type="button" onClick={data.reload}>
+                    Refresh research coverage
+                  </button>
+                  <details className="workspace-tools">
+                    <summary>Review financial statements and cash flow</summary>
+                    <CompanyFacts company={company} />
+                  </details>
+                  <ResearchNotes
+                    company={company}
+                    path={path}
+                    notes={notes}
+                    reload={data.reload}
+                  />
+                  <SearchEvidence company={company} />
+                  {sources.map((source) => (
+                    <details
+                      className="workspace-tools"
+                      key={source.documentId}
+                    >
+                      <summary>
+                        {source.title} · revision {source.revision}
+                      </summary>
+                      <EvidencePanel source={source} />
+                    </details>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+        </Box>
+      ))}
+    </Stack>
+  );
+}
+
+function ResearchNotes({
+  company,
+  path,
+  notes,
+  reload,
+}: {
+  company: string;
+  path: string;
+  notes: CompanyResearchNote[];
+  reload: () => void;
+}) {
+  return (
+    <>
       {Object.entries(labels).map(([kind, label]) => (
         <details key={kind}>
           <summary>
@@ -147,38 +277,14 @@ function Overview({
                 key={note.noteId}
                 note={note}
                 path={path}
-                onChange={data.reload}
+                onChange={reload}
               />
             ))}
           {notes.every((note) => note.kind !== kind) && <p>No entries yet.</p>}
         </details>
       ))}
-      <AddNote company={company} path={path} onSaved={data.reload} />
-      <SearchEvidence company={company} />
-      {(target.thesis || target.event) && <ResearchReports company={company} />}
-      <details>
-        <summary>Recent primary documents</summary>
-        {sources.length === 0 && <p>No primary documents registered.</p>}
-        {sources.map((source) => (
-          <details key={source.documentId}>
-            <summary>
-              {source.title} · revision {source.revision}
-            </summary>
-            <EvidencePanel source={source} />
-          </details>
-        ))}
-      </details>
-      <details>
-        <summary>Recent company events</summary>
-        {events.length === 0 && <p>No reviewed company events.</p>}
-        {events.map((event) => (
-          <details key={event.eventId}>
-            <summary>{event.title}</summary>
-            <EventHistory id={event.eventId} />
-          </details>
-        ))}
-      </details>
-    </div>
+      <AddNote company={company} path={path} onSaved={reload} />
+    </>
   );
 }
 

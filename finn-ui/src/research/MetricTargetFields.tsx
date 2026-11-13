@@ -41,8 +41,9 @@ export function MetricTargetFields({
   onChange: (value: FinancialDimensions, scale: TargetScale) => void;
   required?: boolean;
 }) {
-  const stock =
-    value.metric === "TOTAL_DEBT" || value.metric === "TOTAL_EQUITY";
+  const stock = ["TOTAL_DEBT", "TOTAL_EQUITY", "MARKET_CAP"].includes(
+    value.metric,
+  );
   function changeMetric(metric: FinancialDimensions["metric"]) {
     const unit =
       metric === "OPERATING_MARGIN"
@@ -50,7 +51,9 @@ export function MetricTargetFields({
         : metric === "EPS_BASIC"
           ? "PER_SHARE"
           : "MONEY";
-    const isStock = metric === "TOTAL_DEBT" || metric === "TOTAL_EQUITY";
+    const isStock = ["TOTAL_DEBT", "TOTAL_EQUITY", "MARKET_CAP"].includes(
+      metric,
+    );
     onChange(
       {
         ...value,

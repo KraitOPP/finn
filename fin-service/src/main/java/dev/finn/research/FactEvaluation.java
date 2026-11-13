@@ -58,7 +58,7 @@ class FactEvaluation {
         return null;
     }
 
-    private String usable(UUID owner,FinancialFacts.Fact fact,LocalDate cutoff,boolean historical) {
+    String usable(UUID owner,FinancialFacts.Fact fact,LocalDate cutoff,boolean historical) {
         if(fact.publishedAt()==null)return "PUBLICATION_UNKNOWN";
         var published=OffsetDateTime.parse(fact.publishedAt()).atZoneSameInstant(FactPolicy.INDIA).toLocalDate();
         if(published.isAfter(cutoff))return "PUBLISHED_AFTER_CUTOFF";

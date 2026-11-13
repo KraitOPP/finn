@@ -9,6 +9,7 @@ import { usePrivateCommand } from "../api/usePrivateCommand.ts";
 import { useResource } from "../api/useResource.ts";
 import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { AnnouncedDates, EditAnnouncedDates } from "./AnnouncedDates.tsx";
+import { OrderEvidence } from "./OrderEvidence.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
 
 const path = "/api/v1/research/events";
@@ -167,6 +168,14 @@ export function EventHistory({ id }: { id: string }) {
           </label>
           <EventLabels event={selected} />
           <AnnouncedDates dates={selected.dates} />
+          {selected.subtype === "ORDER" &&
+            selected === versions.value.items[0] && (
+              <OrderEvidence
+                key={selected.versionId}
+                event={selected}
+                editable
+              />
+            )}
           <p>
             Reviewed <LocalTime value={selected.reviewedAt} /> · Source:{" "}
             {selected.sourceTitle} (version {selected.documentRevision})

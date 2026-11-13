@@ -25,6 +25,7 @@ import { LocalTime } from "../monitoring/LocalTime.tsx";
 import { sectors } from "./DiscoveryFields.tsx";
 import { eventTypes, eventLabel } from "./Events.tsx";
 import { SourceEvidence, versionPath } from "./SourceEvidence.tsx";
+import { OrderEvidence } from "./OrderEvidence.tsx";
 
 const path = "/api/v1/discovery";
 const scopes = {
@@ -492,6 +493,9 @@ export function RadarCard({ item }: { item: RadarEntry }) {
           )}
           {evidence.error && <Alert severity="warning">{evidence.error}</Alert>}
           {evidence.value && <SourceEvidence detail={evidence.value} />}
+          {open && event?.subtype === "ORDER" && (
+            <OrderEvidence event={event} />
+          )}
         </details>
       </Stack>
     </Paper>

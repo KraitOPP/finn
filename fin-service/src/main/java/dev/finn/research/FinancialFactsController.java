@@ -13,11 +13,11 @@ import tools.jackson.databind.JsonNode;
 @RequestMapping("/api/v1/research")
 class FinancialFactsController {
     record Dimensions(
-            @NotNull @Pattern(regexp="REVENUE|EBITDA|PROFIT_AFTER_TAX|CASH_FROM_OPERATIONS|CAPITAL_EXPENDITURE|FREE_CASH_FLOW|TOTAL_DEBT|TOTAL_EQUITY|EPS_BASIC|OPERATING_MARGIN") String metric,
+            @NotNull FactPolicy.Metric metric,
             @NotNull @Pattern(regexp="STANDALONE|CONSOLIDATED") String basis,@NotNull @Pattern(regexp="QUARTER|YTD|FULL_YEAR|AS_OF") String periodKind,
             @NotNull LocalDate periodStart,@NotNull LocalDate periodEnd,@NotNull @Pattern(regexp="MONEY|PER_SHARE|PERCENT") String unit,
             @Pattern(regexp="INR|USD|EUR|GBP|JPY") String currency) {
-        FinancialFacts.Dimensions value(){return new FinancialFacts.Dimensions(metric,basis,periodKind,periodStart,periodEnd,unit,currency);}
+        FinancialFacts.Dimensions value(){return new FinancialFacts.Dimensions(metric.name(),basis,periodKind,periodStart,periodEnd,unit,currency);}
     }
     record Reported(@NotNull @Valid Dimensions dimensions,@NotNull UUID anchorId,@NotNull JsonNode amount,
                     @NotNull @Pattern(regexp="ONES|THOUSAND|LAKH|MILLION|CRORE|BILLION") String scale,

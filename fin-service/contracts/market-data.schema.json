@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:finn:contracts:market-data:0.51.0",
+  "$id": "urn:finn:contracts:market-data:0.52.0",
   "title": "FINN market data contract",
   "description": "Versioned synthetic/private EOD data boundary. Schemas describe intended behavior, not deployed APIs or provider entitlements.",
   "$ref": "#/$defs/AcquisitionEnvelope",
   "$defs": {
     "ContractVersion": {
       "type": "string",
-      "const": "0.51.0"
+      "const": "0.52.0"
     },
     "OpaqueId": {
       "type": "string",
@@ -4319,7 +4319,12 @@
             "TOTAL_DEBT",
             "TOTAL_EQUITY",
             "EPS_BASIC",
-            "OPERATING_MARGIN"
+            "OPERATING_MARGIN",
+            "OPERATING_PROFIT",
+            "EXCEPTIONAL_ITEMS",
+            "OTHER_INCOME",
+            "TAX_EXPENSE",
+            "MARKET_CAP"
           ]
         },
         "basis": {
@@ -4627,6 +4632,491 @@
       },
       "required": [
         "items"
+      ],
+      "additionalProperties": false
+    },
+    "EarningsBasis": {
+      "type": "string",
+      "enum": [
+        "CONSOLIDATED",
+        "STANDALONE"
+      ]
+    },
+    "EarningsPeriod": {
+      "type": "string",
+      "enum": [
+        "QUARTER",
+        "FULL_YEAR"
+      ]
+    },
+    "EarningsCurrency": {
+      "type": "string",
+      "enum": [
+        "INR",
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+      ]
+    },
+    "ReviewedEarningsInput": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "SEGMENT",
+            "CONSENSUS"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "metric": {
+          "type": "string",
+          "enum": [
+            "REVENUE",
+            "OPERATING_PROFIT",
+            "PROFIT_AFTER_TAX",
+            "EPS_BASIC"
+          ]
+        },
+        "currency": {
+          "$ref": "#/$defs/EarningsCurrency"
+        },
+        "amount": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "ONES",
+            "THOUSAND",
+            "LAKH",
+            "MILLION",
+            "CRORE",
+            "BILLION"
+          ]
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceUrl": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "basis": {
+          "$ref": "#/$defs/EarningsBasis"
+        },
+        "periodKind": {
+          "$ref": "#/$defs/EarningsPeriod"
+        },
+        "periodStart": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "periodEnd": {
+          "$ref": "#/$defs/SessionDate"
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "kind",
+        "label",
+        "metric",
+        "currency",
+        "amount",
+        "scale",
+        "anchorId",
+        "sourceUrl",
+        "publishedAt",
+        "basis",
+        "periodKind",
+        "periodStart",
+        "periodEnd",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "EarningsInput": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "SEGMENT",
+            "CONSENSUS"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "metric": {
+          "type": "string",
+          "enum": [
+            "REVENUE",
+            "OPERATING_PROFIT",
+            "PROFIT_AFTER_TAX",
+            "EPS_BASIC"
+          ]
+        },
+        "currency": {
+          "$ref": "#/$defs/EarningsCurrency"
+        },
+        "amount": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "ONES",
+            "THOUSAND",
+            "LAKH",
+            "MILLION",
+            "CRORE",
+            "BILLION"
+          ]
+        },
+        "anchorId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceUrl": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publishedAt": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "inputId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "normalized": {
+          "$ref": "#/$defs/DecimalString"
+        }
+      },
+      "required": [
+        "kind",
+        "label",
+        "metric",
+        "currency",
+        "amount",
+        "scale",
+        "anchorId",
+        "sourceUrl",
+        "publishedAt",
+        "inputId",
+        "normalized"
+      ],
+      "additionalProperties": false
+    },
+    "EarningsChange": {
+      "type": "object",
+      "properties": {
+        "previous": {
+          "$ref": "#/$defs/FinancialFact"
+        },
+        "difference": {
+          "$ref": "#/$defs/DecimalString"
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecimalString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "MONEY",
+            "PER_SHARE",
+            "PERCENT"
+          ]
+        }
+      },
+      "required": [
+        "previous",
+        "difference",
+        "percent",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "EarningsReview": {
+      "type": "object",
+      "properties": {
+        "basis": {
+          "$ref": "#/$defs/EarningsBasis"
+        },
+        "kind": {
+          "$ref": "#/$defs/EarningsPeriod"
+        },
+        "currency": {
+          "$ref": "#/$defs/EarningsCurrency"
+        },
+        "current": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "$ref": "#/$defs/SessionDate"
+                },
+                "end": {
+                  "$ref": "#/$defs/SessionDate"
+                }
+              },
+              "required": [
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previousYear": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "$ref": "#/$defs/SessionDate"
+                },
+                "end": {
+                  "$ref": "#/$defs/SessionDate"
+                }
+              },
+              "required": [
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previousQuarter": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "$ref": "#/$defs/SessionDate"
+                },
+                "end": {
+                  "$ref": "#/$defs/SessionDate"
+                }
+              },
+              "required": [
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "actual": {
+                "$ref": "#/$defs/FinancialFact"
+              },
+              "yearOverYear": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/EarningsChange"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "quarterOverQuarter": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/EarningsChange"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "actual",
+              "yearOverYear",
+              "quarterOverQuarter"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 15
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "actual": {
+                "$ref": "#/$defs/EarningsInput"
+              },
+              "previous": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/EarningsInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "difference": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DecimalString"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "percent": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DecimalString"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "actual",
+              "previous",
+              "difference",
+              "percent"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 40
+        },
+        "expectations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "estimate": {
+                "$ref": "#/$defs/EarningsInput"
+              },
+              "actual": {
+                "$ref": "#/$defs/FinancialFact"
+              },
+              "difference": {
+                "$ref": "#/$defs/DecimalString"
+              },
+              "percent": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DecimalString"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "result": {
+                "type": "string",
+                "enum": [
+                  "ABOVE",
+                  "BELOW",
+                  "MET"
+                ]
+              }
+            },
+            "required": [
+              "estimate",
+              "actual",
+              "difference",
+              "percent",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 4
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "basis",
+        "kind",
+        "currency",
+        "current",
+        "previousYear",
+        "previousQuarter",
+        "metrics",
+        "segments",
+        "expectations",
+        "truncated"
       ],
       "additionalProperties": false
     },
@@ -8415,6 +8905,104 @@
       },
       "required": [
         "items"
+      ],
+      "additionalProperties": false
+    },
+    "ReviewedOrderInput": {
+      "type": "object",
+      "properties": {
+        "versionId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "anchorId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revenueFactId": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "revenueRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "amount": {
+          "$ref": "#/$defs/PositiveDecimalString"
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "ONES",
+            "THOUSAND",
+            "LAKH",
+            "MILLION",
+            "CRORE",
+            "BILLION"
+          ]
+        },
+        "execution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "versionId",
+        "anchorId",
+        "revenueFactId",
+        "revenueRevision",
+        "amount",
+        "scale",
+        "execution",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "OrderContext": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "$ref": "#/$defs/PositiveDecimalString"
+                },
+                "execution": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "anchorId": {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                "revenue": {
+                  "$ref": "#/$defs/FinancialFact"
+                },
+                "percent": {
+                  "$ref": "#/$defs/DecimalString"
+                }
+              },
+              "required": [
+                "amount",
+                "execution",
+                "anchorId",
+                "revenue",
+                "percent"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "order"
       ],
       "additionalProperties": false
     },
