@@ -77,7 +77,7 @@ class EarningsReview {
         var priorInputs=inputs(owner,company,basis,kind,currency,year==null
                 ? new PeriodDates(current.start().minusYears(1),current.end().minusYears(1)) : year);
         var segments=segments(currentInputs,priorInputs);
-        var expectations=expectations(currentInputs,actuals);
+        var expectations=expectations(owner,currentInputs,actuals);
         var statements=guidance.atPeriod(owner,company,basis.name(),current.start(),current.end()).stream()
                 .filter(item->item.dimensions().currency()==null||item.dimensions().currency().equals(currency.name())).toList();
         return new Report(basis,kind,currency,current,year,quarter,metrics,segments,expectations,statements,
@@ -164,12 +164,15 @@ class EarningsReview {
     }
     private static String segmentKey(Input row){return row.metric().name()+"|"+CompanyEvents.normalize(row.label());}
 
-    private static List<Expectation> expectations(List<Input> extras,Map<String,FinancialFacts.Fact> actuals){
+    private List<Expectation> expectations(UUID owner,List<Input> extras,Map<String,FinancialFacts.Fact> actuals){
         var comparisons=new LinkedHashMap<FactPolicy.Metric,Expectation>();
+        var firstReleases=new HashMap<UUID,Optional<Instant>>();
         for(var input:extras){
             if(input.kind()!=Kind.CONSENSUS||comparisons.containsKey(input.metric()))continue;
             var actual=actuals.get(input.metric().name());
-            if(actual==null||!Instant.parse(input.publishedAt()).isBefore(Instant.parse(actual.publishedAt())))continue;
+            if(actual==null)continue;
+            var first=firstReleases.computeIfAbsent(actual.factId(),id->Optional.ofNullable(facts.firstPublished(owner,id)).map(Instant::parse));
+            if(first.isEmpty()||!Instant.parse(input.publishedAt()).isBefore(first.get()))continue;
             var estimate=new BigDecimal(input.normalized());
             var difference=new BigDecimal(actual.normalizedAmount()).subtract(estimate);
             comparisons.put(input.metric(),new Expectation(input,actual,FactPolicy.decimal(difference),percent(difference,estimate),

@@ -196,6 +196,13 @@ class FinancialFacts {
         return selectDimensions(owner,company,d,until);
     }
 
+    String firstPublished(UUID owner,UUID fact){
+        return jdbc.queryForObject("""
+                SELECT CASE WHEN count(*)=count(published_at) THEN min(published_at) END AS first_published
+                FROM finn.financial_fact_version WHERE owner_id=? AND fact_id=?
+                """,(row,index)->SourceDocuments.instant(row,"first_published"),owner,fact);
+    }
+
     private Fact selectDimensions(UUID owner,UUID company,Dimensions d,OffsetDateTime until){
         String version=until==null?" AND v.revision=f.revision":" AND v.published_at<? ORDER BY v.revision DESC LIMIT 1";
         var arguments=new java.util.ArrayList<>(java.util.Arrays.asList(owner,company,d.metric(),d.basis(),d.periodKind(),

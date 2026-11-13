@@ -23,7 +23,7 @@ public final class EarningsReviewChecks {
                 filing(company,"Fictional prior results","Revenue 120; services revenue 60","2024-07-24T12:00:00Z")),1);
         String previous=index(mvc,worker,owner,document(mvc,owner,
                 filing(company,"Fictional sequential results","Revenue 125","2025-05-20T12:00:00Z")),1);
-        ok(submit(mvc,path+"/facts",owner,amount(QUARTER,current,"150","CRORE")));
+        var initial=ok(submit(mvc,path+"/facts",owner,amount(QUARTER,current,"150","CRORE")));
         ok(submit(mvc,path+"/facts",owner,amount(QUARTER.replace("2025","2024"),lastYear,"120","CRORE")));
         ok(submit(mvc,path+"/facts",owner,amount(QUARTER.replace("2025-04-01","2025-01-01").replace("2025-06-30","2025-03-31"),
                 previous,"125","CRORE")));
@@ -46,6 +46,13 @@ public final class EarningsReviewChecks {
                 .andExpect(jsonPath("$.metrics[0].yearOverYear").isEmpty())
                 .andExpect(jsonPath("$.expectations.length()").value(0));
         read(mvc,earnings,other).andExpect(status().isNotFound());
+        String restated=index(mvc,worker,owner,document(mvc,owner,
+                filing(company,"Fictional restatement","Restated revenue 145","2025-07-28T12:00:00Z")),1);
+        ok(submit(mvc,ROOT+"/facts/"+initial.path("factId").asText(),owner,
+                "{\"companyId\":\""+company+"\",\"expectedRevision\":1,\"fact\":"+amount(QUARTER,restated,"145","CRORE")+"}"));
+        read(mvc,earnings,owner).andExpect(status().isOk())
+                .andExpect(jsonPath("$.expectations[0].actual.amount").value("145"))
+                .andExpect(jsonPath("$.expectations[0].estimate.amount").value("140"));
 
         String orderDoc=document(mvc,owner,filing(company,"Fictional order award","New contract INR 50 crore to execute over 18 months","2025-08-04T08:00:00Z"));
         String orderId=MarketRadarChecks.event(mvc,owner,orderDoc.substring(orderDoc.lastIndexOf('/')+1),"Fictional order");
