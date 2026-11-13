@@ -41,9 +41,11 @@ class FinancialFacts {
     private final CurrentUser users;
     private final ResearchEvidence evidence;
     private final ApplicationEventPublisher publisher;
+    private final ReviewedEventOutbox outbox;
 
-    FinancialFacts(JdbcTemplate jdbc,CurrentUser users,ResearchEvidence evidence,ApplicationEventPublisher publisher){
+    FinancialFacts(JdbcTemplate jdbc,CurrentUser users,ResearchEvidence evidence,ApplicationEventPublisher publisher,ReviewedEventOutbox outbox){
         this.jdbc=jdbc;this.users=users;this.evidence=evidence;this.publisher=publisher;
+        this.outbox=outbox;
     }
 
     @Transactional public Page list(UUID company,int offset){return listFor(users.requireId(),company,offset);}
@@ -179,7 +181,7 @@ class FinancialFacts {
                 value.b()==null?null:value.b().factId(),value.b()==null?null:value.b().revision(),
                 value.publishedAt()==null?null:OffsetDateTime.parse(value.publishedAt()));
         var saved=require(owner,id,next);
-        publisher.publishEvent(new Reviewed(owner,saved));
+        if(!outbox.enqueueFact(owner,saved))publisher.publishEvent(new Reviewed(owner,saved));
         return saved;
     }
 

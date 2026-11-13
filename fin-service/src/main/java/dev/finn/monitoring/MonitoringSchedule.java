@@ -37,10 +37,10 @@ class MonitoringSchedule {
         }
     }
 
-    @Scheduled(fixedDelay=5000)
+    @Scheduled(fixedDelayString="${finn.monitoring.delivery-delay-ms:1000}")
     void deliver() {
         try {
-            for (int i=0; i<24 && deliveries.processNext(); i++) {
+            for (int i=0; i<256 && deliveries.processNext(); i++) {
                 // Each delivery and its attempt share one transaction.
             }
         } catch (RuntimeException failure) {

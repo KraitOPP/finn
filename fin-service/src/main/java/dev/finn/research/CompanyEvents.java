@@ -37,29 +37,35 @@ public class CompanyEvents {
     private record Decision(UUID documentId,int documentRevision,String title,String category,String subtype,String stage,
                             String materiality,String novelty) {}
 
-    static final String SELECT = """
-            SELECT v.*,e.company_id,c.name AS company_name,s.title AS source_title,s.url,s.source_name,s.published_at
+    static final String COLUMNS = "v.*,e.company_id,c.name AS company_name,s.title AS source_title,s.url,s.source_name,s.published_at";
+    static final String FROM = """
+
             FROM finn.company_event_version v
             JOIN finn.company_event e ON e.owner_id=v.owner_id AND e.event_id=v.event_id
             JOIN finn.company c ON c.owner_id=e.owner_id AND c.company_id=e.company_id
             JOIN finn.source_document_version s ON s.owner_id=v.owner_id AND s.document_id=v.document_id AND s.revision=v.document_revision
             """;
+    static final String SELECT = "SELECT "+COLUMNS+FROM;
     private final JdbcTemplate jdbc;
     private final CurrentUser users;
     private final SourceDocuments sources;
     private final JsonMapper json;
     private final FilingRules rules;
     private final ApplicationEventPublisher publisher;
+    private final ReviewedEventOutbox outbox;
+    private final RadarFilings radar;
     private static final JsonMapper DATE_READER=JsonMapper.builder().build();
 
     CompanyEvents(JdbcTemplate jdbc,CurrentUser users,SourceDocuments sources,JsonMapper json,FilingRules rules,
-                  ApplicationEventPublisher publisher) {
+                  ApplicationEventPublisher publisher,ReviewedEventOutbox outbox,RadarFilings radar) {
         this.jdbc=jdbc;
         this.users=users;
         this.sources=sources;
         this.json=json;
         this.rules=rules;
         this.publisher=publisher;
+        this.outbox=outbox;
+        this.radar=radar;
     }
 
     @Transactional public EventClassifier.Hint suggestion(UUID document,int revision) {
@@ -106,9 +112,9 @@ public class CompanyEvents {
         return new RelatedNews(links);
     }
 
-    @Transactional public Version classify(Input input) { return classifyFor(users.requireId(),input); }
+    @Transactional public Version classify(Input input) { return classifyFor(users.requireId(),input,true); }
 
-    Version classifyFor(UUID owner,Input input) {
+    Version classifyFor(UUID owner,Input input,boolean stream) {
         var source=sources.evidence(owner,input.documentId(),input.documentRevision()).source();
         if (!source.sourceType().equals("PRIMARY")) throw new ApiFailure(422,"PRIMARY_SOURCE_REQUIRED");
         if ((input.eventId()==null)!=(input.expectedRevision()==null)) throw ApiFailure.invalid();
@@ -154,8 +160,11 @@ public class CompanyEvents {
                 """,owner,id,revision,decision.documentId(),decision.documentRevision(),decision.title(),decision.category(),
                 decision.subtype(),decision.stage(),decision.materiality(),decision.novelty(),fingerprint,dateJson);
         var saved=current(owner,id);
-        rules.onEvent(owner,saved);
-        publisher.publishEvent(new Reviewed(owner,saved));
+        if(!stream||!outbox.enqueueFiling(owner,saved)){
+            radar.project(owner,saved,OffsetDateTime.parse(saved.reviewedAt()));
+            rules.onEvent(owner,saved);
+            publisher.publishEvent(new Reviewed(owner,saved));
+        }
         return saved;
     }
 

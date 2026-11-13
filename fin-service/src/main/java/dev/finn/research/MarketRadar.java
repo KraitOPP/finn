@@ -24,7 +24,8 @@ class MarketRadar {
                   Liquidity liquidity, Size size, UUID portfolioId) {}
     record Context(String companyName, UUID companyId, UUID listingId, String symbol, String exchange,
                    DiscoveryUniverse.Sector sector, boolean held, boolean watched) {}
-    record Announcement(CompanyEvents.Version event, String publishedAt, String sourceUrl, String sourceName) {}
+    record Announcement(CompanyEvents.Version event, String publishedAt, String sourceUrl, String sourceName,
+                        @com.fasterxml.jackson.annotation.JsonIgnore Instant visibleAt) {}
     record SectorMove(int peers, String medianChangePercent) {}
     record Reason(String label, int points) {}
     record Entry(Context stock, Announcement announcement, DailyMovement.Signal movement, SectorMove sectorMove,
@@ -92,7 +93,7 @@ class MarketRadar {
             var stock=byCompany.get(event.companyId());
             if(stock==null||!eligibleIds.contains(stock.companyId())
                     ||filter.kind()==Kind.MOVES||filter.eventType()!=null&&!event.subtype().equals(filter.eventType().name()))continue;
-            if(afterReview==null ? !fresh(announcement,start,now) : !reviewedSince(event,afterReview,now))continue;
+            if(afterReview==null ? !fresh(announcement,start,now) : !reviewedSince(announcement,afterReview,now))continue;
             var signal=signals.get(stock.companyId());
             var cap=caps.get(stock.companyId());
             if(!liquid(signal,filter.liquidity())||!inSize(cap,filter.size()))continue;
@@ -136,9 +137,12 @@ class MarketRadar {
     }
 
     List<Announcement> announcements(UUID owner) {
-        return jdbc.query(CompanyEvents.SELECT+" WHERE e.owner_id=? AND v.revision=e.revision ORDER BY v.reviewed_at DESC,e.event_id LIMIT 300",
+        return jdbc.query("SELECT "+CompanyEvents.COLUMNS+",p.visible_at"+CompanyEvents.FROM+"""
+                 JOIN finn.radar_filing p ON p.owner_id=v.owner_id AND p.event_id=v.event_id AND p.revision=v.revision
+                 WHERE e.owner_id=? ORDER BY p.visible_at DESC,e.event_id LIMIT 300
+                """,
                 (row,i)->new Announcement(CompanyEvents.version(row,i),SourceDocuments.instant(row,"published_at"),
-                        row.getString("url"),row.getString("source_name")),owner);
+                        row.getString("url"),row.getString("source_name"),row.getObject("visible_at",OffsetDateTime.class).toInstant()),owner);
     }
 
     private List<Context> contexts(UUID owner,Set<UUID> held,Set<UUID> watched) {
@@ -183,8 +187,9 @@ class MarketRadar {
         return !published.isAfter(session.plusDays(3))&&!published.isBefore(session.minusDays(3));
     }
 
-    private static boolean reviewedSince(CompanyEvents.Version event,Instant from,Instant through){
-        var reviewed=Instant.parse(event.reviewedAt());
+    private static boolean reviewedSince(Announcement announcement,Instant from,Instant through){
+        var event=announcement.event();
+        var reviewed=announcement.visibleAt();
         return (!event.novelty().equals("ROUTINE")||event.stage().equals("CANCELLED"))&&reviewed.isAfter(from)&&!reviewed.isAfter(through);
     }
 

@@ -3,6 +3,31 @@ spring:
     name: finn-backend
   main:
     banner-mode: "off"
+  kafka:
+    bootstrap-servers: ${FINN_KAFKA_BOOTSTRAP:127.0.0.1:19092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 5000
+        max.block.ms: 2500
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        allow.auto.create.topics: false
+        max.poll.records: 100
+    listener:
+      ack-mode: record
+    admin:
+      properties:
+        request.timeout.ms: 5000
+        default.api.timeout.ms: 10000
   config:
     import: "optional:configtree:${FINN_WORKSPACE_ROOT}/secrets/backend/"
   datasource:
@@ -33,6 +58,15 @@ spring:
   mvc:
     log-request-details: false
 finn:
+  filings:
+    kafka:
+      enabled: ${FINN_FILINGS_KAFKA_ENABLED:false}
+      topic: ${FINN_FILINGS_KAFKA_TOPIC:finn.reviewed-company-events.v1}
+      group-prefix: ${FINN_FILINGS_KAFKA_GROUP:finn-reviewed-v1}
+      concurrency: ${FINN_FILINGS_KAFKA_CONCURRENCY:2}
+      replication-factor: ${FINN_KAFKA_REPLICATION_FACTOR:1}
+  metrics:
+    enabled: ${FINN_METRICS_ENABLED:false}
   public-origin: ${FINN_PUBLIC_ORIGIN:}
   oidc:
     issuer: ${FINN_OIDC_ISSUER:}
@@ -57,7 +91,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: ${FINN_ACTUATOR_ENDPOINTS:health}
   endpoint:
     health:
       show-details: never

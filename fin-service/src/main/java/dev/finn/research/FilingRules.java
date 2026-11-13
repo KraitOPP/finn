@@ -97,9 +97,13 @@ class FilingRules {
     }
 
     void onEvent(UUID owner,CompanyEvents.Version event) {
+        onEvent(owner,event,true);
+    }
+
+    void onEvent(UUID owner,CompanyEvents.Version event,boolean currentRevision) {
         for(Rule rule:rules(owner)){
             if (!rule.enabled()) continue;
-            syncDates(owner,rule,event);
+            if(currentRevision)syncDates(owner,rule,event);
             if (!rule.settings().arrivals()||!matches(rule,event)) continue;
             String semantic=event.category()+"|"+event.subtype()+"|"+event.stage()+"|"+event.materiality()+"|"+event.dates();
             boolean correction=event.novelty().equals("CORRECTION")||event.stage().equals("CANCELLED");

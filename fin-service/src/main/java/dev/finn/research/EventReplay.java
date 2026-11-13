@@ -67,10 +67,10 @@ class EventReplay {
         var meeting=sources.createFor(synthetic,"PRIMARY",new SourceDocuments.Input(company,MEETING,"Fictional company secretary",
                 null,"Fictional notice. The board plans to meet on 10 January 2025 to review quarterly results.",
                 "2025-01-06T10:00:00Z"));
-        var main=events.classifyFor(synthetic,decision(first,null,"HIGH","NEW",List.of()));
-        events.classifyFor(synthetic,decision(copy,main,"HIGH","FOLLOW_UP",List.of()));
+        var main=events.classifyFor(synthetic,decision(first,null,"HIGH","NEW",List.of()),false);
+        events.classifyFor(synthetic,decision(copy,main,"HIGH","FOLLOW_UP",List.of()),false);
         events.classifyFor(synthetic,decision(meeting,null,"LOW","ROUTINE",
-                List.of(new CompanyEvents.AnnouncedDate("MEETING",LocalDate.of(2025,1,10),"TENTATIVE"))));
+                List.of(new CompanyEvents.AnnouncedDate("MEETING",LocalDate.of(2025,1,10),"TENTATIVE"))),false);
         jdbc.update("INSERT INTO finn.event_replay(owner_id,scenario,run_id,synthetic_owner_id) VALUES (?,?,?,?)",
                 owner,SCENARIO,replay,synthetic);
         return view(load(owner));
