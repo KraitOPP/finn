@@ -64,11 +64,39 @@ Set `GROQ_API_KEY` in the backend process environment or put the key in `$FINN_W
 
 `FINN_STOCK_AI_PROVIDER` accepts `GROQ`, `GEMINI`, or `AUTO`. The default `AUTO` selects Groq when configured, otherwise it uses a configured Gemini provider. Gemini reads `GEMINI_API_KEY` or `$FINN_WORKSPACE_ROOT/secrets/backend/finn.gemini.api-key`, and `GEMINI_MODEL` defaults to `gemini-3.8-flash`. Gemini requires a Google project with Search grounding access. The initial request contains the public stock identity and selected dated research prompt. Groq can use the official NSE issuer name from the verified directory for complete research and recent news. Reports remain in the open view for the current session. [Gemini API keys](https://ai.google.dev/gemini-api/docs/api-key) · [Google Search grounding terms](https://ai.google.dev/gemini-api/terms#grounding-with-google-search)
 
+## Reviewed filing stream
+
+FINN can publish reviewed company events and financial fact revisions to Kafka. Saving the review and adding its outbox row share a PostgreSQL transaction. The relay publishes a versioned reference with an owner/company partition key. Source documents, fact values, and portfolio data stay in PostgreSQL. Independent consumer groups evaluate Inbox alerts, update Radar, and check thesis conditions. Consumers commit database effects before acknowledging the record and record processed event IDs to handle redelivery. Radar can rebuild its projection from retained records.
+
+The optional Compose stack adds a local Kafka broker, Prometheus and a provisioned Grafana dashboard. Run the usual local database and identity setup first. Then run these commands from `fin-service` with an existing external `FINN_WORKSPACE_ROOT`.
+
+```powershell
+$scrapeSecret = Join-Path $env:FINN_WORKSPACE_ROOT 'secrets/monitoring/scrape-password'
+if (!(Test-Path -LiteralPath $scrapeSecret)) {
+    New-Item -ItemType Directory -Force (Split-Path -Parent $scrapeSecret) | Out-Null
+    $value = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+    [IO.File]::WriteAllText($scrapeSecret, $value)
+}
+docker compose -f compose.filing-stream.yaml up -d --wait
+$env:FINN_FILINGS_KAFKA_ENABLED = 'true'
+$env:FINN_METRICS_ENABLED = 'true'
+$env:FINN_ACTUATOR_ENDPOINTS = 'health,prometheus'
+$env:FINN_METRICS_PASSWORD = (Get-Content -LiteralPath $scrapeSecret -Raw).Trim()
+node scripts/maven.mjs run
+```
+
+Open the [FINN filing stream dashboard](http://127.0.0.1:13000/d/finn-filing-stream/finn-filing-stream). Review a source-backed company event with an active filing alert rule to populate the latency charts. The dashboard also shows pending publications and processing, duplicates, and failed records. The metrics endpoint uses a dedicated scrape credential. The local stack binds published ports to loopback and runs Kafka with a single replica.
+
+The main topic keeps 30 days of records. Exhausted retries move the record reference into a failure topic for seven days. Monitor that topic and the receipt backlog together. After correcting the cause, republish the original key and versioned reference to the main topic to retry only missing effects. Restore from PostgreSQL backups for recovery beyond Kafka's retained history. If the Kafka option is disabled, new reviews are processed inline. Already queued reviews still require a running relay and consumers.
+
 ## Verification
 
 See [Deployment and recovery](deployment/RELEASE.md) for packaged deployment, encrypted archives, restore, and rollback.
 See [Fictional replay](deployment/DEMO.md) for the generated workbook and end-to-end API scenario.
 See [Stock directory](deployment/STOCK_DIRECTORY.md) for name suggestions, exact holding matches and automatic daily-price requests.
+The Kafka integration test uses disposable Docker containers to stop and resume the Inbox consumer, rewind offsets, rebuild Radar, and check that the replay creates zero duplicate alerts. Set `-Dfinn.benchmark.filings=10000` and `-Dfinn.benchmark.report=<absolute path outside the checkout>` in `MAVEN_ARGS` to produce a recovery report. The latency in that report includes the simulated outage.
+
+The k6 script at `deployment/filing-stream/k6-filing-reads.js` exercises Radar and Inbox for 15 seconds with four virtual users. Run it against the local stack with a fictional user's session cookie stored in a private external file. Set `FINN_BENCHMARK_URL` to the reachable API origin and `FINN_BENCHMARK_COOKIE_FILE` to that file's path as seen by k6. Invalidate the session and remove the cookie file after the run. [k6 load testing](https://grafana.com/docs/k6/latest/)
 
 ```mermaid
 flowchart LR

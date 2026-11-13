@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+  scrape_timeout: 4s
+scrape_configs:
+  - job_name: finn
+    metrics_path: /actuator/prometheus
+    basic_auth:
+      username: finn-metrics
+      password_file: /run/secrets/finn-scrape-password
+    static_configs:
+      - targets: [host.docker.internal:8080]

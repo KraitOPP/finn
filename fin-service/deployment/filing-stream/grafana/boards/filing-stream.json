@@ -1,0 +1,70 @@
+{
+  "uid": "finn-filing-stream",
+  "title": "FINN filing stream",
+  "description": "Reviewed filings and financial facts from PostgreSQL through Kafka to Radar, thesis checks and the Inbox.",
+  "schemaVersion": 39,
+  "tags": ["FINN", "Kafka"],
+  "time": { "from": "now-30m", "to": "now" },
+  "refresh": "5s",
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Filing to Inbox · p95",
+      "description": "Elapsed time from filing review to committed delivery for immediate in-app alerts.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "finn-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 } },
+      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(finn_filings_inbox_latency_seconds_bucket[2m])))", "legendFormat": "Inbox p95" }]
+    },
+    {
+      "id": 2,
+      "title": "Events awaiting processing",
+      "description": "Outbox records awaiting Kafka and published events awaiting each consumer's database receipt.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "finn-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "min": 0 } },
+      "targets": [
+        { "refId": "A", "expr": "max by (consumer) (finn_filings_consumer_pending)", "legendFormat": "{{consumer}}" },
+        { "refId": "B", "expr": "max(finn_filings_outbox_pending)", "legendFormat": "outbox" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Consumer processing · p95",
+      "description": "Elapsed time from review to a committed Radar, alert or thesis receipt.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "finn-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 } },
+      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum by (consumer, le) (rate(finn_filings_processing_latency_seconds_bucket[2m])))", "legendFormat": "{{consumer}}" }]
+    },
+    {
+      "id": 4,
+      "title": "Published and processed per second",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "finn-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 } },
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(finn_filings_published_total[1m]))", "legendFormat": "published" },
+        { "refId": "B", "expr": "sum by (consumer) (rate(finn_filings_consumer_events_total{outcome=\"processed\"}[1m]))", "legendFormat": "{{consumer}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Retries, failed messages and duplicate deliveries",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "finn-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(finn_filings_publish_failures_total[2m])) or vector(0)", "legendFormat": "outbox failures" },
+        { "refId": "B", "expr": "sum by (consumer) (increase(finn_filings_dead_letters_total[2m]))", "legendFormat": "{{consumer}} dead letters" },
+        { "refId": "C", "expr": "sum by (consumer) (increase(finn_filings_consumer_events_total{outcome=\"duplicate\"}[2m]))", "legendFormat": "{{consumer}} duplicates handled" }
+      ]
+    }
+  ]
+}

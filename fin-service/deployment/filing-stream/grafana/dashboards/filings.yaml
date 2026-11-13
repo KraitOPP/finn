@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: FINN
+    type: file
+    editable: false
+    options:
+      path: /etc/finn-dashboards
